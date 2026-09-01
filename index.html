@@ -1,9 +1,54 @@
+<!--
+    ============================================================
+    ANTES DE USAR LAS FUNCIONES NUEVAS: correr este SQL una vez
+    en el SQL Editor de Supabase (Project > SQL Editor > New query).
+    Sin esto, las funciones nuevas van a tirar error porque las
+    columnas/tablas todavía no existen en tu base.
+    ============================================================
+
+    /* 1) Notas internas por cliente */
+    alter table clientes add column if not exists notas text;
+
+    /* 2) Vincular ventas de stock y cobros de taller a un cliente
+          (para poder armar el historial en la ficha del cliente) */
+    alter table caja add column if not exists cliente_id bigint references clientes(id);
+
+    /* 3) Plantillas de WhatsApp reutilizables */
+    create table if not exists plantillas_whatsapp (
+        id bigint generated always as identity primary key,
+        nombre text not null,
+        mensaje text not null,
+        creado_en timestamptz default now()
+    );
+
+    /* 4) Historial de mensajes de WhatsApp enviados */
+    create table if not exists mensajes_whatsapp (
+        id bigint generated always as identity primary key,
+        cliente_id bigint references clientes(id),
+        cliente_nombre text,
+        telefono text,
+        plantilla_nombre text,
+        mensaje text,
+        enviado_en timestamptz default now()
+    );
+
+    /* 5) Cierres de caja diarios */
+    create table if not exists cierres_caja (
+        id bigint generated always as identity primary key,
+        fecha timestamptz default now(),
+        total_esperado numeric,
+        total_contado numeric,
+        diferencia numeric,
+        detalle jsonb
+    );
+    ============================================================
+-->
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bicicletería del Abasto - Taller, Caja y Reportes</title>
+    <title>Bicicletería del Abasto - Gestión Integral</title>
     <!-- Diseño con Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Librería de Supabase -->
@@ -20,22 +65,28 @@
     <header class="bg-slate-800 text-white p-4 shadow-md">
         <div class="container mx-auto flex flex-col md:flex-row justify-between items-center gap-3">
             <h1 class="text-xl font-bold">🚲 Bicicletería del Abasto</h1>
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
                 <button onclick="cambiarPestana('taller')" id="btnTabTaller" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-medium transition">🛠️ Taller y Caja</button>
-                <button onclick="cambiarPestana('reportes')" id="btnTabReportes" class="bg-slate-700 text-white px-3 py-1.5 rounded text-sm font-medium transition">📊 Reportes y Métricas</button>
+                <button onclick="cambiarPestana('clientes')" id="btnTabClientes" class="bg-slate-700 text-white px-3 py-1.5 rounded text-sm font-medium transition">👥 Clientes (CRM)</button>
+                <button onclick="cambiarPestana('inventario')" id="btnTabInventario" class="bg-slate-700 text-white px-3 py-1.5 rounded text-sm font-medium transition">🚲 Stock Bicis</button>
+                <button onclick="cambiarPestana('reportes')" id="btnTabReportes" class="bg-slate-700 text-white px-3 py-1.5 rounded text-sm font-medium transition">📊 Reportes</button>
             </div>
+        </div>
+        <div class="container mx-auto mt-3 relative">
+            <input type="text" id="inputBusquedaGlobal" oninput="busquedaGlobal()" onfocus="busquedaGlobal()" placeholder="🔎 Buscar en todo el sistema (clientes, OTs, stock, caja)..." class="w-full border border-slate-600 bg-slate-700 text-white placeholder-slate-300 p-2 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <div id="resultadosBusquedaGlobal" class="hidden absolute z-50 bg-white text-slate-800 w-full mt-1 rounded shadow-lg max-h-96 overflow-y-auto"></div>
         </div>
     </header>
 
     <!-- Contenido Principal -->
-    <main class="container mx-auto p-4 max-w-5xl space-y-6">
+    <main class="container mx-auto p-4 max-w-6xl space-y-6">
         
         <!-- SECCIÓN 1: TALLER Y CAJA -->
         <div id="seccionTaller" class="space-y-6">
             
             <!-- Ingreso Rápido de Bicicletas -->
             <div class="bg-white p-4 rounded-lg shadow">
-                <h2 class="text-lg font-semibold mb-3 text-slate-700">➕ Recibir Nueva Bicicleta</h2>
+                <h2 class="text-lg font-semibold mb-3 text-slate-700">➕ Recibir Nueva Bicicleta en Taller</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                     <input type="text" id="inputCliente" placeholder="Nombre del cliente" class="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <input type="text" id="inputTelefono" placeholder="Teléfono / WhatsApp (ej: 3415...)" class="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -44,11 +95,12 @@
                     <input type="text" id="inputBici" placeholder="Descripción de la bici (ej: MTB Rodado 29)" class="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <input type="text" id="inputTrabajo" placeholder="Trabajo a realizar" class="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
-                <div class="mb-3">
-                    <input type="number" id="inputPresupuesto" placeholder="Presupuesto Estimado ($)" class="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-1/2">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                    <input type="number" id="inputPresupuesto" placeholder="Presupuesto Estimado ($)" class="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="number" id="inputSena" placeholder="Seña / Anticipo recibido ($)" class="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 </div>
                 <button onclick="registrarBicicleta()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-medium w-full">
-                    Registrar Ingreso y Habilitar WhatsApp
+                    Registrar Ingreso y Cargar Seña en Caja (si aplica)
                 </button>
             </div>
 
@@ -59,8 +111,10 @@
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-gray-50 border-b text-sm text-gray-600">
+                                <th class="p-2">OT</th>
                                 <th class="p-2">Cliente</th>
                                 <th class="p-2">Bicicleta / Trabajo / Presupuesto</th>
+                                <th class="p-2">Seña</th>
                                 <th class="p-2">Estado</th>
                                 <th class="p-2">Cobro Final</th>
                                 <th class="p-2 text-center">Acciones</th>
@@ -75,7 +129,7 @@
             <div class="bg-white p-4 rounded-lg shadow">
                 <h2 class="text-lg font-semibold mb-3 text-slate-700">⚙️ Gestión de Conceptos de Caja</h2>
                 <div class="flex gap-2 mb-3">
-                    <input type="text" id="nuevoConceptoNombre" placeholder="Nombre del nuevo concepto (ej: Publicidad)" class="border p-2 rounded text-sm flex-grow">
+                    <input type="text" id="nuevoConceptoNombre" placeholder="Nombre del nuevo concepto (ej: Repuestos)" class="border p-2 rounded text-sm flex-grow">
                     <button onclick="agregarConcepto()" class="bg-slate-700 text-white px-4 py-2 rounded hover:bg-slate-800 text-sm font-medium">➕ Nuevo Concepto</button>
                 </div>
                 <div id="listaConceptos" class="flex flex-wrap gap-2"></div>
@@ -120,7 +174,7 @@
 
                 <div class="flex flex-col md:flex-row gap-2 mb-3 justify-between items-center bg-slate-50 p-2 rounded border">
                     <div class="flex gap-2 w-full md:w-auto">
-                        <input type="text" id="filtroTexto" placeholder="Buscar..." oninput="filtrarCaja()" class="border p-1.5 rounded text-sm w-full md:w-64">
+                        <input type="text" id="filtroTexto" placeholder="Buscar en caja..." oninput="filtrarCaja()" class="border p-1.5 rounded text-sm w-full md:w-64">
                         <select id="filtroTipo" onchange="filtrarCaja()" class="border p-1.5 rounded text-sm">
                             <option value="Todos">Todos</option>
                             <option value="Entrada">Entradas</option>
@@ -148,15 +202,168 @@
                 </div>
             </div>
 
+            <!-- Cierre de Caja Diario -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 class="text-lg font-semibold mb-3 text-slate-700">🔒 Cierre de Caja Diario</h2>
+                <p class="text-sm text-gray-500 mb-3">Suma los movimientos en <strong>Efectivo</strong> del día de hoy y los compara contra lo que contaste físicamente en la caja.</p>
+                <div class="flex flex-col md:flex-row gap-3 items-end">
+                    <div>
+                        <label class="text-xs text-gray-500 block mb-1">Efectivo esperado (calculado)</label>
+                        <div id="cierreEsperado" class="border p-2 rounded bg-gray-50 font-bold text-slate-700 w-48">$0.00</div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 block mb-1">Efectivo contado físicamente</label>
+                        <input type="number" id="cierreContado" placeholder="0.00" class="border p-2 rounded w-48">
+                    </div>
+                    <button onclick="calcularCierreCaja()" class="bg-slate-700 text-white px-4 py-2 rounded hover:bg-slate-800 text-sm font-medium">🔄 Calcular Diferencia</button>
+                    <button onclick="cerrarCajaDelDia()" class="bg-rose-700 text-white px-4 py-2 rounded hover:bg-rose-800 text-sm font-medium">🔒 Cerrar Caja del Día</button>
+                </div>
+                <div id="cierreResultado" class="mt-3 text-sm font-semibold"></div>
+            </div>
+
         </div>
 
-        <!-- SECCIÓN 2: REPORTES Y MÉTRICAS -->
-        <div id="seccionReportes" class="space-y-6 hidden">
-            
-            <!-- Contenedor Exportable (PDF/Excel) -->
-            <div id="areaExportable" class="space-y-6">
+        <!-- SECCIÓN 2: CLIENTES (CRM) -->
+        <div id="seccionClientes" class="space-y-6 hidden">
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 class="text-lg font-semibold mb-3 text-slate-700">👥 Registro y Gestión de Clientes (CRM)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+                    <input type="text" id="cliNombre" placeholder="Nombre y Apellido" class="border p-2 rounded text-sm">
+                    <input type="text" id="cliTelefono" placeholder="Teléfono / WhatsApp" class="border p-2 rounded text-sm">
+                    <input type="email" id="cliEmail" placeholder="Correo electrónico" class="border p-2 rounded text-sm">
+                    <input type="text" id="cliDireccion" placeholder="Dirección" class="border p-2 rounded text-sm">
+                </div>
+                <textarea id="cliNotas" placeholder="Notas internas (ej: Cliente exigente, siempre paga a 30 días)" class="border p-2 rounded text-sm w-full mb-3" rows="2"></textarea>
+                <button onclick="guardarCliente()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm font-medium w-full">💾 Guardar Cliente</button>
+            </div>
 
-                <!-- Filtros por Fechas para Reportes y Botones de Exportación -->
+            <!-- Plantillas de WhatsApp -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 class="text-lg font-semibold mb-3 text-slate-700">💬 Plantillas de WhatsApp</h2>
+                <p class="text-xs text-gray-500 mb-2">Usá <code>{nombre}</code> y <code>{bici}</code> dentro del mensaje: se reemplazan automáticamente al enviar.</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-3">
+                    <input type="text" id="plantillaNombre" placeholder="Nombre (ej: Bici lista)" class="border p-2 rounded text-sm">
+                    <input type="text" id="plantillaMensaje" placeholder="Mensaje (ej: Hola {nombre}, tu {bici} está lista!)" class="border p-2 rounded text-sm md:col-span-2">
+                </div>
+                <button onclick="guardarPlantilla()" class="bg-slate-700 text-white px-4 py-2 rounded hover:bg-slate-800 text-sm font-medium mb-3">➕ Guardar Plantilla</button>
+                <div id="listaPlantillas" class="flex flex-wrap gap-2"></div>
+            </div>
+
+            <div class="bg-white p-4 rounded-lg shadow">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-md font-semibold text-slate-700">Base de Datos de Clientes</h3>
+                    <input type="text" id="buscarClienteInput" placeholder="Buscar cliente..." oninput="filtrarClientes()" class="border p-1.5 rounded text-sm w-64">
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-gray-50 border-b text-gray-600">
+                                <th class="p-2">Nombre</th>
+                                <th class="p-2">Teléfono</th>
+                                <th class="p-2">Email</th>
+                                <th class="p-2">Dirección</th>
+                                <th class="p-2 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaClientes"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL: Ficha de Cliente -->
+        <div id="modalFichaCliente" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5">
+                <div class="flex justify-between items-start mb-3">
+                    <h2 id="fichaTituloCliente" class="text-xl font-bold text-slate-800"></h2>
+                    <button onclick="cerrarFichaCliente()" class="text-gray-500 hover:text-gray-800 text-xl leading-none">✖</button>
+                </div>
+                <div id="fichaDatosContacto" class="text-sm text-gray-600 mb-4"></div>
+
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="bg-emerald-50 border border-emerald-200 rounded p-3">
+                        <span class="text-xs text-emerald-700 uppercase font-semibold">Total Gastado</span>
+                        <div id="fichaTotalGastado" class="text-xl font-bold text-emerald-700">$0.00</div>
+                    </div>
+                    <div class="bg-blue-50 border border-blue-200 rounded p-3">
+                        <span class="text-xs text-blue-700 uppercase font-semibold">Órdenes de Trabajo</span>
+                        <div id="fichaCantidadOTs" class="text-xl font-bold text-blue-700">0</div>
+                    </div>
+                </div>
+
+                <h3 class="text-sm font-semibold text-slate-700 mb-2">🛠️ Historial de Reparaciones</h3>
+                <div class="overflow-x-auto mb-4">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead><tr class="bg-gray-50 border-b text-gray-600"><th class="p-1.5">OT</th><th class="p-1.5">Bici</th><th class="p-1.5">Trabajo</th><th class="p-1.5">Estado</th><th class="p-1.5">Cobrado</th></tr></thead>
+                        <tbody id="fichaTablaOrdenes"></tbody>
+                    </table>
+                </div>
+
+                <h3 class="text-sm font-semibold text-slate-700 mb-2">🚲 Bicicletas Compradas (Stock)</h3>
+                <div class="overflow-x-auto mb-4">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead><tr class="bg-gray-50 border-b text-gray-600"><th class="p-1.5">Fecha</th><th class="p-1.5">Detalle</th><th class="p-1.5">Monto</th></tr></thead>
+                        <tbody id="fichaTablaVentas"></tbody>
+                    </table>
+                </div>
+
+                <h3 class="text-sm font-semibold text-slate-700 mb-2">💬 Historial de Mensajes Enviados</h3>
+                <div class="overflow-x-auto mb-4">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead><tr class="bg-gray-50 border-b text-gray-600"><th class="p-1.5">Fecha</th><th class="p-1.5">Plantilla</th><th class="p-1.5">Mensaje</th></tr></thead>
+                        <tbody id="fichaTablaMensajes"></tbody>
+                    </table>
+                </div>
+
+                <h3 class="text-sm font-semibold text-slate-700 mb-2">📝 Notas Internas</h3>
+                <textarea id="fichaNotasInternas" rows="3" class="border p-2 rounded text-sm w-full mb-2" placeholder="Ej: Cliente exigente, siempre paga a 30 días..."></textarea>
+                <button onclick="guardarNotasFicha()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm font-medium">💾 Guardar Notas</button>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 3: INVENTARIO DE BICICLETAS -->
+        <div id="seccionInventario" class="space-y-6 hidden">
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 class="text-lg font-semibold mb-3 text-slate-700">🚲 Cargar Bicicleta al Stock</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                    <input type="text" id="biciMarca" placeholder="Marca (ej: TopMega, Olmo)" class="border p-2 rounded text-sm">
+                    <input type="text" id="biciModelo" placeholder="Modelo (ej: Sunshine R29)" class="border p-2 rounded text-sm">
+                    <input type="text" id="biciNroSerie" placeholder="Número de Serie" class="border p-2 rounded text-sm">
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+                    <input type="text" id="biciColor" placeholder="Color" class="border p-2 rounded text-sm">
+                    <input type="text" id="biciTalle" placeholder="Talle (ej: L, 17, 54)" class="border p-2 rounded text-sm">
+                    <input type="number" id="biciPrecio" placeholder="Precio de Venta ($)" class="border p-2 rounded text-sm">
+                    <button onclick="guardarBicicletaStock()" class="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700 text-sm font-medium">➕ Agregar Stock</button>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-lg shadow">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-md font-semibold text-slate-700">Inventario de Bicicletas Nuevas / Usadas en Venta</h3>
+                    <input type="text" id="buscarBiciStockInput" placeholder="Buscar por marca, modelo o serie..." oninput="filtrarInventario()" class="border p-1.5 rounded text-sm w-72">
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-gray-50 border-b text-gray-600">
+                                <th class="p-2">Marca y Modelo</th>
+                                <th class="p-2">Nro Serie</th>
+                                <th class="p-2">Color / Talle</th>
+                                <th class="p-2">Precio</th>
+                                <th class="p-2">Estado</th>
+                                <th class="p-2 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaInventario"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 4: REPORTES Y MÉTRICAS -->
+        <div id="seccionReportes" class="space-y-6 hidden">
+            <div id="areaExportable" class="space-y-6">
                 <div class="bg-white p-4 rounded-lg shadow flex flex-col md:flex-row gap-4 items-center justify-between">
                     <h2 class="text-lg font-semibold text-slate-700">📊 Panel General de Métricas</h2>
                     <div class="flex flex-wrap items-center gap-2 text-sm">
@@ -172,7 +379,6 @@
                     </div>
                 </div>
 
-                <!-- Tarjetas de Indicadores Clave (KPIs incluyendo Rentabilidad e Ingreso Neto) -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
                         <span class="text-xs text-gray-500 uppercase font-semibold">Bicicletas (Taller / Entregadas)</span>
@@ -199,7 +405,6 @@
                     </div>
                 </div>
 
-                <!-- Desglose por Conceptos (Entradas y Gastos detallados) -->
                 <div class="bg-white p-4 rounded-lg shadow">
                     <h3 class="text-md font-semibold text-slate-700 mb-3">📋 Desglose Financiero por Concepto</h3>
                     <div class="overflow-x-auto">
@@ -217,29 +422,47 @@
                     </div>
                 </div>
 
-                <!-- Gráficos Estadísticos -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-white p-4 rounded-lg shadow">
                         <h3 class="text-md font-semibold text-slate-700 mb-3">📈 Entradas vs Salidas de Dinero</h3>
-                        <div class="relative h-64">
-                            <canvas id="graficoFinanzas"></canvas>
-                        </div>
+                        <div class="relative h-64"><canvas id="graficoFinanzas"></canvas></div>
                     </div>
                     <div class="bg-white p-4 rounded-lg shadow">
                         <h3 class="text-md font-semibold text-slate-700 mb-3">🏷️ Movimientos por Concepto</h3>
-                        <div class="relative h-64">
-                            <canvas id="graficoConceptos"></canvas>
-                        </div>
+                        <div class="relative h-64"><canvas id="graficoConceptos"></canvas></div>
                     </div>
                 </div>
 
+                <!-- Comparativa de Períodos -->
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-2 mb-3">
+                        <h3 class="text-md font-semibold text-slate-700">🆚 Comparativa de Períodos</h3>
+                        <select id="selectComparativa" onchange="actualizarComparativa()" class="border p-1.5 rounded text-sm">
+                            <option value="mes_vs_mes_anterior">Este mes vs. Mes anterior</option>
+                            <option value="anio_vs_anio_anterior">Este año vs. Año anterior</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                        <div class="bg-slate-50 border rounded p-3">
+                            <span id="comparativaLabelActual" class="text-xs text-gray-500 uppercase font-semibold">Período Actual</span>
+                            <h3 id="comparativaActualNeto" class="text-xl font-bold text-emerald-600">$0.00</h3>
+                            <span class="text-xs text-gray-500">Entradas: <span id="comparativaActualEntradas">$0.00</span> · Salidas: <span id="comparativaActualSalidas">$0.00</span></span>
+                        </div>
+                        <div class="bg-slate-50 border rounded p-3">
+                            <span id="comparativaLabelAnterior" class="text-xs text-gray-500 uppercase font-semibold">Período Anterior</span>
+                            <h3 id="comparativaAnteriorNeto" class="text-xl font-bold text-slate-600">$0.00</h3>
+                            <span class="text-xs text-gray-500">Entradas: <span id="comparativaAnteriorEntradas">$0.00</span> · Salidas: <span id="comparativaAnteriorSalidas">$0.00</span></span>
+                        </div>
+                    </div>
+                    <div id="comparativaVariacion" class="text-sm font-semibold mb-3"></div>
+                    <div class="relative h-64"><canvas id="graficoComparativa"></canvas></div>
+                </div>
             </div>
-
         </div>
 
     </main>
 
-    <!-- Script Principal y Lógica -->
+   <!-- Script Principal y Lógica -->
     <script>
         const SUPABASE_URL = 'https://twezzstssnjrrnrzwdkv.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3ZXp6c3Rzc25qcnJucnp3ZGt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyMDExMjIsImV4cCI6MjEwMzc3NzEyMn0.nWtJHz6rPMoC9G70tIYBtgLBxPj8WI6snelIOZTR4V0';
@@ -248,34 +471,46 @@
         let listaCajaGlobal = [];
         let listaTallerGlobal = [];
         let listaConceptosGlobal = [];
+        let listaClientesGlobal = [];
+        let listaInventarioGlobal = [];
+        let listaPlantillasGlobal = [];
         let graficoFinanzasInstance = null;
         let graficoConceptosInstance = null;
+        let graficoComparativaInstance = null;
+        let clienteFichaActualId = null;
 
         document.addEventListener('DOMContentLoaded', () => {
             cargarConceptos();
             cargarTaller();
             cargarCaja();
+            cargarClientes();
+            cargarInventario();
+            cargarPlantillas();
+        });
+
+        document.addEventListener('click', (e) => {
+            const cont = document.getElementById('resultadosBusquedaGlobal');
+            const input = document.getElementById('inputBusquedaGlobal');
+            if (cont && !cont.contains(e.target) && e.target !== input) cont.classList.add('hidden');
         });
 
         // --- NAVEGACIÓN ENTRE PESTAÑAS ---
         function cambiarPestana(pestana) {
-            const secTaller = document.getElementById('seccionTaller');
-            const secReportes = document.getElementById('seccionReportes');
-            const btnTaller = document.getElementById('btnTabTaller');
-            const btnReportes = document.getElementById('btnTabReportes');
-
-            if (pestana === 'taller') {
-                secTaller.classList.remove('hidden');
-                secReportes.classList.add('hidden');
-                btnTaller.className = 'bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-medium transition';
-                btnReportes.className = 'bg-slate-700 text-white px-3 py-1.5 rounded text-sm font-medium transition';
-            } else {
-                secTaller.classList.add('hidden');
-                secReportes.classList.remove('hidden');
-                btnReportes.className = 'bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-medium transition';
-                btnTaller.className = 'bg-slate-700 text-white px-3 py-1.5 rounded text-sm font-medium transition';
-                actualizarReportes();
-            }
+            const secciones = ['seccionTaller', 'seccionClientes', 'seccionInventario', 'seccionReportes'];
+            const botones = ['btnTabTaller', 'btnTabClientes', 'btnTabInventario', 'btnTabReportes'];
+            
+            secciones.forEach((sec, idx) => {
+                const elSec = document.getElementById(sec);
+                const elBtn = document.getElementById(botones[idx]);
+                if (sec.replace('seccion', '').toLowerCase() === pestana.toLowerCase()) {
+                    elSec.classList.remove('hidden');
+                    elBtn.className = 'bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-medium transition';
+                    if(pestana === 'reportes') { actualizarReportes(); actualizarComparativa(); }
+                } else {
+                    elSec.classList.add('hidden');
+                    elBtn.className = 'bg-slate-700 text-white px-3 py-1.5 rounded text-sm font-medium transition';
+                }
+            });
         }
 
         // --- GESTIÓN DE CONCEPTOS ---
@@ -286,18 +521,20 @@
 
             const contenedor = document.getElementById('listaConceptos');
             const selectCaja = document.getElementById('cajaConceptoSelect');
-            contenedor.innerHTML = '';
-            selectCaja.innerHTML = '';
+            if(contenedor) contenedor.innerHTML = '';
+            if(selectCaja) selectCaja.innerHTML = '';
 
             data.forEach(item => {
-                selectCaja.innerHTML += `<option value="${item.nombre}">${item.nombre}</option>`;
-                contenedor.innerHTML += `
-                    <div class="bg-slate-100 border px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm">
-                        <span class="font-medium text-slate-700">${item.nombre}</span>
-                        <button onclick="editarConcepto(${item.id}, '${item.nombre}')" class="text-blue-600 hover:text-blue-800 text-xs" title="Modificar">✏️</button>
-                        <button onclick="eliminarConcepto(${item.id})" class="text-rose-600 hover:text-rose-800 text-xs" title="Eliminar">🗑️</button>
-                    </div>
-                `;
+                if(selectCaja) selectCaja.innerHTML += `<option value="${item.nombre}">${item.nombre}</option>`;
+                if(contenedor) {
+                    contenedor.innerHTML += `
+                        <div class="bg-slate-100 border px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm">
+                            <span class="font-medium text-slate-700">${item.nombre}</span>
+                            <button onclick="editarConcepto(${item.id}, '${item.nombre}')" class="text-blue-600 hover:text-blue-800 text-xs" title="Modificar">✏️</button>
+                            <button onclick="eliminarConcepto(${item.id})" class="text-rose-600 hover:text-rose-800 text-xs" title="Eliminar">🗑️</button>
+                        </div>
+                    `;
+                }
             });
         }
 
@@ -325,6 +562,481 @@
             cargarConceptos();
         }
 
+        // --- CLIENTES (CRM) ---
+        async function cargarClientes() {
+            const { data, error } = await supabaseClient.from('clientes').select('*').order('nombre', { ascending: true });
+            if (error) return console.error(error);
+            listaClientesGlobal = data || [];
+            renderizarClientes(listaClientesGlobal);
+        }
+
+        async function guardarCliente() {
+            const nombre = document.getElementById('cliNombre').value.trim();
+            const telefono = document.getElementById('cliTelefono').value.trim();
+            const email = document.getElementById('cliEmail').value.trim();
+            const direccion = document.getElementById('cliDireccion').value.trim();
+            const notas = document.getElementById('cliNotas').value.trim();
+
+            if (!nombre) return alert('El nombre del cliente es obligatorio.');
+
+            const { error } = await supabaseClient.from('clientes').insert([{ nombre, telefono, email, direccion, notas }]);
+            if (error) return alert('Error al guardar cliente: ' + error.message);
+
+            document.getElementById('cliNombre').value = '';
+            document.getElementById('cliTelefono').value = '';
+            document.getElementById('cliEmail').value = '';
+            document.getElementById('cliDireccion').value = '';
+            document.getElementById('cliNotas').value = '';
+            alert('¡Cliente registrado con éxito!');
+            cargarClientes();
+        }
+
+        function renderizarClientes(datos) {
+            const tbody = document.getElementById('tablaClientes');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            if (datos.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400">No hay clientes registrados.</td></tr>`;
+                return;
+            }
+            datos.forEach(item => {
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50 cursor-pointer" onclick="abrirFichaCliente(${item.id})">
+                        <td class="p-2 font-medium text-slate-800">${item.nombre}</td>
+                        <td class="p-2 text-gray-600">${item.telefono || '-'}</td>
+                        <td class="p-2 text-gray-600">${item.email || '-'}</td>
+                        <td class="p-2 text-gray-600">${item.direccion || '-'}</td>
+                        <td class="p-2 text-center" onclick="event.stopPropagation()">
+                            <button onclick="abrirFichaCliente(${item.id})" class="text-blue-600 hover:text-blue-800 text-xs font-semibold mr-2">📇 Ficha</button>
+                            <button onclick="eliminarCliente(${item.id})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold">🗑️ Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // --- FICHA DE CLIENTE (historial completo) ---
+        async function abrirFichaCliente(id) {
+            const cliente = listaClientesGlobal.find(c => c.id === id);
+            if (!cliente) return;
+            clienteFichaActualId = id;
+
+            document.getElementById('fichaTituloCliente').innerText = cliente.nombre;
+            document.getElementById('fichaDatosContacto').innerHTML = `
+                📞 ${cliente.telefono || '-'} &nbsp;|&nbsp; ✉️ ${cliente.email || '-'} &nbsp;|&nbsp; 📍 ${cliente.direccion || '-'}
+            `;
+            document.getElementById('fichaNotasInternas').value = cliente.notas || '';
+
+            // Historial de reparaciones: se cruza por teléfono (mismo dato que carga el taller)
+            const ordenes = listaTallerGlobal.filter(t => cliente.telefono && t.telefono === cliente.telefono);
+            const tbodyOrdenes = document.getElementById('fichaTablaOrdenes');
+            tbodyOrdenes.innerHTML = ordenes.length === 0
+                ? `<tr><td colspan="5" class="p-2 text-center text-gray-400">Sin órdenes registradas.</td></tr>`
+                : ordenes.map(o => `
+                    <tr class="border-b">
+                        <td class="p-1.5 font-mono text-blue-700">${formatearOT(o.id)}</td>
+                        <td class="p-1.5">${o.bicicleta}</td>
+                        <td class="p-1.5">${o.trabajo}</td>
+                        <td class="p-1.5">${o.estado}</td>
+                        <td class="p-1.5 font-semibold">$${(o.precio_cobrado || 0).toFixed ? (o.precio_cobrado || 0).toFixed(2) : Number(o.precio_cobrado || 0).toFixed(2)}</td>
+                    </tr>`).join('');
+
+            // Ventas de stock vinculadas por cliente_id en caja (requiere columna cliente_id, ver SQL al inicio del archivo)
+            const ventas = listaCajaGlobal.filter(m => m.cliente_id === id);
+            const tbodyVentas = document.getElementById('fichaTablaVentas');
+            tbodyVentas.innerHTML = ventas.length === 0
+                ? `<tr><td colspan="3" class="p-2 text-center text-gray-400">Sin compras de stock registradas.</td></tr>`
+                : ventas.map(v => `
+                    <tr class="border-b">
+                        <td class="p-1.5">${new Date(v.fecha).toLocaleDateString()}</td>
+                        <td class="p-1.5">${v.descripcion || v.concepto}</td>
+                        <td class="p-1.5 font-semibold">$${Number(v.monto).toFixed(2)}</td>
+                    </tr>`).join('');
+
+            const totalGastado = ordenes.reduce((s, o) => s + Number(o.precio_cobrado || 0), 0) + ventas.reduce((s, v) => s + Number(v.monto), 0);
+            document.getElementById('fichaTotalGastado').innerText = `$${totalGastado.toFixed(2)}`;
+            document.getElementById('fichaCantidadOTs').innerText = ordenes.length;
+
+            // Historial de mensajes de WhatsApp enviados a este cliente
+            try {
+                const { data: mensajes, error } = await supabaseClient
+                    .from('mensajes_whatsapp')
+                    .select('*')
+                    .eq('cliente_id', id)
+                    .order('enviado_en', { ascending: false });
+                const tbodyMensajes = document.getElementById('fichaTablaMensajes');
+                if (error || !mensajes || mensajes.length === 0) {
+                    tbodyMensajes.innerHTML = `<tr><td colspan="3" class="p-2 text-center text-gray-400">Sin mensajes registrados.</td></tr>`;
+                } else {
+                    tbodyMensajes.innerHTML = mensajes.map(m => `
+                        <tr class="border-b">
+                            <td class="p-1.5">${new Date(m.enviado_en).toLocaleString()}</td>
+                            <td class="p-1.5">${m.plantilla_nombre || '-'}</td>
+                            <td class="p-1.5 text-gray-500">${(m.mensaje || '').slice(0, 60)}</td>
+                        </tr>`).join('');
+                }
+            } catch (e) {
+                document.getElementById('fichaTablaMensajes').innerHTML = `<tr><td colspan="3" class="p-2 text-center text-gray-400">Tabla mensajes_whatsapp no encontrada. Ver SQL al inicio del archivo.</td></tr>`;
+            }
+
+            document.getElementById('modalFichaCliente').classList.remove('hidden');
+        }
+
+        function cerrarFichaCliente() {
+            document.getElementById('modalFichaCliente').classList.add('hidden');
+            clienteFichaActualId = null;
+        }
+
+        async function guardarNotasFicha() {
+            if (!clienteFichaActualId) return;
+            const notas = document.getElementById('fichaNotasInternas').value.trim();
+            const { error } = await supabaseClient.from('clientes').update({ notas }).eq('id', clienteFichaActualId);
+            if (error) return alert('Error al guardar notas: ' + error.message);
+            alert('Notas guardadas.');
+            cargarClientes();
+        }
+
+        // --- PLANTILLAS DE WHATSAPP ---
+        async function cargarPlantillas() {
+            try {
+                const { data, error } = await supabaseClient.from('plantillas_whatsapp').select('*').order('id', { ascending: true });
+                if (error) throw error;
+                listaPlantillasGlobal = data || [];
+            } catch (e) {
+                console.warn('Tabla plantillas_whatsapp no disponible todavía. Ver SQL al inicio del archivo.', e);
+                listaPlantillasGlobal = [];
+            }
+            renderizarPlantillas();
+        }
+
+        function renderizarPlantillas() {
+            const cont = document.getElementById('listaPlantillas');
+            if (!cont) return;
+            cont.innerHTML = '';
+            if (listaPlantillasGlobal.length === 0) {
+                cont.innerHTML = `<span class="text-sm text-gray-400">Sin plantillas guardadas todavía.</span>`;
+                return;
+            }
+            listaPlantillasGlobal.forEach(p => {
+                cont.innerHTML += `
+                    <div class="bg-slate-100 border px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm">
+                        <span class="font-medium text-slate-700">${p.nombre}</span>
+                        <button onclick="eliminarPlantilla(${p.id})" class="text-rose-600 hover:text-rose-800 text-xs" title="Eliminar">🗑️</button>
+                    </div>
+                `;
+            });
+        }
+
+        async function guardarPlantilla() {
+            const nombre = document.getElementById('plantillaNombre').value.trim();
+            const mensaje = document.getElementById('plantillaMensaje').value.trim();
+            if (!nombre || !mensaje) return alert('Completa el nombre y el mensaje de la plantilla.');
+            const { error } = await supabaseClient.from('plantillas_whatsapp').insert([{ nombre, mensaje }]);
+            if (error) return alert('Error al guardar plantilla: ' + error.message + ' (¿Creaste la tabla plantillas_whatsapp? Ver SQL al inicio del archivo)');
+            document.getElementById('plantillaNombre').value = '';
+            document.getElementById('plantillaMensaje').value = '';
+            cargarPlantillas();
+        }
+
+        async function eliminarPlantilla(id) {
+            if (!confirm('¿Eliminar esta plantilla?')) return;
+            const { error } = await supabaseClient.from('plantillas_whatsapp').delete().eq('id', id);
+            if (error) return alert('Error: ' + error.message);
+            cargarPlantillas();
+        }
+
+        // Envía un mensaje de WhatsApp Web/Desktop, sustituye variables y lo registra en el historial
+        async function enviarMensajeWhatsapp(telefono, nombreCliente, biciDescripcion, mensajePlantilla, nombrePlantilla) {
+            if (!telefono) return alert('Este contacto no tiene teléfono cargado.');
+            const mensajeFinal = mensajePlantilla
+                .replaceAll('{nombre}', nombreCliente || '')
+                .replaceAll('{bici}', biciDescripcion || '');
+
+            const cliente = listaClientesGlobal.find(c => c.telefono === telefono);
+            try {
+                await supabaseClient.from('mensajes_whatsapp').insert([{
+                    cliente_id: cliente ? cliente.id : null,
+                    cliente_nombre: nombreCliente,
+                    telefono,
+                    plantilla_nombre: nombrePlantilla,
+                    mensaje: mensajeFinal
+                }]);
+            } catch (e) {
+                console.warn('No se pudo guardar el historial de mensajes (¿existe la tabla mensajes_whatsapp?).', e);
+            }
+
+            // wa.me abre WhatsApp Desktop si está instalado, o WhatsApp Web en el navegador
+            window.open(`https://wa.me/549${telefono}?text=${encodeURIComponent(mensajeFinal)}`, '_blank');
+        }
+
+        function elegirYEnviarPlantilla(telefono, nombreCliente, biciDescripcion) {
+            if (listaPlantillasGlobal.length === 0) {
+                return alert('No hay plantillas guardadas. Cargá una en la pestaña Clientes (CRM) > Plantillas de WhatsApp.');
+            }
+            const opciones = listaPlantillasGlobal.map((p, i) => `${i + 1}. ${p.nombre}`).join('\n');
+            const eleccion = prompt(`¿Qué plantilla querés enviar?\n${opciones}`, '1');
+            if (!eleccion) return;
+            const idx = parseInt(eleccion) - 1;
+            const plantilla = listaPlantillasGlobal[idx];
+            if (!plantilla) return alert('Opción inválida.');
+            enviarMensajeWhatsapp(telefono, nombreCliente, biciDescripcion, plantilla.mensaje, plantilla.nombre);
+        }
+
+        // --- BÚSQUEDA GLOBAL ---
+        function busquedaGlobal() {
+            const texto = document.getElementById('inputBusquedaGlobal').value.trim().toLowerCase();
+            const cont = document.getElementById('resultadosBusquedaGlobal');
+            if (!texto) { cont.classList.add('hidden'); cont.innerHTML = ''; return; }
+
+            let resultados = [];
+
+            listaClientesGlobal.filter(c => c.nombre.toLowerCase().includes(texto) || (c.telefono || '').includes(texto)).forEach(c => {
+                resultados.push({ tipo: 'Cliente', texto: `👤 ${c.nombre} (${c.telefono || 'sin tel.'})`, accion: () => { cambiarPestana('clientes'); abrirFichaCliente(c.id); } });
+            });
+
+            listaTallerGlobal.filter(t => t.cliente.toLowerCase().includes(texto) || t.bicicleta.toLowerCase().includes(texto) || formatearOT(t.id).toLowerCase().includes(texto)).forEach(t => {
+                resultados.push({ tipo: 'Orden de Trabajo', texto: `🛠️ ${formatearOT(t.id)} - ${t.cliente} - ${t.bicicleta} (${t.estado})`, accion: () => cambiarPestana('taller') });
+            });
+
+            listaInventarioGlobal.filter(i => `${i.marca} ${i.modelo} ${i.numero_serie || ''}`.toLowerCase().includes(texto)).forEach(i => {
+                resultados.push({ tipo: 'Stock', texto: `🚲 ${i.marca} ${i.modelo} - $${Number(i.precio).toFixed(2)}`, accion: () => cambiarPestana('inventario') });
+            });
+
+            listaCajaGlobal.filter(m => (m.concepto || '').toLowerCase().includes(texto) || (m.descripcion || '').toLowerCase().includes(texto)).slice(0, 10).forEach(m => {
+                resultados.push({ tipo: 'Caja', texto: `💵 ${m.tipo} - ${m.concepto} - $${Number(m.monto).toFixed(2)}`, accion: () => cambiarPestana('taller') });
+            });
+
+            if (resultados.length === 0) {
+                cont.innerHTML = `<div class="p-3 text-sm text-gray-400">Sin resultados.</div>`;
+            } else {
+                cont.innerHTML = resultados.slice(0, 25).map((r, i) => `
+                    <div onclick="ejecutarResultadoBusqueda(${i})" class="p-2 border-b hover:bg-gray-50 cursor-pointer text-sm">
+                        <span class="text-xs text-gray-400">${r.tipo}</span><br>${r.texto}
+                    </div>
+                `).join('');
+                window._resultadosBusquedaActual = resultados;
+            }
+            cont.classList.remove('hidden');
+        }
+
+        function ejecutarResultadoBusqueda(i) {
+            const r = window._resultadosBusquedaActual[i];
+            if (r && r.accion) r.accion();
+            document.getElementById('resultadosBusquedaGlobal').classList.add('hidden');
+            document.getElementById('inputBusquedaGlobal').value = '';
+        }
+
+        // --- NÚMERO DE ORDEN DE TRABAJO (OT) ---
+        function formatearOT(id) {
+            return 'OT-' + String(id).padStart(5, '0');
+        }
+
+        function imprimirComprobante(id, cliente, telefono, bicicleta, trabajo, presupuesto, sena) {
+            const ventana = window.open('', '_blank', 'width=400,height=600');
+            ventana.document.write(`
+                <html><head><title>${formatearOT(id)}</title>
+                <style>body{font-family:sans-serif;padding:20px;} h1{font-size:18px;} p{margin:4px 0;font-size:14px;} hr{margin:12px 0;}</style>
+                </head><body>
+                <h1>🚲 Bicicletería del Abasto</h1>
+                <h2>${formatearOT(id)}</h2>
+                <hr>
+                <p><strong>Cliente:</strong> ${cliente}</p>
+                <p><strong>Teléfono:</strong> ${telefono}</p>
+                <p><strong>Bicicleta:</strong> ${bicicleta}</p>
+                <p><strong>Trabajo a realizar:</strong> ${trabajo}</p>
+                <p><strong>Presupuesto estimado:</strong> $${Number(presupuesto || 0).toFixed(2)}</p>
+                <p><strong>Seña recibida:</strong> $${Number(sena || 0).toFixed(2)}</p>
+                <hr>
+                <p>Conservá este comprobante para retirar tu bicicleta.</p>
+                </body></html>
+            `);
+            ventana.document.close();
+            ventana.print();
+        }
+
+        function filtrarClientes() {
+            const texto = document.getElementById('buscarClienteInput').value.toLowerCase();
+            const filtrados = listaClientesGlobal.filter(c => 
+                c.nombre.toLowerCase().includes(texto) || 
+                (c.telefono && c.telefono.includes(texto)) || 
+                (c.email && c.email.toLowerCase().includes(texto))
+            );
+            renderizarClientes(filtrados);
+        }
+
+        async function eliminarCliente(id) {
+            if (!confirm("¿Deseas eliminar este cliente?")) return;
+            const { error } = await supabaseClient.from('clientes').delete().eq('id', id);
+            if (error) return alert('Error: ' + error.message);
+            cargarClientes();
+        }
+
+        // --- INVENTARIO DE BICICLETAS ---
+        async function cargarInventario() {
+            const { data, error } = await supabaseClient.from('inventario_bicicletas').select('*').order('id', { ascending: false });
+            if (error) return console.error(error);
+            listaInventarioGlobal = data || [];
+            renderizarInventario(listaInventarioGlobal);
+        }
+
+        async function guardarBicicletaStock() {
+            const marca = document.getElementById('biciMarca').value.trim();
+            const modelo = document.getElementById('biciModelo').value.trim();
+            const numero_serie = document.getElementById('biciNroSerie').value.trim();
+            const color = document.getElementById('biciColor').value.trim();
+            const talle = document.getElementById('biciTalle').value.trim();
+            const precio = parseFloat(document.getElementById('biciPrecio').value);
+            const stock = parseInt(document.getElementById('biciStock').value) || 1;
+
+            if (!marca || !modelo || isNaN(precio)) return alert('Completa marca, modelo y precio de la bicicleta.');
+
+            const { error } = await supabaseClient.from('inventario_bicicletas').insert([{
+                marca, modelo, numero_serie, color, talle, precio, stock, estado: 'Disponible'
+            }]);
+
+            if (error) return alert('Error al guardar en stock: ' + error.message);
+
+            document.getElementById('biciMarca').value = '';
+            document.getElementById('biciModelo').value = '';
+            document.getElementById('biciNroSerie').value = '';
+            document.getElementById('biciColor').value = '';
+            document.getElementById('biciTalle').value = '';
+            document.getElementById('biciPrecio').value = '';
+            document.getElementById('biciStock').value = '1';
+            
+            alert('¡Bicicleta agregada al stock con éxito!');
+            cargarInventario();
+        }
+
+        function renderizarInventario(datos) {
+            const tbody = document.getElementById('tablaInventario');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            if (datos.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">No hay bicicletas cargadas en stock.</td></tr>`;
+                return;
+            }
+
+            datos.forEach(item => {
+                const stockActual = item.stock !== undefined ? item.stock : 1;
+                const badgeEstado = stockActual > 0 
+                    ? `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-xs font-semibold">${stockActual} un. Disponibles</span>` 
+                    : '<span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-semibold">Sin Stock</span>';
+
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-2 font-medium text-slate-800">${item.marca} ${item.modelo}</td>
+                        <td class="p-2 text-xs text-gray-500">${item.numero_serie || 'S/N'}</td>
+                        <td class="p-2 text-gray-600">${item.color || '-'} / Talle: ${item.talle || '-'}</td>
+                        <td class="p-2 font-bold text-emerald-600">$${Number(item.precio).toFixed(2)}</td>
+                        <td class="p-2">${badgeEstado}</td>
+                        <td class="p-2 text-center flex justify-center gap-1.5">
+                            <button onclick="editarBicicletaStock(${item.id}, '${item.marca}', '${item.modelo}', '${item.numero_serie || ''}', '${item.color || ''}', '${item.talle || ''}', ${item.precio}, ${stockActual})" class="bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold hover:bg-blue-700" title="Modificar datos y stock">✏️ Editar</button>
+                            ${stockActual > 0 ? `<button onclick="venderBicicletaStock(${item.id}, ${item.precio}, '${item.marca} ${item.modelo}', ${stockActual})" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs font-semibold hover:bg-emerald-700" title="Vender unidad">💰 Vender</button>` : ''}
+                            <button onclick="eliminarBicicletaStock(${item.id})" class="text-rose-600 hover:text-rose-800 text-xs" title="Eliminar">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function editarBicicletaStock(id, marcaAct, modeloAct, serieAct, colorAct, talleAct, precioAct, stockAct) {
+            const nuevaMarca = prompt("Modificar Marca:", marcaAct);
+            if (nuevaMarca === null) return;
+            const nuevoModelo = prompt("Modificar Modelo:", modeloAct);
+            if (nuevoModelo === null) return;
+            const nuevaSerie = prompt("Modificar Número de Serie:", serieAct);
+            if (nuevaSerie === null) return;
+            const nuevoColor = prompt("Modificar Color:", colorAct);
+            if (nuevoColor === null) return;
+            const nuevoTalle = prompt("Modificar Talle:", talleAct);
+            if (nuevoTalle === null) return;
+            const nuevoPrecio = prompt("Modificar Precio ($):", precioAct);
+            if (nuevoPrecio === null) return;
+            const nuevoStock = prompt("Modificar Cantidad de Unidades (Stock):", stockAct);
+            if (nuevoStock === null) return;
+
+            const { error } = await supabaseClient.from('inventario_bicicletas').update({
+                marca: nuevaMarca.trim(),
+                modelo: nuevoModelo.trim(),
+                numero_serie: nuevaSerie.trim(),
+                color: nuevoColor.trim(),
+                talle: nuevoTalle.trim(),
+                precio: parseFloat(nuevoPrecio) || 0,
+                stock: parseInt(nuevoStock) || 0,
+                estado: parseInt(nuevoStock) > 0 ? 'Disponible' : 'Sin Stock'
+            }).eq('id', id);
+
+            if (error) return alert('Error al actualizar inventario: ' + error.message);
+            alert('¡Inventario actualizado con éxito!');
+            cargarInventario();
+        }
+
+        async function venderBicicletaStock(id, precio, descripcionBici, stockActual) {
+            if (!confirm(`¿Confirmar la venta de una unidad de "${descripcionBici}" por $${precio}?`)) return;
+
+            // Vincular la venta a un cliente existente para que aparezca en su ficha (opcional)
+            const nombreComprador = prompt('Nombre del cliente que compra (dejalo vacío si no querés vincularlo a un cliente):', '');
+            let clienteId = null;
+            if (nombreComprador && nombreComprador.trim()) {
+                const existente = listaClientesGlobal.find(c => c.nombre.toLowerCase() === nombreComprador.trim().toLowerCase());
+                if (existente) {
+                    clienteId = existente.id;
+                } else {
+                    const { data: nuevoCliente, error: errCli } = await supabaseClient.from('clientes').insert([{ nombre: nombreComprador.trim() }]).select().single();
+                    if (!errCli && nuevoCliente) clienteId = nuevoCliente.id;
+                }
+            }
+
+            const nuevoStock = stockActual - 1;
+            const nuevoEstado = nuevoStock > 0 ? 'Disponible' : 'Sin Stock';
+
+            // 1. Descontar 1 unidad del stock
+            const { error: err1 } = await supabaseClient.from('inventario_bicicletas').update({ 
+                stock: nuevoStock, 
+                estado: nuevoEstado 
+            }).eq('id', id);
+            
+            if (err1) return alert('Error al actualizar stock.');
+
+            // 2. Registrar la entrada de dinero en la caja (vinculada al cliente si corresponde)
+            const registroCaja = {
+                tipo: 'Entrada',
+                categoria: 'Venta de Bicicletas',
+                concepto: 'Venta de Bicicletas',
+                medio_pago: 'Efectivo',
+                monto: precio,
+                descripcion: `Venta de unidad de stock: ${descripcionBici}`
+            };
+            if (clienteId) registroCaja.cliente_id = clienteId;
+
+            const { error: err2 } = await supabaseClient.from('caja').insert([registroCaja]);
+            
+            if (err2) return alert('Error al registrar en caja.');
+
+            alert('¡Venta registrada y stock descontado con éxito!');
+            cargarInventario();
+            cargarCaja();
+            cargarClientes();
+        }
+
+        function filtrarInventario() {
+            const texto = document.getElementById('buscarBiciStockInput').value.toLowerCase();
+            const filtrados = listaInventarioGlobal.filter(b => 
+                b.marca.toLowerCase().includes(texto) || 
+                b.modelo.toLowerCase().includes(texto) || 
+                (b.numero_serie && b.numero_serie.toLowerCase().includes(texto))
+            );
+            renderizarInventario(filtrados);
+        }
+
+        async function eliminarBicicletaStock(id) {
+            if (!confirm("¿Eliminar esta bicicleta del inventario?")) return;
+            const { error } = await supabaseClient.from('inventario_bicicletas').delete().eq('id', id);
+            if (error) return alert('Error: ' + error.message);
+            cargarInventario();
+        }
+
         // --- TALLER ---
         async function cargarTaller() {
             const { data, error } = await supabaseClient.from('taller').select('*').order('id', { ascending: false });
@@ -332,15 +1044,16 @@
             listaTallerGlobal = data || [];
 
             const tbody = document.getElementById('tablaTaller');
+            if(!tbody) return;
             tbody.innerHTML = '';
             if (data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400">No hay bicicletas en el taller.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">No hay bicicletas en el taller.</td></tr>`;
                 return;
             }
 
             data.forEach(item => {
-                const msgIngreso = encodeURIComponent(`Hola *${item.cliente}*! Recibimos tu bici (*${item.bicicleta}*). Trabajo: ${item.trabajo}. Presupuesto est.: $${item.presupuesto || 0}.`);
-                const msgLista = encodeURIComponent(`Hola *${item.cliente}*! Tu bicicleta (*${item.bicicleta}*) ya está lista para retirar.`);
+                const msgIngreso = `Hola *${item.cliente}*! Recibimos tu bici (*${item.bicicleta}*). Trabajo: ${item.trabajo}. Presupuesto est.: $${item.presupuesto || 0}. Tu comprobante es ${formatearOT(item.id)}.`;
+                const msgLista = `Hola *${item.cliente}*! Tu bicicleta (*${item.bicicleta}*) ya está lista para retirar. OT: ${formatearOT(item.id)}.`;
 
                 let estados = ['En taller', 'En proceso', 'Esperando repuestos', 'Lista', 'Entregada'];
                 let selectEstado = `<select onchange="actualizarEstado(${item.id}, this.value)" class="border rounded p-1 text-xs font-medium bg-gray-50">`;
@@ -351,16 +1064,17 @@
 
                 tbody.innerHTML += `
                     <tr class="border-b hover:bg-gray-50">
+                        <td class="p-2 font-mono text-xs font-bold text-blue-700">${formatearOT(item.id)}</td>
                         <td class="p-2 font-medium">
                             ${item.cliente}<br>
                             <span class="text-xs text-gray-400">${item.telefono}</span>
-                            <button onclick="editarCliente(${item.id}, '${item.cliente}', '${item.telefono}', '${item.bicicleta}', '${item.trabajo}', ${item.presupuesto || 0})" class="text-blue-600 text-xs ml-1" title="Editar datos del cliente">✏️</button>
                         </td>
                         <td class="p-2 text-sm text-gray-600">
                             <strong>${item.bicicleta}</strong><br>
                             <span class="text-xs text-blue-600">Trabajo: ${item.trabajo}</span><br>
                             <span class="text-xs text-emerald-600 font-semibold">Presupuesto: $${item.presupuesto || 0}</span>
                         </td>
+                        <td class="p-2 font-semibold text-emerald-600">$${item.sena || 0}</td>
                         <td class="p-2">${selectEstado}</td>
                         <td class="p-2">
                             <div class="flex items-center gap-1">
@@ -370,55 +1084,124 @@
                             </div>
                         </td>
                         <td class="p-2 flex flex-col gap-1">
-                            <a href="https://wa.me/549${item.telefono}?text=${msgIngreso}" target="_blank" class="bg-slate-700 text-white text-xs px-2 py-1 rounded text-center">💬 Compr.</a>
-                            <a href="https://wa.me/549${item.telefono}?text=${msgLista}" target="_blank" class="bg-emerald-600 text-white text-xs px-2 py-1 rounded text-center">🟢 Lista</a>
+                            <div class="flex gap-1">
+                                <button onclick="editarIngresoTaller(${item.id}, '${item.cliente}', '${item.telefono}', '${item.bicicleta}', '${item.trabajo}', ${item.presupuesto || 0}, ${item.sena || 0})" class="bg-blue-600 text-white text-xs px-2 py-1 rounded text-center w-full" title="Modificar datos">✏️ Editar</button>
+                            </div>
+                            <button onclick='imprimirComprobante(${item.id}, ${JSON.stringify(item.cliente)}, ${JSON.stringify(item.telefono)}, ${JSON.stringify(item.bicicleta)}, ${JSON.stringify(item.trabajo)}, ${item.presupuesto || 0}, ${item.sena || 0})' class="bg-amber-600 text-white text-xs px-2 py-1 rounded text-center">🧾 Comprobante</button>
+                            <button onclick='enviarMensajeWhatsapp(${JSON.stringify(item.telefono)}, ${JSON.stringify(item.cliente)}, ${JSON.stringify(item.bicicleta)}, ${JSON.stringify(msgIngreso)}, "Ingreso")' class="bg-slate-700 text-white text-xs px-2 py-1 rounded text-center">💬 Compr.</button>
+                            <button onclick='enviarMensajeWhatsapp(${JSON.stringify(item.telefono)}, ${JSON.stringify(item.cliente)}, ${JSON.stringify(item.bicicleta)}, ${JSON.stringify(msgLista)}, "Lista")' class="bg-emerald-600 text-white text-xs px-2 py-1 rounded text-center">🟢 Lista</button>
+                            <button onclick='elegirYEnviarPlantilla(${JSON.stringify(item.telefono)}, ${JSON.stringify(item.cliente)}, ${JSON.stringify(item.bicicleta)})' class="bg-purple-600 text-white text-xs px-2 py-1 rounded text-center">✉️ Otra plantilla</button>
                         </td>
                     </tr>`;
             });
         }
 
         async function registrarBicicleta() {
-            const cliente = document.getElementById('inputCliente').value;
-            const telefono = document.getElementById('inputTelefono').value;
-            const bicicleta = document.getElementById('inputBici').value;
-            const trabajo = document.getElementById('inputTrabajo').value;
-            const presupuesto = document.getElementById('inputPresupuesto').value || 0;
+            const cliente = document.getElementById('inputCliente').value.trim();
+            const telefono = document.getElementById('inputTelefono').value.trim();
+            const bicicleta = document.getElementById('inputBici').value.trim();
+            const trabajo = document.getElementById('inputTrabajo').value.trim();
+            const presupuesto = parseFloat(document.getElementById('inputPresupuesto').value) || 0;
+            const sena = parseFloat(document.getElementById('inputSena').value) || 0;
 
-            if (!cliente || !telefono || !bicicleta || !trabajo) return alert('Completa los campos principales.');
+            if (!cliente || !telefono || !bicicleta || !trabajo) {
+                return alert('Completa los campos principales (Cliente, Teléfono, Bici y Trabajo).');
+            }
 
-            const { error } = await supabaseClient.from('taller').insert([{ cliente, telefono, bicicleta, trabajo, presupuesto, estado: 'En taller' }]);
-            if (error) return alert('Error: ' + error.message);
+            // 1. Guardar la bicicleta en el Taller
+            const { error: errorTaller } = await supabaseClient.from('taller').insert([{ 
+                cliente, telefono, bicicleta, trabajo, presupuesto, sena, estado: 'En taller' 
+            }]);
+            
+            if (errorTaller) {
+                return alert('Error al registrar en taller: ' + errorTaller.message);
+            }
 
+            // 2. Sincronización directa con CRM (Verificar si el teléfono ya existe para no duplicar)
+            const { data: clienteExistente, error: errorBusqueda } = await supabaseClient
+                .from('clientes')
+                .select('id')
+                .eq('telefono', telefono)
+                .maybeSingle();
+
+            if (errorBusqueda) {
+                console.error('Error al verificar cliente existente:', errorBusqueda);
+            }
+
+            if (!clienteExistente) {
+                // Si no existe un cliente con ese teléfono, lo creamos automáticamente en el CRM
+                const { error: errorCliente } = await supabaseClient.from('clientes').insert([{ 
+                    nombre: cliente, 
+                    telefono: telefono 
+                }]);
+                
+                if (errorCliente) {
+                    console.error('Error al sincronizar con CRM:', errorCliente.message);
+                }
+            } else {
+                // Opcional: Si ya existe pero cambió el nombre, podemos actualizarlo o dejarlo
+                await supabaseClient.from('clientes')
+                    .update({ nombre: cliente })
+                    .eq('telefono', telefono);
+            }
+
+            // 3. Si se cargó seña, impactar automáticamente en la caja
+            if (sena > 0) {
+                const { error: errorCaja } = await supabaseClient.from('caja').insert([{
+                    tipo: 'Entrada',
+                    categoria: 'Reparaciones',
+                    concepto: 'Reparaciones',
+                    medio_pago: 'Efectivo',
+                    monto: sena,
+                    descripcion: `Seña taller - Cliente: ${cliente} (${bicicleta})`
+                }]);
+                
+                if (errorCaja) {
+                    console.error('Error al registrar seña en caja:', errorCaja.message);
+                }
+            }
+
+            // Limpiar formulario
             document.getElementById('inputCliente').value = '';
             document.getElementById('inputTelefono').value = '';
             document.getElementById('inputBici').value = '';
             document.getElementById('inputTrabajo').value = '';
             document.getElementById('inputPresupuesto').value = '';
+            document.getElementById('inputSena').value = '';
+            
+            alert('¡Bicicleta ingresada y cliente sincronizado en el CRM con éxito!');
+            
+            // Recargar las vistas
             cargarTaller();
+            cargarClientes();
+            cargarCaja();
         }
 
-        async function editarCliente(id, cliActual, telActual, biciActual, trabActual, presuActual) {
-            const nuevoCliente = prompt("Editar Nombre del Cliente:", cliActual);
+        async function editarIngresoTaller(id, cliActual, telActual, biciActual, trabActual, presuActual, senaActual) {
+            const nuevoCliente = prompt("Modificar Nombre del Cliente:", cliActual);
             if (nuevoCliente === null) return;
-            const nuevoTelefono = prompt("Editar Teléfono / WhatsApp:", telActual);
+            const nuevoTelefono = prompt("Modificar Teléfono / WhatsApp:", telActual);
             if (nuevoTelefono === null) return;
-            const nuevaBici = prompt("Editar Descripción de la Bicicleta:", biciActual);
+            const nuevaBici = prompt("Modificar Descripción de la Bicicleta:", biciActual);
             if (nuevaBici === null) return;
-            const nuevoTrabajo = prompt("Editar Trabajo a Realizar:", trabActual);
+            const nuevoTrabajo = prompt("Modificar Trabajo a Realizar:", trabActual);
             if (nuevoTrabajo === null) return;
-            const nuevoPresupuesto = prompt("Editar Presupuesto Estimado ($):", presuActual);
+            const nuevoPresupuesto = prompt("Modificar Presupuesto Estimado ($):", presuActual);
             if (nuevoPresupuesto === null) return;
+            const nuevaSena = prompt("Modificar Seña / Anticipo ($):", senaActual);
+            if (nuevaSena === null) return;
 
             const { error } = await supabaseClient.from('taller').update({
                 cliente: nuevoCliente.trim(),
                 telefono: nuevoTelefono.trim(),
                 bicicleta: nuevaBici.trim(),
                 trabajo: nuevoTrabajo.trim(),
-                presupuesto: parseFloat(nuevoPresupuesto) || 0
+                presupuesto: parseFloat(nuevoPresupuesto) || 0,
+                sena: parseFloat(nuevaSena) || 0
             }).eq('id', id);
 
             if (error) return alert('Error al actualizar: ' + error.message);
-            alert('¡Datos actualizados con éxito!');
+            alert('¡Datos de la bicicleta actualizados con éxito!');
             cargarTaller();
         }
 
@@ -440,11 +1223,11 @@
                 concepto: 'Reparaciones',
                 medio_pago: 'Efectivo',
                 monto: monto,
-                descripcion: `Cobro reparación - Bici ID #${id}`
+                descripcion: `Cobro final reparación - Bici ID #${id}`
             }]);
             if (err2) return alert('Error al impactar en caja.');
 
-            alert('¡Cobro registrado con éxito!');
+            alert('¡Cobro registrado y enviado a caja con éxito!');
             cargarTaller();
             cargarCaja();
         }
@@ -455,6 +1238,7 @@
             if (error) return console.error(error);
             listaCajaGlobal = data || [];
             renderizarCaja(listaCajaGlobal);
+            if (document.getElementById('cierreEsperado')) calcularCierreCaja();
         }
 
         async function registrarMovimientoCaja() {
@@ -477,6 +1261,7 @@
 
         function renderizarCaja(datos) {
             const tbody = document.getElementById('tablaCaja');
+            if(!tbody) return;
             tbody.innerHTML = '';
             let totalEntradas = 0, totalSalidas = 0;
 
@@ -502,7 +1287,6 @@
                         <td class="p-2 text-gray-500 text-xs">${item.descripcion || '-'}</td>
                         <td class="p-2 font-bold">$${Number(item.monto).toFixed(2)}</td>
                         <td class="p-2 text-center">
-                            <button onclick="editarMovimiento(${item.id}, ${item.monto}, '${item.concepto}')" class="text-blue-600 text-xs mr-2">✏️</button>
                             <button onclick="eliminarMovimiento(${item.id})" class="text-rose-600 text-xs">🗑️</button>
                         </td>
                     </tr>`;
@@ -527,17 +1311,6 @@
             renderizarCaja(filtrados);
         }
 
-        async function editarMovimiento(id, montoActual, conceptoActual) {
-            const nuevoMonto = prompt("Editar monto:", montoActual);
-            if (nuevoMonto === null) return;
-            const nuevoConcepto = prompt("Editar concepto:", conceptoActual);
-            if (nuevoConcepto === null) return;
-
-            const { error } = await supabaseClient.from('caja').update({ monto: parseFloat(nuevoMonto), concepto: nuevoConcepto, categoria: nuevoConcepto }).eq('id', id);
-            if (error) return alert('Error: ' + error.message);
-            cargarCaja();
-        }
-
         async function eliminarMovimiento(id) {
             if (!confirm("¿Eliminar este movimiento?")) return;
             const { error } = await supabaseClient.from('caja').delete().eq('id', id);
@@ -545,7 +1318,7 @@
             cargarCaja();
         }
 
-        // --- REPORTES, RENTABILIDAD Y GRÁFICOS ---
+        // --- REPORTES Y FINANZAS ---
         function limpiarFiltrosFechas() {
             document.getElementById('filtroFechaDesde').value = '';
             document.getElementById('filtroFechaHasta').value = '';
@@ -570,7 +1343,6 @@
             let totalSalidas = 0;
             let conceptosMap = {};
 
-            // Inicializar mapa con conceptos existentes
             listaConceptosGlobal.forEach(c => {
                 conceptosMap[c.nombre] = { entrada: 0, salida: 0 };
             });
@@ -591,9 +1363,7 @@
                 }
             });
 
-            // Cálculos financieros
             const ingresoNeto = totalEntradas - totalSalidas;
-            // Rentabilidad = (Ingreso Neto / Ingresos Totales) * 100 (si hay ingresos)
             const rentabilidad = totalEntradas > 0 ? (ingresoNeto / totalEntradas) * 100 : 0;
 
             document.getElementById('kpiIngresos').innerText = `$${totalEntradas.toFixed(2)}`;
@@ -605,20 +1375,15 @@
             let bicisEntregadas = 0;
 
             listaTallerGlobal.forEach(item => {
-                if (item.estado === 'Entregada') {
-                    bicisEntregadas++;
-                } else {
-                    bicisEnTaller++;
-                }
+                if (item.estado === 'Entregada') bicisEntregadas++;
+                else bicisEnTaller++;
             });
 
             document.getElementById('kpiBicisTaller').innerText = bicisEnTaller;
             document.getElementById('kpiBicisEntregadas').innerText = bicisEntregadas;
 
-            // Renderizar tabla de desglose por conceptos
             renderizarDesgloseConceptos(conceptosMap);
 
-            // Datos para gráficos
             let datosGraficoConceptos = {};
             Object.keys(conceptosMap).forEach(k => {
                 const totalConcepto = conceptosMap[k].entrada + conceptosMap[k].salida;
@@ -631,11 +1396,12 @@
 
         function renderizarDesgloseConceptos(conceptosMap) {
             const tbody = document.getElementById('tablaDesgloseConceptos');
+            if(!tbody) return;
             tbody.innerHTML = '';
 
             const keys = Object.keys(conceptosMap);
             if (keys.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="p-3 text-center text-gray-400">Sin datos de conceptos registrados.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" class="p-3 text-center text-gray-400">Sin datos de conceptos.</td></tr>`;
                 return;
             }
 
@@ -658,13 +1424,15 @@
         }
 
         function renderizarGraficoFinanzas(entradas, salidas) {
-            const ctx = document.getElementById('graficoFinanzas').getContext('2d');
+            const canvasEl = document.getElementById('graficoFinanzas');
+            if(!canvasEl) return;
+            const ctx = canvasEl.getContext('2d');
             if (graficoFinanzasInstance) graficoFinanzasInstance.destroy();
 
             graficoFinanzasInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['Entradas (Ingresos)', 'Salidas (Gastos)'],
+                    labels: ['Entradas', 'Salidas'],
                     datasets: [{
                         label: 'Monto ($)',
                         data: [entradas, salidas],
@@ -672,16 +1440,14 @@
                         borderWidth: 1
                     }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } }
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
         }
 
         function renderizarGraficoConceptos(conceptosMap) {
-            const ctx = document.getElementById('graficoConceptos').getContext('2d');
+            const canvasEl = document.getElementById('graficoConceptos');
+            if(!canvasEl) return;
+            const ctx = canvasEl.getContext('2d');
             if (graficoConceptosInstance) graficoConceptosInstance.destroy();
 
             const labels = Object.keys(conceptosMap);
@@ -696,14 +1462,129 @@
                         backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b']
                     }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
+                options: { responsive: true, maintainAspectRatio: false }
             });
         }
 
-        // --- FUNCIONES DE EXPORTACIÓN (EXCEL Y PDF) ---
+        // --- CIERRE DE CAJA DIARIO ---
+        function calcularCierreCaja() {
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+            const movimientosHoy = listaCajaGlobal.filter(m => new Date(m.fecha) >= hoy && m.medio_pago === 'Efectivo');
+            const entradas = movimientosHoy.filter(m => m.tipo === 'Entrada').reduce((s, m) => s + Number(m.monto), 0);
+            const salidas = movimientosHoy.filter(m => m.tipo === 'Salida').reduce((s, m) => s + Number(m.monto), 0);
+            const esperado = entradas - salidas;
+            document.getElementById('cierreEsperado').innerText = `$${esperado.toFixed(2)}`;
+            return { esperado, movimientosHoy };
+        }
+
+        async function cerrarCajaDelDia() {
+            const { esperado, movimientosHoy } = calcularCierreCaja();
+            const contadoStr = document.getElementById('cierreContado').value;
+            const contado = parseFloat(contadoStr);
+            if (isNaN(contado)) return alert('Ingresá el monto contado físicamente en la caja.');
+
+            const diferencia = contado - esperado;
+            const colorDif = diferencia === 0 ? 'text-emerald-600' : (diferencia > 0 ? 'text-blue-600' : 'text-rose-600');
+            document.getElementById('cierreResultado').innerHTML = `
+                <span class="${colorDif}">Diferencia: $${diferencia.toFixed(2)} ${diferencia === 0 ? '(caja exacta ✅)' : (diferencia > 0 ? '(sobrante)' : '(faltante)')}</span>
+            `;
+
+            try {
+                await supabaseClient.from('cierres_caja').insert([{
+                    total_esperado: esperado,
+                    total_contado: contado,
+                    diferencia,
+                    detalle: movimientosHoy
+                }]);
+            } catch (e) {
+                console.warn('No se pudo guardar el cierre (¿existe la tabla cierres_caja?).', e);
+            }
+
+            const ventana = window.open('', '_blank', 'width=400,height=600');
+            ventana.document.write(`
+                <html><head><title>Cierre de Caja</title>
+                <style>body{font-family:sans-serif;padding:20px;} h1{font-size:18px;} p{margin:4px 0;font-size:14px;} hr{margin:12px 0;}</style>
+                </head><body>
+                <h1>🚲 Bicicletería del Abasto</h1>
+                <h2>Cierre de Caja - ${new Date().toLocaleDateString()}</h2>
+                <hr>
+                <p><strong>Efectivo esperado:</strong> $${esperado.toFixed(2)}</p>
+                <p><strong>Efectivo contado:</strong> $${contado.toFixed(2)}</p>
+                <p><strong>Diferencia:</strong> $${diferencia.toFixed(2)}</p>
+                <hr>
+                <p><strong>Movimientos del día (efectivo):</strong></p>
+                ${movimientosHoy.map(m => `<p>${m.tipo} - ${m.concepto} - $${Number(m.monto).toFixed(2)}</p>`).join('')}
+                </body></html>
+            `);
+            ventana.document.close();
+            ventana.print();
+        }
+
+        // --- COMPARATIVA DE PERÍODOS ---
+        function actualizarComparativa() {
+            const modo = document.getElementById('selectComparativa').value;
+            const ahora = new Date();
+            let inicioActual, finActual, inicioAnterior, finAnterior, labelActual, labelAnterior;
+
+            if (modo === 'anio_vs_anio_anterior') {
+                inicioActual = new Date(ahora.getFullYear(), 0, 1);
+                finActual = new Date(ahora.getFullYear() + 1, 0, 1);
+                inicioAnterior = new Date(ahora.getFullYear() - 1, 0, 1);
+                finAnterior = new Date(ahora.getFullYear(), 0, 1);
+                labelActual = `Este año (${ahora.getFullYear()})`;
+                labelAnterior = `Año anterior (${ahora.getFullYear() - 1})`;
+            } else {
+                inicioActual = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+                finActual = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 1);
+                inicioAnterior = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
+                finAnterior = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+                labelActual = 'Este mes';
+                labelAnterior = 'Mes anterior';
+            }
+
+            const sumarPeriodo = (inicio, fin) => {
+                const movs = listaCajaGlobal.filter(m => { const f = new Date(m.fecha); return f >= inicio && f < fin; });
+                const entradas = movs.filter(m => m.tipo === 'Entrada').reduce((s, m) => s + Number(m.monto), 0);
+                const salidas = movs.filter(m => m.tipo === 'Salida').reduce((s, m) => s + Number(m.monto), 0);
+                return { entradas, salidas, neto: entradas - salidas };
+            };
+
+            const actual = sumarPeriodo(inicioActual, finActual);
+            const anterior = sumarPeriodo(inicioAnterior, finAnterior);
+
+            document.getElementById('comparativaLabelActual').innerText = labelActual;
+            document.getElementById('comparativaLabelAnterior').innerText = labelAnterior;
+            document.getElementById('comparativaActualNeto').innerText = `$${actual.neto.toFixed(2)}`;
+            document.getElementById('comparativaActualEntradas').innerText = `$${actual.entradas.toFixed(2)}`;
+            document.getElementById('comparativaActualSalidas').innerText = `$${actual.salidas.toFixed(2)}`;
+            document.getElementById('comparativaAnteriorNeto').innerText = `$${anterior.neto.toFixed(2)}`;
+            document.getElementById('comparativaAnteriorEntradas').innerText = `$${anterior.entradas.toFixed(2)}`;
+            document.getElementById('comparativaAnteriorSalidas').innerText = `$${anterior.salidas.toFixed(2)}`;
+
+            const variacion = anterior.neto !== 0 ? ((actual.neto - anterior.neto) / Math.abs(anterior.neto)) * 100 : (actual.neto > 0 ? 100 : 0);
+            const varColor = variacion >= 0 ? 'text-emerald-600' : 'text-rose-600';
+            document.getElementById('comparativaVariacion').innerHTML = `<span class="${varColor}">Variación de ingreso neto: ${variacion >= 0 ? '▲' : '▼'} ${Math.abs(variacion).toFixed(1)}%</span>`;
+
+            const canvasEl = document.getElementById('graficoComparativa');
+            if (canvasEl) {
+                const ctx = canvasEl.getContext('2d');
+                if (graficoComparativaInstance) graficoComparativaInstance.destroy();
+                graficoComparativaInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Entradas', 'Salidas', 'Neto'],
+                        datasets: [
+                            { label: labelAnterior, data: [anterior.entradas, anterior.salidas, anterior.neto], backgroundColor: '#94a3b8' },
+                            { label: labelActual, data: [actual.entradas, actual.salidas, actual.neto], backgroundColor: '#3b82f6' }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+        }
+
+        // --- EXPORTACIÓN ---
         function exportarExcel() {
             let datosTabla = [];
             listaCajaGlobal.forEach(item => {
