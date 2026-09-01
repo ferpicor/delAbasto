@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bicicletería del Abasto - Taller, Caja y Reportes</title>
+    <!-- Diseño con Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Librería de Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Librería Chart.js para los gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Librerías para Exportar a Excel y PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <!-- Encabezado con Pestañas de Navegación -->
+    <header class="bg-slate-800 text-white p-4 shadow-md">
+        <div class="container mx-auto flex flex-col md:flex-row justify-between items-center gap-3">
+            <h1 class="text-xl font-bold">🚲 Bicicletería del Abasto</h1>
+            <div class="flex gap-2">
+                <button onclick="cambiarPestana('taller')" id="btnTabTaller" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-medium transition">🛠️ Taller y Caja</button>
+                <button onclick="cambiarPestana('reportes')" id="btnTabReportes" class="bg-slate-700 text-white px-3 py-1.5 rounded text-sm font-medium transition">📊 Reportes y Métricas</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="container mx-auto p-4 max-w-5xl space-y-6">
+        
+        <!-- SECCIÓN 1: TALLER Y CAJA -->
+        <div id="seccionTaller" class="space-y-6">
+            
+            <!-- Ingreso Rápido de Bicicletas -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 class="text-lg font-semibold mb-3 text-slate-700">➕ Recibir Nueva Bicicleta</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                    <input type="text" id="inputCliente" placeholder="Nombre del cliente" class="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="inputTelefono" placeholder="Teléfono / WhatsApp (ej: 3415...)" class="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                    <input type="text" id="inputBici" placeholder="Descripción de la bici (ej: MTB Rodado 29)" class="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="inputTrabajo" placeholder="Trabajo a realizar" class="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="mb-3">
+                    <input type="number" id="inputPresupuesto" placeholder="Presupuesto Estimado ($)" class="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-1/2">
+                </div>
+                <button onclick="registrarBicicleta()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-medium w-full">
+                    Registrar Ingreso y Habilitar WhatsApp
+                </button>
+            </div>
+
+            <!-- Tabla de Bicicletas en Taller -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 class="text-lg font-semibold mb-3 text-slate-700">🛠️ Bicicletas en Taller</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 border-b text-sm text-gray-600">
+                                <th class="p-2">Cliente</th>
+                                <th class="p-2">Bicicleta / Trabajo / Presupuesto</th>
+                                <th class="p-2">Estado</th>
+                                <th class="p-2">Cobro Final</th>
+                                <th class="p-2 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaTaller"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Gestión de Conceptos -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 class="text-lg font-semibold mb-3 text-slate-700">⚙️ Gestión de Conceptos de Caja</h2>
+                <div class="flex gap-2 mb-3">
+                    <input type="text" id="nuevoConceptoNombre" placeholder="Nombre del nuevo concepto (ej: Publicidad)" class="border p-2 rounded text-sm flex-grow">
+                    <button onclick="agregarConcepto()" class="bg-slate-700 text-white px-4 py-2 rounded hover:bg-slate-800 text-sm font-medium">➕ Nuevo Concepto</button>
+                </div>
+                <div id="listaConceptos" class="flex flex-wrap gap-2"></div>
+            </div>
+
+            <!-- Control de Caja -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 class="text-lg font-semibold mb-3 text-slate-700">💵 Control de Caja (Ingresos y Gastos)</h2>
+                
+                <div class="bg-gray-50 p-3 rounded border mb-4 grid grid-cols-1 md:grid-cols-5 gap-2 items-end">
+                    <div>
+                        <label class="text-xs text-gray-500 block mb-1">Tipo</label>
+                        <select id="cajaTipo" class="border p-2 rounded w-full text-sm">
+                            <option value="Entrada">Entrada (Ingreso)</option>
+                            <option value="Salida">Salida (Gasto)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 block mb-1">Concepto</label>
+                        <select id="cajaConceptoSelect" class="border p-2 rounded w-full text-sm"></select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 block mb-1">Medio de Pago</label>
+                        <select id="cajaMedioPago" class="border p-2 rounded w-full text-sm">
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Transferencia">Transferencia</option>
+                            <option value="Tarjeta">Tarjeta</option>
+                            <option value="Débito">Débito</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 block mb-1">Monto ($)</label>
+                        <input type="number" id="cajaMonto" placeholder="0.00" class="border p-2 rounded w-full text-sm">
+                    </div>
+                    <div>
+                        <button onclick="registrarMovimientoCaja()" class="bg-emerald-600 text-white p-2 rounded hover:bg-emerald-700 w-full text-sm font-medium">➕ Agregar</button>
+                    </div>
+                    <div class="md:col-span-5">
+                        <input type="text" id="cajaDescripcion" placeholder="Detalle o descripción (opcional)" class="border p-2 rounded w-full text-sm">
+                    </div>
+                </div>
+
+                <div class="flex flex-col md:flex-row gap-2 mb-3 justify-between items-center bg-slate-50 p-2 rounded border">
+                    <div class="flex gap-2 w-full md:w-auto">
+                        <input type="text" id="filtroTexto" placeholder="Buscar..." oninput="filtrarCaja()" class="border p-1.5 rounded text-sm w-full md:w-64">
+                        <select id="filtroTipo" onchange="filtrarCaja()" class="border p-1.5 rounded text-sm">
+                            <option value="Todos">Todos</option>
+                            <option value="Entrada">Entradas</option>
+                            <option value="Salida">Salidas</option>
+                        </select>
+                    </div>
+                    <div id="resumenTotales" class="text-sm font-semibold text-slate-700"></div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 border-b text-sm text-gray-600">
+                                <th class="p-2">Fecha</th>
+                                <th class="p-2">Tipo</th>
+                                <th class="p-2">Concepto</th>
+                                <th class="p-2">Medio Pago</th>
+                                <th class="p-2">Detalle</th>
+                                <th class="p-2">Monto</th>
+                                <th class="p-2 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaCaja"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- SECCIÓN 2: REPORTES Y MÉTRICAS -->
+        <div id="seccionReportes" class="space-y-6 hidden">
+            
+            <!-- Contenedor Exportable (PDF/Excel) -->
+            <div id="areaExportable" class="space-y-6">
+
+                <!-- Filtros por Fechas para Reportes y Botones de Exportación -->
+                <div class="bg-white p-4 rounded-lg shadow flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <h2 class="text-lg font-semibold text-slate-700">📊 Panel General de Métricas</h2>
+                    <div class="flex flex-wrap items-center gap-2 text-sm">
+                        <label class="text-gray-500">Desde:</label>
+                        <input type="date" id="filtroFechaDesde" onchange="actualizarReportes()" class="border p-1.5 rounded">
+                        <label class="text-gray-500">Hasta:</label>
+                        <input type="date" id="filtroFechaHasta" onchange="actualizarReportes()" class="border p-1.5 rounded">
+                        <button onclick="limpiarFiltrosFechas()" class="bg-gray-200 text-gray-700 px-3 py-1.5 rounded hover:bg-gray-300">Limpiar</button>
+                        <div class="flex gap-1 ml-2">
+                            <button onclick="exportarExcel()" class="bg-emerald-700 text-white px-3 py-1.5 rounded hover:bg-emerald-800 text-xs font-semibold">📥 Excel</button>
+                            <button onclick="exportarPDF()" class="bg-rose-700 text-white px-3 py-1.5 rounded hover:bg-rose-800 text-xs font-semibold">📄 PDF</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tarjetas de Indicadores Clave (KPIs incluyendo Rentabilidad e Ingreso Neto) -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
+                        <span class="text-xs text-gray-500 uppercase font-semibold">Bicicletas (Taller / Entregadas)</span>
+                        <h3 class="text-xl font-bold text-slate-800"><span id="kpiBicisTaller">0</span> en taller / <span id="kpiBicisEntregadas" class="text-emerald-600">0</span> entregadas</h3>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow border-l-4 border-emerald-600">
+                        <span class="text-xs text-gray-500 uppercase font-semibold">Ingreso Neto (Ganado)</span>
+                        <h3 id="kpiIngresoNeto" class="text-2xl font-bold text-emerald-600">$0.00</h3>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow border-l-4 border-indigo-600">
+                        <span class="text-xs text-gray-500 uppercase font-semibold">Rentabilidad (%)</span>
+                        <h3 id="kpiRentabilidad" class="text-2xl font-bold text-indigo-600">0.00%</h3>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white p-4 rounded-lg shadow border-l-4 border-emerald-500">
+                        <span class="text-xs text-gray-500 uppercase font-semibold">Ingresos Totales Brutos</span>
+                        <h3 id="kpiIngresos" class="text-xl font-bold text-emerald-600">$0.00</h3>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow border-l-4 border-rose-500">
+                        <span class="text-xs text-gray-500 uppercase font-semibold">Salidas / Gastos Totales</span>
+                        <h3 id="kpiSalidas" class="text-xl font-bold text-rose-600">$0.00</h3>
+                    </div>
+                </div>
+
+                <!-- Desglose por Conceptos (Entradas y Gastos detallados) -->
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <h3 class="text-md font-semibold text-slate-700 mb-3">📋 Desglose Financiero por Concepto</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-gray-50 border-b text-gray-600">
+                                    <th class="p-2">Concepto</th>
+                                    <th class="p-2 text-emerald-600">Ingresos (Entradas)</th>
+                                    <th class="p-2 text-rose-600">Gastos (Salidas)</th>
+                                    <th class="p-2">Neto por Concepto</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaDesgloseConceptos"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Gráficos Estadísticos -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <h3 class="text-md font-semibold text-slate-700 mb-3">📈 Entradas vs Salidas de Dinero</h3>
+                        <div class="relative h-64">
+                            <canvas id="graficoFinanzas"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <h3 class="text-md font-semibold text-slate-700 mb-3">🏷️ Movimientos por Concepto</h3>
+                        <div class="relative h-64">
+                            <canvas id="graficoConceptos"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Script Principal y Lógica -->
+    <script>
+        const SUPABASE_URL = 'https://twezzstssnjrrnrzwdkv.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3ZXp6c3Rzc25qcnJucnp3ZGt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyMDExMjIsImV4cCI6MjEwMzc3NzEyMn0.nWtJHz6rPMoC9G70tIYBtgLBxPj8WI6snelIOZTR4V0';
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let listaCajaGlobal = [];
+        let listaTallerGlobal = [];
+        let listaConceptosGlobal = [];
+        let graficoFinanzasInstance = null;
+        let graficoConceptosInstance = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarConceptos();
+            cargarTaller();
+            cargarCaja();
+        });
+
+        // --- NAVEGACIÓN ENTRE PESTAÑAS ---
+        function cambiarPestana(pestana) {
+            const secTaller = document.getElementById('seccionTaller');
+            const secReportes = document.getElementById('seccionReportes');
+            const btnTaller = document.getElementById('btnTabTaller');
+            const btnReportes = document.getElementById('btnTabReportes');
+
+            if (pestana === 'taller') {
+                secTaller.classList.remove('hidden');
+                secReportes.classList.add('hidden');
+                btnTaller.className = 'bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-medium transition';
+                btnReportes.className = 'bg-slate-700 text-white px-3 py-1.5 rounded text-sm font-medium transition';
+            } else {
+                secTaller.classList.add('hidden');
+                secReportes.classList.remove('hidden');
+                btnReportes.className = 'bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-medium transition';
+                btnTaller.className = 'bg-slate-700 text-white px-3 py-1.5 rounded text-sm font-medium transition';
+                actualizarReportes();
+            }
+        }
+
+        // --- GESTIÓN DE CONCEPTOS ---
+        async function cargarConceptos() {
+            const { data, error } = await supabaseClient.from('conceptos').select('*').order('nombre', { ascending: true });
+            if (error) return console.error(error);
+            listaConceptosGlobal = data || [];
+
+            const contenedor = document.getElementById('listaConceptos');
+            const selectCaja = document.getElementById('cajaConceptoSelect');
+            contenedor.innerHTML = '';
+            selectCaja.innerHTML = '';
+
+            data.forEach(item => {
+                selectCaja.innerHTML += `<option value="${item.nombre}">${item.nombre}</option>`;
+                contenedor.innerHTML += `
+                    <div class="bg-slate-100 border px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm">
+                        <span class="font-medium text-slate-700">${item.nombre}</span>
+                        <button onclick="editarConcepto(${item.id}, '${item.nombre}')" class="text-blue-600 hover:text-blue-800 text-xs" title="Modificar">✏️</button>
+                        <button onclick="eliminarConcepto(${item.id})" class="text-rose-600 hover:text-rose-800 text-xs" title="Eliminar">🗑️</button>
+                    </div>
+                `;
+            });
+        }
+
+        async function agregarConcepto() {
+            const nombre = document.getElementById('nuevoConceptoNombre').value.trim();
+            if (!nombre) return alert('Escribe el nombre del concepto.');
+            const { error } = await supabaseClient.from('conceptos').insert([{ nombre }]);
+            if (error) return alert('Error al agregar: ' + error.message);
+            document.getElementById('nuevoConceptoNombre').value = '';
+            cargarConceptos();
+        }
+
+        async function editarConcepto(id, nombreActual) {
+            const nuevoNombre = prompt("Modificar nombre:", nombreActual);
+            if (!nuevoNombre || nuevoNombre.trim() === '') return;
+            const { error } = await supabaseClient.from('conceptos').update({ nombre: nuevoNombre.trim() }).eq('id', id);
+            if (error) return alert('Error: ' + error.message);
+            cargarConceptos();
+        }
+
+        async function eliminarConcepto(id) {
+            if (!confirm("¿Eliminar este concepto?")) return;
+            const { error } = await supabaseClient.from('conceptos').delete().eq('id', id);
+            if (error) return alert('Error: ' + error.message);
+            cargarConceptos();
+        }
+
+        // --- TALLER ---
+        async function cargarTaller() {
+            const { data, error } = await supabaseClient.from('taller').select('*').order('id', { ascending: false });
+            if (error) return console.error(error);
+            listaTallerGlobal = data || [];
+
+            const tbody = document.getElementById('tablaTaller');
+            tbody.innerHTML = '';
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400">No hay bicicletas en el taller.</td></tr>`;
+                return;
+            }
+
+            data.forEach(item => {
+                const msgIngreso = encodeURIComponent(`Hola *${item.cliente}*! Recibimos tu bici (*${item.bicicleta}*). Trabajo: ${item.trabajo}. Presupuesto est.: $${item.presupuesto || 0}.`);
+                const msgLista = encodeURIComponent(`Hola *${item.cliente}*! Tu bicicleta (*${item.bicicleta}*) ya está lista para retirar.`);
+
+                let estados = ['En taller', 'En proceso', 'Esperando repuestos', 'Lista', 'Entregada'];
+                let selectEstado = `<select onchange="actualizarEstado(${item.id}, this.value)" class="border rounded p-1 text-xs font-medium bg-gray-50">`;
+                estados.forEach(est => {
+                    selectEstado += `<option value="${est}" ${item.estado === est ? 'selected' : ''}>${est}</option>`;
+                });
+                selectEstado += `</select>`;
+
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-2 font-medium">
+                            ${item.cliente}<br>
+                            <span class="text-xs text-gray-400">${item.telefono}</span>
+                            <button onclick="editarCliente(${item.id}, '${item.cliente}', '${item.telefono}', '${item.bicicleta}', '${item.trabajo}', ${item.presupuesto || 0})" class="text-blue-600 text-xs ml-1" title="Editar datos del cliente">✏️</button>
+                        </td>
+                        <td class="p-2 text-sm text-gray-600">
+                            <strong>${item.bicicleta}</strong><br>
+                            <span class="text-xs text-blue-600">Trabajo: ${item.trabajo}</span><br>
+                            <span class="text-xs text-emerald-600 font-semibold">Presupuesto: $${item.presupuesto || 0}</span>
+                        </td>
+                        <td class="p-2">${selectEstado}</td>
+                        <td class="p-2">
+                            <div class="flex items-center gap-1">
+                                <span class="text-xs">$</span>
+                                <input type="number" id="cobro_${item.id}" value="${item.precio_cobrado || ''}" placeholder="0.00" class="border rounded p-1 text-xs w-20">
+                                <button onclick="guardarCobro(${item.id})" class="bg-emerald-600 text-white text-xs px-1.5 py-1 rounded hover:bg-emerald-700" title="Cobrar">💾</button>
+                            </div>
+                        </td>
+                        <td class="p-2 flex flex-col gap-1">
+                            <a href="https://wa.me/549${item.telefono}?text=${msgIngreso}" target="_blank" class="bg-slate-700 text-white text-xs px-2 py-1 rounded text-center">💬 Compr.</a>
+                            <a href="https://wa.me/549${item.telefono}?text=${msgLista}" target="_blank" class="bg-emerald-600 text-white text-xs px-2 py-1 rounded text-center">🟢 Lista</a>
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        async function registrarBicicleta() {
+            const cliente = document.getElementById('inputCliente').value;
+            const telefono = document.getElementById('inputTelefono').value;
+            const bicicleta = document.getElementById('inputBici').value;
+            const trabajo = document.getElementById('inputTrabajo').value;
+            const presupuesto = document.getElementById('inputPresupuesto').value || 0;
+
+            if (!cliente || !telefono || !bicicleta || !trabajo) return alert('Completa los campos principales.');
+
+            const { error } = await supabaseClient.from('taller').insert([{ cliente, telefono, bicicleta, trabajo, presupuesto, estado: 'En taller' }]);
+            if (error) return alert('Error: ' + error.message);
+
+            document.getElementById('inputCliente').value = '';
+            document.getElementById('inputTelefono').value = '';
+            document.getElementById('inputBici').value = '';
+            document.getElementById('inputTrabajo').value = '';
+            document.getElementById('inputPresupuesto').value = '';
+            cargarTaller();
+        }
+
+        async function editarCliente(id, cliActual, telActual, biciActual, trabActual, presuActual) {
+            const nuevoCliente = prompt("Editar Nombre del Cliente:", cliActual);
+            if (nuevoCliente === null) return;
+            const nuevoTelefono = prompt("Editar Teléfono / WhatsApp:", telActual);
+            if (nuevoTelefono === null) return;
+            const nuevaBici = prompt("Editar Descripción de la Bicicleta:", biciActual);
+            if (nuevaBici === null) return;
+            const nuevoTrabajo = prompt("Editar Trabajo a Realizar:", trabActual);
+            if (nuevoTrabajo === null) return;
+            const nuevoPresupuesto = prompt("Editar Presupuesto Estimado ($):", presuActual);
+            if (nuevoPresupuesto === null) return;
+
+            const { error } = await supabaseClient.from('taller').update({
+                cliente: nuevoCliente.trim(),
+                telefono: nuevoTelefono.trim(),
+                bicicleta: nuevaBici.trim(),
+                trabajo: nuevoTrabajo.trim(),
+                presupuesto: parseFloat(nuevoPresupuesto) || 0
+            }).eq('id', id);
+
+            if (error) return alert('Error al actualizar: ' + error.message);
+            alert('¡Datos actualizados con éxito!');
+            cargarTaller();
+        }
+
+        async function actualizarEstado(id, nuevoEstado) {
+            await supabaseClient.from('taller').update({ estado: nuevoEstado }).eq('id', id);
+            cargarTaller();
+        }
+
+        async function guardarCobro(id) {
+            const monto = parseFloat(document.getElementById(`cobro_${id}`).value);
+            if (isNaN(monto) || monto <= 0) return alert('Ingresa un monto válido.');
+
+            const { error: err1 } = await supabaseClient.from('taller').update({ precio_cobrado: monto, estado: 'Entregada' }).eq('id', id);
+            if (err1) return alert('Error al actualizar bici.');
+
+            const { error: err2 } = await supabaseClient.from('caja').insert([{
+                tipo: 'Entrada',
+                categoria: 'Reparaciones',
+                concepto: 'Reparaciones',
+                medio_pago: 'Efectivo',
+                monto: monto,
+                descripcion: `Cobro reparación - Bici ID #${id}`
+            }]);
+            if (err2) return alert('Error al impactar en caja.');
+
+            alert('¡Cobro registrado con éxito!');
+            cargarTaller();
+            cargarCaja();
+        }
+
+        // --- CAJA ---
+        async function cargarCaja() {
+            const { data, error } = await supabaseClient.from('caja').select('*').order('id', { ascending: false });
+            if (error) return console.error(error);
+            listaCajaGlobal = data || [];
+            renderizarCaja(listaCajaGlobal);
+        }
+
+        async function registrarMovimientoCaja() {
+            const tipo = document.getElementById('cajaTipo').value;
+            const concepto = document.getElementById('cajaConceptoSelect').value;
+            const medio_pago = document.getElementById('cajaMedioPago').value;
+            const monto = parseFloat(document.getElementById('cajaMonto').value);
+            const descripcion = document.getElementById('cajaDescripcion').value;
+
+            if (isNaN(monto) || monto <= 0) return alert('Ingresa un monto válido.');
+            if (!concepto) return alert('Selecciona un concepto.');
+
+            const { error } = await supabaseClient.from('caja').insert([{ tipo, categoria: concepto, concepto, medio_pago, monto, descripcion }]);
+            if (error) return alert('Error: ' + error.message);
+
+            document.getElementById('cajaMonto').value = '';
+            document.getElementById('cajaDescripcion').value = '';
+            cargarCaja();
+        }
+
+        function renderizarCaja(datos) {
+            const tbody = document.getElementById('tablaCaja');
+            tbody.innerHTML = '';
+            let totalEntradas = 0, totalSalidas = 0;
+
+            if (datos.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">No se encontraron movimientos.</td></tr>`;
+                document.getElementById('resumenTotales').innerHTML = `Entradas: $0 | Salidas: $0 | Balance: $0`;
+                return;
+            }
+
+            datos.forEach(item => {
+                if (item.tipo === 'Entrada') totalEntradas += Number(item.monto);
+                else totalSalidas += Number(item.monto);
+
+                const colorTipo = item.tipo === 'Entrada' ? 'text-emerald-600 font-bold' : 'text-rose-600 font-bold';
+                const fechaFormateada = new Date(item.fecha).toLocaleDateString() + ' ' + new Date(item.fecha).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50 text-sm">
+                        <td class="p-2 text-xs text-gray-500">${fechaFormateada}</td>
+                        <td class="p-2 ${colorTipo}">${item.tipo}</td>
+                        <td class="p-2 font-medium">${item.concepto}</td>
+                        <td class="p-2 text-gray-600">${item.medio_pago}</td>
+                        <td class="p-2 text-gray-500 text-xs">${item.descripcion || '-'}</td>
+                        <td class="p-2 font-bold">$${Number(item.monto).toFixed(2)}</td>
+                        <td class="p-2 text-center">
+                            <button onclick="editarMovimiento(${item.id}, ${item.monto}, '${item.concepto}')" class="text-blue-600 text-xs mr-2">✏️</button>
+                            <button onclick="eliminarMovimiento(${item.id})" class="text-rose-600 text-xs">🗑️</button>
+                        </td>
+                    </tr>`;
+            });
+
+            const balance = totalEntradas - totalSalidas;
+            document.getElementById('resumenTotales').innerHTML = `
+                <span class="text-emerald-600">Entradas: $${totalEntradas.toFixed(2)}</span> | 
+                <span class="text-rose-600">Salidas: $${totalSalidas.toFixed(2)}</span> | 
+                <span>Balance: <strong class="${balance >= 0 ? 'text-blue-600' : 'text-rose-600'}">$${balance.toFixed(2)}</strong></span>
+            `;
+        }
+
+        function filtrarCaja() {
+            const texto = document.getElementById('filtroTexto').value.toLowerCase();
+            const tipoFiltro = document.getElementById('filtroTipo').value;
+            const filtrados = listaCajaGlobal.filter(item => {
+                const coincideTexto = (item.concepto && item.concepto.toLowerCase().includes(texto)) || (item.descripcion && item.descripcion.toLowerCase().includes(texto));
+                const coincideTipo = tipoFiltro === 'Todos' || item.tipo === tipoFiltro;
+                return coincideTexto && coincideTipo;
+            });
+            renderizarCaja(filtrados);
+        }
+
+        async function editarMovimiento(id, montoActual, conceptoActual) {
+            const nuevoMonto = prompt("Editar monto:", montoActual);
+            if (nuevoMonto === null) return;
+            const nuevoConcepto = prompt("Editar concepto:", conceptoActual);
+            if (nuevoConcepto === null) return;
+
+            const { error } = await supabaseClient.from('caja').update({ monto: parseFloat(nuevoMonto), concepto: nuevoConcepto, categoria: nuevoConcepto }).eq('id', id);
+            if (error) return alert('Error: ' + error.message);
+            cargarCaja();
+        }
+
+        async function eliminarMovimiento(id) {
+            if (!confirm("¿Eliminar este movimiento?")) return;
+            const { error } = await supabaseClient.from('caja').delete().eq('id', id);
+            if (error) return alert('Error: ' + error.message);
+            cargarCaja();
+        }
+
+        // --- REPORTES, RENTABILIDAD Y GRÁFICOS ---
+        function limpiarFiltrosFechas() {
+            document.getElementById('filtroFechaDesde').value = '';
+            document.getElementById('filtroFechaHasta').value = '';
+            actualizarReportes();
+        }
+
+        function actualizarReportes() {
+            const fechaDesde = document.getElementById('filtroFechaDesde').value;
+            const fechaHasta = document.getElementById('filtroFechaHasta').value;
+
+            let cajaFiltrada = listaCajaGlobal;
+            if (fechaDesde) {
+                cajaFiltrada = cajaFiltrada.filter(item => new Date(item.fecha) >= new Date(fechaDesde));
+            }
+            if (fechaHasta) {
+                const fechaLimite = new Date(fechaHasta);
+                fechaLimite.setDate(fechaLimite.getDate() + 1);
+                cajaFiltrada = cajaFiltrada.filter(item => new Date(item.fecha) < fechaLimite);
+            }
+
+            let totalEntradas = 0;
+            let totalSalidas = 0;
+            let conceptosMap = {};
+
+            // Inicializar mapa con conceptos existentes
+            listaConceptosGlobal.forEach(c => {
+                conceptosMap[c.nombre] = { entrada: 0, salida: 0 };
+            });
+
+            cajaFiltrada.forEach(item => {
+                const monto = Number(item.monto);
+                const conc = item.concepto || 'General';
+                if (!conceptosMap[conc]) {
+                    conceptosMap[conc] = { entrada: 0, salida: 0 };
+                }
+
+                if (item.tipo === 'Entrada') {
+                    totalEntradas += monto;
+                    conceptosMap[conc].entrada += monto;
+                } else {
+                    totalSalidas += monto;
+                    conceptosMap[conc].salida += monto;
+                }
+            });
+
+            // Cálculos financieros
+            const ingresoNeto = totalEntradas - totalSalidas;
+            // Rentabilidad = (Ingreso Neto / Ingresos Totales) * 100 (si hay ingresos)
+            const rentabilidad = totalEntradas > 0 ? (ingresoNeto / totalEntradas) * 100 : 0;
+
+            document.getElementById('kpiIngresos').innerText = `$${totalEntradas.toFixed(2)}`;
+            document.getElementById('kpiSalidas').innerText = `$${totalSalidas.toFixed(2)}`;
+            document.getElementById('kpiIngresoNeto').innerText = `$${ingresoNeto.toFixed(2)}`;
+            document.getElementById('kpiRentabilidad').innerText = `${rentabilidad.toFixed(2)}%`;
+
+            let bicisEnTaller = 0;
+            let bicisEntregadas = 0;
+
+            listaTallerGlobal.forEach(item => {
+                if (item.estado === 'Entregada') {
+                    bicisEntregadas++;
+                } else {
+                    bicisEnTaller++;
+                }
+            });
+
+            document.getElementById('kpiBicisTaller').innerText = bicisEnTaller;
+            document.getElementById('kpiBicisEntregadas').innerText = bicisEntregadas;
+
+            // Renderizar tabla de desglose por conceptos
+            renderizarDesgloseConceptos(conceptosMap);
+
+            // Datos para gráficos
+            let datosGraficoConceptos = {};
+            Object.keys(conceptosMap).forEach(k => {
+                const totalConcepto = conceptosMap[k].entrada + conceptosMap[k].salida;
+                if (totalConcepto > 0) datosGraficoConceptos[k] = totalConcepto;
+            });
+
+            renderizarGraficoFinanzas(totalEntradas, totalSalidas);
+            renderizarGraficoConceptos(datosGraficoConceptos);
+        }
+
+        function renderizarDesgloseConceptos(conceptosMap) {
+            const tbody = document.getElementById('tablaDesgloseConceptos');
+            tbody.innerHTML = '';
+
+            const keys = Object.keys(conceptosMap);
+            if (keys.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-3 text-center text-gray-400">Sin datos de conceptos registrados.</td></tr>`;
+                return;
+            }
+
+            keys.forEach(conc => {
+                const ent = conceptosMap[conc].entrada;
+                const sal = conceptosMap[conc].salida;
+                const neto = ent - sal;
+
+                if (ent > 0 || sal > 0) {
+                    tbody.innerHTML += `
+                        <tr class="border-b hover:bg-gray-50">
+                            <td class="p-2 font-medium text-slate-700">${conc}</td>
+                            <td class="p-2 text-emerald-600 font-semibold">$${ent.toFixed(2)}</td>
+                            <td class="p-2 text-rose-600 font-semibold">$${sal.toFixed(2)}</td>
+                            <td class="p-2 font-bold ${neto >= 0 ? 'text-blue-600' : 'text-rose-600'}">$${neto.toFixed(2)}</td>
+                        </tr>
+                    `;
+                }
+            });
+        }
+
+        function renderizarGraficoFinanzas(entradas, salidas) {
+            const ctx = document.getElementById('graficoFinanzas').getContext('2d');
+            if (graficoFinanzasInstance) graficoFinanzasInstance.destroy();
+
+            graficoFinanzasInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Entradas (Ingresos)', 'Salidas (Gastos)'],
+                    datasets: [{
+                        label: 'Monto ($)',
+                        data: [entradas, salidas],
+                        backgroundColor: ['#10b981', '#f43f5e'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function renderizarGraficoConceptos(conceptosMap) {
+            const ctx = document.getElementById('graficoConceptos').getContext('2d');
+            if (graficoConceptosInstance) graficoConceptosInstance.destroy();
+
+            const labels = Object.keys(conceptosMap);
+            const data = Object.values(conceptosMap);
+
+            graficoConceptosInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        // --- FUNCIONES DE EXPORTACIÓN (EXCEL Y PDF) ---
+        function exportarExcel() {
+            let datosTabla = [];
+            listaCajaGlobal.forEach(item => {
+                datosTabla.push({
+                    Fecha: new Date(item.fecha).toLocaleString(),
+                    Tipo: item.tipo,
+                    Concepto: item.concepto,
+                    'Medio de Pago': item.medio_pago,
+                    Detalle: item.descripcion || '',
+                    Monto: item.monto
+                });
+            });
+
+            if(datosTabla.length === 0) return alert('No hay datos para exportar.');
+
+            const worksheet = XLSX.utils.json_to_sheet(datosTabla);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Reporte Caja");
+            XLSX.writeFile(workbook, "Reporte_Bicicleteria_Abasto.xlsx");
+        }
+
+        function exportarPDF() {
+            const elemento = document.getElementById('areaExportable');
+            const opciones = {
+                margin:       10,
+                filename:     'Reporte_Metricas_Bicicleteria.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().from(elemento).set(opciones).save();
+        }
+    </script>
+</body>
+</html>
