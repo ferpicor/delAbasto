@@ -1,1193 +1,557 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bicicletería del Abasto - Gestión Integral</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bicicletería del Abasto - Gestión Integral V2</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+body{background:#f5f7fa}.card{background:white;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 2px 8px rgba(15,23,42,.05)}
+.tab-active{background:#2563eb!important}.modal{background:rgba(15,23,42,.55)}
+input,select,textarea{min-width:0}
+.kpi{border-left:4px solid #2563eb}.small{font-size:.78rem}.money{font-variant-numeric:tabular-nums}
+</style>
 </head>
-<body class="bg-gray-100 font-sans">
-
-    <header class="bg-slate-800 text-white p-4 shadow-md">
-        <div class="container mx-auto flex flex-col md:flex-row justify-between items-center gap-3">
-            <div class="flex items-center gap-4">
-                <h1 class="text-xl font-bold">🚲 Bicicletería del Abasto</h1>
-                <div id="relojArgentino" class="text-xs bg-slate-700 px-2.5 py-1 rounded text-blue-300 font-mono">Cargando hora...</div>
-            </div>
-            <div class="flex flex-wrap gap-2">
-                <button onclick="cambiarPestana('taller')" id="btnTabTaller" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-medium transition">🛠️ Taller</button>
-                <button onclick="cambiarPestana('caja')" id="btnTabCaja" class="bg-slate-700 text-white px-3 py-1.5 rounded text-sm font-medium transition">💵 Caja</button>
-                <button onclick="cambiarPestana('clientes')" id="btnTabClientes" class="bg-slate-700 text-white px-3 py-1.5 rounded text-sm font-medium transition">👥 Clientes (CRM)</button>
-                <button onclick="cambiarPestana('inventario')" id="btnTabInventario" class="bg-slate-700 text-white px-3 py-1.5 rounded text-sm font-medium transition">🚲 Stock Bicis</button>
-                <button onclick="cambiarPestana('reportes')" id="btnTabReportes" class="bg-slate-700 text-white px-3 py-1.5 rounded text-sm font-medium transition">📊 Reportes</button>
-            </div>
-        </div>
-    </header>
-
-    <main class="container mx-auto p-4 max-w-6xl space-y-6">
-        
-        <!-- SECCIÓN TALLER -->
-        <div id="seccionTaller" class="space-y-6">
-            <div class="bg-white p-4 rounded-lg shadow">
-                <h2 class="text-lg font-semibold mb-3 text-slate-700">➕ Recibir Nueva Bicicleta en Taller</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                    <input type="text" id="inputCliente" placeholder="Nombre del cliente" class="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <input type="text" id="inputTelefono" placeholder="Teléfono / WhatsApp (ej: 3415...)" class="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                    <input type="text" id="inputBici" placeholder="Descripción de la bici (ej: MTB Rodado 29)" class="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <input type="text" id="inputTrabajo" placeholder="Trabajo a realizar" class="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                    <input type="number" id="inputPresupuesto" placeholder="Presupuesto Estimado ($)" class="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <input type="number" id="inputSena" placeholder="Seña / Anticipo recibido ($)" class="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                </div>
-                <button onclick="registrarBicicleta()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-medium w-full">
-                    Registrar Ingreso y Cargar Seña en Caja (si aplica)
-                </button>
-            </div>
-
-            <div class="bg-white p-4 rounded-lg shadow">
-                <h2 class="text-lg font-semibold mb-3 text-slate-700">🛠️ Bicicletas en Taller</h2>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-gray-50 border-b text-sm text-gray-600">
-                                <th class="p-2">Cliente</th>
-                                <th class="p-2">Bicicleta / Trabajo / Presupuesto</th>
-                                <th class="p-2">Seña</th>
-                                <th class="p-2">Estado</th>
-                                <th class="p-2">Cobro Final</th>
-                                <th class="p-2 text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tablaTaller"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- SECCIÓN CAJA -->
-        <div id="seccionCaja" class="space-y-6 hidden">
-            <div class="bg-white p-4 rounded-lg shadow">
-                <h2 class="text-lg font-semibold mb-3 text-slate-700">⚙️ Gestión de Conceptos de Caja</h2>
-                <div class="flex gap-2 mb-3">
-                    <input type="text" id="nuevoConceptoNombre" placeholder="Nombre del nuevo concepto (ej: Repuestos)" class="border p-2 rounded text-sm flex-grow">
-                    <button onclick="agregarConcepto()" class="bg-slate-700 text-white px-4 py-2 rounded hover:bg-slate-800 text-sm font-medium">➕ Nuevo Concepto</button>
-                </div>
-                <div id="listaConceptos" class="flex flex-wrap gap-2"></div>
-            </div>
-
-            <div class="bg-white p-4 rounded-lg shadow">
-                <h2 class="text-lg font-semibold mb-3 text-slate-700">💵 Control de Caja (Ingresos y Gastos)</h2>
-                <div class="bg-gray-50 p-3 rounded border mb-4 grid grid-cols-1 md:grid-cols-5 gap-2 items-end">
-                    <div>
-                        <label class="text-xs text-gray-500 block mb-1">Tipo</label>
-                        <select id="cajaTipo" class="border p-2 rounded w-full text-sm">
-                            <option value="Entrada">Entrada (Ingreso)</option>
-                            <option value="Salida">Salida (Gasto)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-xs text-gray-500 block mb-1">Concepto</label>
-                        <select id="cajaConceptoSelect" class="border p-2 rounded w-full text-sm"></select>
-                    </div>
-                    <div>
-                        <label class="text-xs text-gray-500 block mb-1">Medio de Pago</label>
-                        <select id="cajaMedioPago" class="border p-2 rounded w-full text-sm">
-                            <option value="Efectivo">Efectivo</option>
-                            <option value="Transferencia">Transferencia</option>
-                            <option value="Tarjeta">Tarjeta</option>
-                            <option value="Débito">Débito</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-xs text-gray-500 block mb-1">Monto ($)</label>
-                        <input type="number" id="cajaMonto" placeholder="0.00" class="border p-2 rounded w-full text-sm">
-                    </div>
-                    <div>
-                        <button onclick="registrarMovimientoCaja()" class="bg-emerald-600 text-white p-2 rounded hover:bg-emerald-700 w-full text-sm font-medium">➕ Agregar</button>
-                    </div>
-                    <div class="md:col-span-5">
-                        <input type="text" id="cajaDescripcion" placeholder="Detalle o descripción (opcional)" class="border p-2 rounded w-full text-sm">
-                    </div>
-                </div>
-
-                <div class="flex flex-col md:flex-row gap-2 mb-3 justify-between items-center bg-slate-50 p-2 rounded border">
-                    <div class="flex gap-2 w-full md:w-auto">
-                        <input type="text" id="filtroTexto" placeholder="Buscar en caja..." oninput="filtrarCaja()" class="border p-1.5 rounded text-sm w-full md:w-64">
-                        <select id="filtroTipo" onchange="filtrarCaja()" class="border p-1.5 rounded text-sm">
-                            <option value="Todos">Todos</option>
-                            <option value="Entrada">Entradas</option>
-                            <option value="Salida">Salidas</option>
-                        </select>
-                    </div>
-                    <div id="resumenTotales" class="text-sm font-semibold text-slate-700"></div>
-                </div>
-
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-gray-100 border-b text-sm text-gray-600">
-                                <th class="p-2">Fecha (Arg)</th>
-                                <th class="p-2">Tipo</th>
-                                <th class="p-2">Concepto</th>
-                                <th class="p-2">Medio Pago</th>
-                                <th class="p-2">Detalle</th>
-                                <th class="p-2">Monto</th>
-                                <th class="p-2 text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tablaCaja"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- SECCIÓN CLIENTES (CRM) -->
-        <div id="seccionClientes" class="space-y-6 hidden">
-            <div class="bg-white p-4 rounded-lg shadow">
-                <h2 class="text-lg font-semibold mb-3 text-slate-700">👥 Registro y Gestión de Clientes (CRM)</h2>
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
-                    <input type="text" id="cliNombre" placeholder="Nombre y Apellido" class="border p-2 rounded text-sm">
-                    <input type="text" id="cliTelefono" placeholder="Teléfono / WhatsApp" class="border p-2 rounded text-sm">
-                    <input type="email" id="cliEmail" placeholder="Correo electrónico" class="border p-2 rounded text-sm">
-                    <input type="text" id="cliDireccion" placeholder="Dirección" class="border p-2 rounded text-sm">
-                </div>
-                <button onclick="guardarCliente()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm font-medium w-full">💾 Guardar Cliente</button>
-            </div>
-
-            <div class="bg-white p-4 rounded-lg shadow">
-                <div class="flex justify-between items-center mb-3">
-                    <h3 class="text-md font-semibold text-slate-700">Base de Datos de Clientes</h3>
-                    <input type="text" id="buscarClienteInput" placeholder="Buscar cliente..." oninput="filtrarClientes()" class="border p-1.5 rounded text-sm w-64">
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-sm">
-                        <thead>
-                            <tr class="bg-gray-50 border-b text-gray-600">
-                                <th class="p-2">Nombre</th>
-                                <th class="p-2">Teléfono / WhatsApp</th>
-                                <th class="p-2">Email</th>
-                                <th class="p-2">Dirección</th>
-                                <th class="p-2 text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tablaClientes"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- SECCIÓN INVENTARIO -->
-        <div id="seccionInventario" class="space-y-6 hidden">
-            <div class="bg-white p-4 rounded-lg shadow">
-                <h2 class="text-lg font-semibold mb-3 text-slate-700">🚲 Cargar Bicicleta al Stock</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-                    <input type="text" id="biciMarca" placeholder="Marca (ej: TopMega, Olmo)" class="border p-2 rounded text-sm">
-                    <input type="text" id="biciModelo" placeholder="Modelo (ej: Sunshine R29)" class="border p-2 rounded text-sm">
-                    <input type="text" id="biciNroSerie" placeholder="Número de Serie" class="border p-2 rounded text-sm">
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
-                    <input type="text" id="biciColor" placeholder="Color" class="border p-2 rounded text-sm">
-                    <input type="text" id="biciTalle" placeholder="Talle (ej: L, 17, 54)" class="border p-2 rounded text-sm">
-                    <input type="number" id="biciPrecio" placeholder="Precio de Venta ($)" class="border p-2 rounded text-sm">
-                    <input type="number" id="biciStock" placeholder="Unidades" value="1" class="border p-2 rounded text-sm">
-                </div>
-                <button onclick="guardarBicicletaStock()" class="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700 text-sm font-medium w-full">➕ Agregar Stock</button>
-            </div>
-
-            <div class="bg-white p-4 rounded-lg shadow">
-                <div class="flex justify-between items-center mb-3">
-                    <h3 class="text-md font-semibold text-slate-700">Inventario de Bicicletas Nuevas / Usadas en Venta</h3>
-                    <input type="text" id="buscarBiciStockInput" placeholder="Buscar por marca, modelo o serie..." oninput="filtrarInventario()" class="border p-1.5 rounded text-sm w-72">
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-sm">
-                        <thead>
-                            <tr class="bg-gray-50 border-b text-gray-600">
-                                <th class="p-2">Marca y Modelo</th>
-                                <th class="p-2">Nro Serie</th>
-                                <th class="p-2">Color / Talle</th>
-                                <th class="p-2">Precio</th>
-                                <th class="p-2">Estado</th>
-                                <th class="p-2 text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tablaInventario"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- SECCIÓN REPORTES -->
-        <div id="seccionReportes" class="space-y-6 hidden">
-            <div id="areaExportable" class="space-y-6">
-                <div class="bg-white p-4 rounded-lg shadow flex flex-col md:flex-row gap-4 items-center justify-between">
-                    <h2 class="text-lg font-semibold text-slate-700">📊 Panel General de Métricas</h2>
-                    <div class="flex flex-wrap items-center gap-2 text-sm">
-                        <label class="text-gray-500">Desde:</label>
-                        <input type="date" id="filtroFechaDesde" onchange="actualizarReportes()" class="border p-1.5 rounded">
-                        <label class="text-gray-500">Hasta:</label>
-                        <input type="date" id="filtroFechaHasta" onchange="actualizarReportes()" class="border p-1.5 rounded">
-                        <button onclick="limpiarFiltrosFechas()" class="bg-gray-200 text-gray-700 px-3 py-1.5 rounded hover:bg-gray-300">Limpiar</button>
-                        <div class="flex gap-1 ml-2">
-                            <button onclick="exportarExcel()" class="bg-emerald-700 text-white px-3 py-1.5 rounded hover:bg-emerald-800 text-xs font-semibold">📥 Excel</button>
-                            <button onclick="exportarPDF()" class="bg-rose-700 text-white px-3 py-1.5 rounded hover:bg-rose-800 text-xs font-semibold">📄 PDF</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
-                        <span class="text-xs text-gray-500 uppercase font-semibold">Bicicletas (Taller / Entregadas)</span>
-                        <h3 class="text-xl font-bold text-slate-800"><span id="kpiBicisTaller">0</span> en taller / <span id="kpiBicisEntregadas" class="text-emerald-600">0</span> entregadas</h3>
-                    </div>
-                    <div class="bg-white p-4 rounded-lg shadow border-l-4 border-emerald-600">
-                        <span class="text-xs text-gray-500 uppercase font-semibold">Ingreso Neto (Ganado)</span>
-                        <h3 id="kpiIngresoNeto" class="text-2xl font-bold text-emerald-600">$0.00</h3>
-                    </div>
-                    <div class="bg-white p-4 rounded-lg shadow border-l-4 border-indigo-600">
-                        <span class="text-xs text-gray-500 uppercase font-semibold">Rentabilidad (%)</span>
-                        <h3 id="kpiRentabilidad" class="text-2xl font-bold text-indigo-600">0.00%</h3>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="bg-white p-4 rounded-lg shadow border-l-4 border-emerald-500">
-                        <span class="text-xs text-gray-500 uppercase font-semibold">Ingresos Totales Brutos</span>
-                        <h3 id="kpiIngresos" class="text-xl font-bold text-emerald-600">$0.00</h3>
-                    </div>
-                    <div class="bg-white p-4 rounded-lg shadow border-l-4 border-rose-500">
-                        <span class="text-xs text-gray-500 uppercase font-semibold">Salidas / Gastos Totales</span>
-                        <h3 id="kpiSalidas" class="text-xl font-bold text-rose-600">$0.00</h3>
-                    </div>
-                </div>
-
-                <div class="bg-white p-4 rounded-lg shadow">
-                    <h3 class="text-md font-semibold text-slate-700 mb-3">📋 Desglose Financiero por Concepto</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse text-sm">
-                            <thead>
-                                <tr class="bg-gray-50 border-b text-gray-600">
-                                    <th class="p-2">Concepto</th>
-                                    <th class="p-2 text-emerald-600">Ingresos (Entradas)</th>
-                                    <th class="p-2 text-rose-600">Gastos (Salidas)</th>
-                                    <th class="p-2">Neto por Concepto</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tablaDesgloseConceptos"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white p-4 rounded-lg shadow">
-                        <h3 class="text-md font-semibold text-slate-700 mb-3">📈 Entradas vs Salidas de Dinero</h3>
-                        <div class="relative h-64"><canvas id="graficoFinanzas"></canvas></div>
-                    </div>
-                    <div class="bg-white p-4 rounded-lg shadow">
-                        <h3 class="text-md font-semibold text-slate-700 mb-3">🏷️ Movimientos por Concepto</h3>
-                        <div class="relative h-64"><canvas id="graficoConceptos"></canvas></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </main>
-
-    <script>
-        const SUPABASE_URL = 'https://twezzstssnjrrnrzwdkv.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3ZXp6c3Rzc25qcnJucnp3ZGt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyMDExMjIsImV4cCI6MjEwMzc3NzEyMn0.nWtJHz6rPMoC9G70tIYBtgLBxPj8WI6snelIOZTR4V0';
-
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        let listaCajaGlobal = [];
-        let listaTallerGlobal = [];
-        let listaConceptosGlobal = [];
-        let listaClientesGlobal = [];
-        let listaInventarioGlobal = [];
-        let graficoFinanzasInstance = null;
-        let graficoConceptosInstance = null;
-
-        document.addEventListener('DOMContentLoaded', () => {
-            cargarConceptos();
-            cargarTaller();
-            cargarCaja();
-            cargarClientes();
-            cargarInventario();
-            iniciarReloj();
-        });
-
-        // --- RELOJ HORA ARGENTINA ---
-        function iniciarReloj() {
-            function actualizarReloj() {
-                try {
-                    const ahora = new Date();
-                    const opciones = { 
-                        timeZone: 'America/Argentina/Buenos_Aires', 
-                        hour: '2-digit', 
-                        minute: '2-digit', 
-                        second: '2-digit', 
-                        hour12: false 
-                    };
-                    const formatter = new Intl.DateTimeFormat('es-AR', opciones);
-                    const elReloj = document.getElementById('relojArgentino');
-                    if(elReloj) elReloj.innerText = `Arg: ${formatter.format(ahora)}`;
-                } catch (e) {
-                    const elReloj = document.getElementById('relojArgentino');
-                    if(elReloj) elReloj.innerText = "Arg: (N/D)";
-                }
-            }
-            setInterval(actualizarReloj, 1000);
-            actualizarReloj();
-        }
-
-        // --- NAVEGACIÓN ENTRE PESTAÑAS ---
-        function cambiarPestana(pestana) {
-            const secciones = ['seccionTaller', 'seccionCaja', 'seccionClientes', 'seccionInventario', 'seccionReportes'];
-            const botones = ['btnTabTaller', 'btnTabCaja', 'btnTabClientes', 'btnTabInventario', 'btnTabReportes'];
-            
-            secciones.forEach((sec, idx) => {
-                const elSec = document.getElementById(sec);
-                const elBtn = document.getElementById(botones[idx]);
-                if (sec.replace('seccion', '').toLowerCase() === pestana.toLowerCase()) {
-                    elSec.classList.remove('hidden');
-                    elBtn.className = 'bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-medium transition';
-                    if(pestana === 'reportes') actualizarReportes();
-                } else {
-                    elSec.classList.add('hidden');
-                    elBtn.className = 'bg-slate-700 text-white px-3 py-1.5 rounded text-sm font-medium transition';
-                }
-            });
-        }
-
-        // --- GESTIÓN DE CONCEPTOS ---
-        async function cargarConceptos() {
-            const { data, error } = await supabaseClient.from('conceptos').select('*').order('nombre', { ascending: true });
-            if (error) return console.error(error);
-            listaConceptosGlobal = data || [];
-
-            const contenedor = document.getElementById('listaConceptos');
-            const selectCaja = document.getElementById('cajaConceptoSelect');
-            if(contenedor) contenedor.innerHTML = '';
-            if(selectCaja) selectCaja.innerHTML = '';
-
-            data.forEach(item => {
-                if(selectCaja) selectCaja.innerHTML += `<option value="${item.nombre}">${item.nombre}</option>`;
-                if(contenedor) {
-                    contenedor.innerHTML += `
-                        <div class="bg-slate-100 border px-3 py-1.5 rounded-lg flex items-center gap-2 text-sm">
-                            <span class="font-medium text-slate-700">${item.nombre}</span>
-                            <button onclick="editarConcepto(${item.id}, '${item.nombre}')" class="text-blue-600 hover:text-blue-800 text-xs" title="Modificar">✏️</button>
-                            <button onclick="eliminarConcepto(${item.id})" class="text-rose-600 hover:text-rose-800 text-xs" title="Eliminar">🗑️</button>
-                        </div>
-                    `;
-                }
-            });
-        }
-
-        async function agregarConcepto() {
-            const nombre = document.getElementById('nuevoConceptoNombre').value.trim();
-            if (!nombre) return alert('Escribe el nombre del concepto.');
-            const { error } = await supabaseClient.from('conceptos').insert([{ nombre }]);
-            if (error) return alert('Error al agregar: ' + error.message);
-            document.getElementById('nuevoConceptoNombre').value = '';
-            cargarConceptos();
-        }
-
-        async function editarConcepto(id, nombreActual) {
-            const nuevoNombre = prompt("Modificar nombre:", nombreActual);
-            if (!nuevoNombre || nuevoNombre.trim() === '') return;
-            const { error } = await supabaseClient.from('conceptos').update({ nombre: nuevoNombre.trim() }).eq('id', id);
-            if (error) return alert('Error: ' + error.message);
-            cargarConceptos();
-        }
-
-        async function eliminarConcepto(id) {
-            if (!confirm("¿Eliminar este concepto?")) return;
-            const { error } = await supabaseClient.from('conceptos').delete().eq('id', id);
-            if (error) return alert('Error: ' + error.message);
-            cargarConceptos();
-        }
-
-        // --- CLIENTES (CRM) CON TELÉFONO ENLAZADO Y WHATSAPP ---
-        async function cargarClientes() {
-            const { data, error } = await supabaseClient.from('clientes').select('*').order('nombre', { ascending: true });
-            if (error) return console.error(error);
-            listaClientesGlobal = data || [];
-            renderizarClientes(listaClientesGlobal);
-        }
-
-        async function guardarCliente() {
-            const nombre = document.getElementById('cliNombre').value.trim();
-            const telefono = document.getElementById('cliTelefono').value.trim();
-            const email = document.getElementById('cliEmail').value.trim();
-            const direccion = document.getElementById('cliDireccion').value.trim();
-
-            if (!nombre) return alert('El nombre del cliente es obligatorio.');
-
-            const { error } = await supabaseClient.from('clientes').insert([{ nombre, telefono, email, direccion }]);
-            if (error) return alert('Error al guardar cliente: ' + error.message);
-
-            document.getElementById('cliNombre').value = '';
-            document.getElementById('cliTelefono').value = '';
-            document.getElementById('cliEmail').value = '';
-            document.getElementById('cliDireccion').value = '';
-            alert('¡Cliente registrado con éxito!');
-            cargarClientes();
-        }
-
-        function renderizarClientes(datos) {
-            const tbody = document.getElementById('tablaClientes');
-            if(!tbody) return;
-            tbody.innerHTML = '';
-            if (datos.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400">No hay clientes registrados.</td></tr>`;
-                return;
-            }
-            datos.forEach(item => {
-                let telHtml = '-';
-                if (item.telefono && item.telefono.trim() !== '') {
-                    const telLimpio = item.telefono.replace(/\D/g, '');
-                    const msgWp = encodeURIComponent(`Hola ${item.nombre}! Te escribimos de Bicicletería del Abasto.`);
-                    telHtml = `
-                        <div class="flex items-center gap-2">
-                            <a href="https://wa.me/549${telLimpio}?text=${msgWp}" target="_blank" class="text-blue-600 hover:underline font-medium" title="Abrir WhatsApp">
-                                ${item.telefono}
-                            </a>
-                            <a href="https://wa.me/549${telLimpio}?text=${msgWp}" target="_blank" class="bg-emerald-600 text-white px-2 py-0.5 rounded text-xs font-semibold hover:bg-emerald-700 flex items-center gap-1" title="Enviar WhatsApp">
-                                💬 WP
-                            </a>
-                        </div>
-                    `;
-                }
-
-                tbody.innerHTML += `
-                    <tr class="border-b hover:bg-gray-50">
-                        <td class="p-2 font-medium text-slate-800">${item.nombre}</td>
-                        <td class="p-2">${telHtml}</td>
-                        <td class="p-2 text-gray-600">${item.email || '-'}</td>
-                        <td class="p-2 text-gray-600">${item.direccion || '-'}</td>
-                        <td class="p-2 text-center flex justify-center gap-2">
-                            <button onclick="editarCliente(${item.id}, '${item.nombre || ''}', '${item.telefono || ''}', '${item.email || ''}', '${item.direccion || ''}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold hover:bg-blue-700" title="Editar cliente">✏️ Editar</button>
-                            <button onclick="eliminarCliente(${item.id})" class="bg-rose-600 text-white px-2 py-1 rounded text-xs font-semibold hover:bg-rose-700" title="Eliminar cliente">🗑️ Eliminar</button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-
-        async function editarCliente(id, nombreAct, telAct, emailAct, dirAct) {
-            const nuevoNombre = prompt("Modificar Nombre y Apellido:", nombreAct);
-            if (nuevoNombre === null) return;
-            const nuevoTel = prompt("Modificar Teléfono / WhatsApp:", telAct);
-            if (nuevoTel === null) return;
-            const nuevoEmail = prompt("Modificar Correo electrónico:", emailAct);
-            if (nuevoEmail === null) return;
-            const nuevaDir = prompt("Modificar Dirección:", dirAct);
-            if (nuevaDir === null) return;
-
-            const { error } = await supabaseClient.from('clientes').update({
-                nombre: nuevoNombre.trim(),
-                telefono: nuevoTel.trim(),
-                email: nuevoEmail.trim(),
-                direccion: nuevaDir.trim()
-            }).eq('id', id);
-
-            if (error) return alert('Error al actualizar cliente: ' + error.message);
-            alert('¡Cliente actualizado con éxito!');
-            cargarClientes();
-        }
-
-        function filtrarClientes() {
-            const texto = document.getElementById('buscarClienteInput').value.toLowerCase();
-            const filtrados = listaClientesGlobal.filter(c => 
-                c.nombre.toLowerCase().includes(texto) || 
-                (c.telefono && c.telefono.includes(texto)) || 
-                (c.email && c.email.toLowerCase().includes(texto))
-            );
-            renderizarClientes(filtrados);
-        }
-
-        async function eliminarCliente(id) {
-            if (!confirm("¿Deseas eliminar este cliente?")) return;
-            const { error } = await supabaseClient.from('clientes').delete().eq('id', id);
-            if (error) return alert('Error: ' + error.message);
-            cargarClientes();
-        }
-
-        // --- INVENTARIO DE BICICLETAS ---
-        async function cargarInventario() {
-            const { data, error } = await supabaseClient.from('inventario_bicicletas').select('*').order('id', { ascending: false });
-            if (error) return console.error(error);
-            listaInventarioGlobal = data || [];
-            renderizarInventario(listaInventarioGlobal);
-        }
-
-        async function guardarBicicletaStock() {
-            const marca = document.getElementById('biciMarca').value.trim();
-            const modelo = document.getElementById('biciModelo').value.trim();
-            const numero_serie = document.getElementById('biciNroSerie').value.trim();
-            const color = document.getElementById('biciColor').value.trim();
-            const talle = document.getElementById('biciTalle').value.trim();
-            const precio = parseFloat(document.getElementById('biciPrecio').value);
-            const stock = parseInt(document.getElementById('biciStock').value) || 1;
-
-            if (!marca || !modelo || isNaN(precio)) return alert('Completa marca, modelo y precio de la bicicleta.');
-
-            const { error } = await supabaseClient.from('inventario_bicicletas').insert([{
-                marca, modelo, numero_serie, color, talle, precio, stock, estado: 'Disponible'
-            }]);
-
-            if (error) return alert('Error al guardar en stock: ' + error.message);
-
-            document.getElementById('biciMarca').value = '';
-            document.getElementById('biciModelo').value = '';
-            document.getElementById('biciNroSerie').value = '';
-            document.getElementById('biciColor').value = '';
-            document.getElementById('biciTalle').value = '';
-            document.getElementById('biciPrecio').value = '';
-            document.getElementById('biciStock').value = '1';
-            
-            alert('¡Bicicleta agregada al stock con éxito!');
-            cargarInventario();
-        }
-
-        function renderizarInventario(datos) {
-            const tbody = document.getElementById('tablaInventario');
-            if(!tbody) return;
-            tbody.innerHTML = '';
-            if (datos.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">No hay bicicletas cargadas en stock.</td></tr>`;
-                return;
-            }
-
-            datos.forEach(item => {
-                const stockActual = item.stock !== undefined ? item.stock : 1;
-                const badgeEstado = stockActual > 0 
-                    ? `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-xs font-semibold">${stockActual} un. Disponibles</span>` 
-                    : '<span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs font-semibold">Sin Stock</span>';
-
-                tbody.innerHTML += `
-                    <tr class="border-b hover:bg-gray-50">
-                        <td class="p-2 font-medium text-slate-800">${item.marca} ${item.modelo}</td>
-                        <td class="p-2 text-xs text-gray-500">${item.numero_serie || 'S/N'}</td>
-                        <td class="p-2 text-gray-600">${item.color || '-'} / Talle: ${item.talle || '-'}</td>
-                        <td class="p-2 font-bold text-emerald-600">$${Number(item.precio).toFixed(2)}</td>
-                        <td class="p-2">${badgeEstado}</td>
-                        <td class="p-2 text-center flex justify-center gap-1.5">
-                            <button onclick="editarBicicletaStock(${item.id}, '${item.marca}', '${item.modelo}', '${item.numero_serie || ''}', '${item.color || ''}', '${item.talle || ''}', ${item.precio}, ${stockActual})" class="bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold hover:bg-blue-700" title="Modificar datos y stock">✏️ Editar</button>
-                            ${stockActual > 0 ? `<button onclick="venderBicicletaStock(${item.id}, ${item.precio}, '${item.marca} ${item.modelo}', '${item.numero_serie || 'S/N'}', ${stockActual})" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs font-semibold hover:bg-emerald-700" title="Vender unidad">💰 Vender</button>` : ''}
-                            <button onclick="eliminarBicicletaStock(${item.id})" class="text-rose-600 hover:text-rose-800 text-xs" title="Eliminar">🗑️</button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-
-        async function editarBicicletaStock(id, marcaAct, modeloAct, serieAct, colorAct, talleAct, precioAct, stockAct) {
-            const nuevaMarca = prompt("Modificar Marca:", marcaAct);
-            if (nuevaMarca === null) return;
-            const nuevoModelo = prompt("Modificar Modelo:", modeloAct);
-            if (nuevoModelo === null) return;
-            const nuevaSerie = prompt("Modificar Número de Serie:", serieAct);
-            if (nuevaSerie === null) return;
-            const nuevoColor = prompt("Modificar Color:", colorAct);
-            if (nuevoColor === null) return;
-            const nuevoTalle = prompt("Modificar Talle:", talleAct);
-            if (nuevoTalle === null) return;
-            const nuevoPrecio = prompt("Modificar Precio ($):", precioAct);
-            if (nuevoPrecio === null) return;
-            const nuevoStock = prompt("Modificar Cantidad de Unidades (Stock):", stockAct);
-            if (nuevoStock === null) return;
-
-            const { error } = await supabaseClient.from('inventario_bicicletas').update({
-                marca: nuevaMarca.trim(),
-                modelo: nuevoModelo.trim(),
-                numero_serie: nuevaSerie.trim(),
-                color: nuevoColor.trim(),
-                talle: nuevoTalle.trim(),
-                precio: parseFloat(nuevoPrecio) || 0,
-                stock: parseInt(nuevoStock) || 0,
-                estado: parseInt(nuevoStock) > 0 ? 'Disponible' : 'Sin Stock'
-            }).eq('id', id);
-
-            if (error) return alert('Error al actualizar inventario: ' + error.message);
-            alert('¡Inventario actualizado con éxito!');
-            cargarInventario();
-        }
-
-        async function venderBicicletaStock(id, precio, descripcionBici, nroSerieBici, stockActual) {
-            const nombreComprador = prompt(`Registrar Venta de: ${descripcionBici} ($${precio})\n\nIngrese el Nombre y Apellido del comprador:`);
-            if (!nombreComprador || nombreComprador.trim() === '') return;
-
-            const telefonoComprador = prompt("Ingrese el Teléfono / WhatsApp del comprador (ej: 3415...):");
-            if (!telefonoComprador || telefonoComprador.trim() === '') return;
-
-            const nuevoStock = stockActual - 1;
-            const nuevoEstado = nuevoStock > 0 ? 'Disponible' : 'Sin Stock';
-
-            const { error: err1 } = await supabaseClient.from('inventario_bicicletas').update({ 
-                stock: nuevoStock, 
-                estado: nuevoEstado 
-            }).eq('id', id);
-            
-            if (err1) return alert('Error al actualizar stock.');
-
-            const { error: err2 } = await supabaseClient.from('caja').insert([{
-                tipo: 'Entrada',
-                categoria: 'Venta de Bicicletas',
-                concepto: 'Venta de Bicicletas',
-                medio_pago: 'Efectivo',
-                monto: precio,
-                descripcion: `Venta bici: ${descripcionBici} (Serie: ${nroSerieBici}) - Compra: ${nombreComprador}`
-            }]);
-            
-            if (err2) return alert('Error al registrar en caja.');
-
-            const { data: clienteExistente } = await supabaseClient
-                .from('clientes')
-                .select('id')
-                .eq('telefono', telefonoComprador.trim())
-                .maybeSingle();
-
-            const detalleCompraMsg = `Compró bicicleta ${descripcionBici} - Nro Serie: ${nroSerieBici}`;
-
-            if (!clienteExistente) {
-                await supabaseClient.from('clientes').insert([{ 
-                    nombre: nombreComprador.trim(), 
-                    telefono: telefonoComprador.trim(),
-                    direccion: detalleCompraMsg
-                }]);
-            } else {
-                await supabaseClient.from('clientes')
-                    .update({ nombre: nombreComprador.trim(), direccion: detalleCompraMsg })
-                    .eq('telefono', telefonoComprador.trim());
-            }
-
-            const msgWhatsApp = encodeURIComponent(`Hola *${nombreComprador.trim()}*! Te escribimos de Bicicletería del Abasto para agradecerte por la compra de tu *${descripcionBici}* (Nro de Serie: ${nroSerieBici}). ¡Esperamos que la disfrutes y recordá que estamos a disposición para su primer service!`);
-            const urlWhatsApp = `https://wa.me/549${telefonoComprador.trim()}?text=${msgWhatsApp}`;
-
-            if (confirm(`¡Venta registrada con éxito y cliente guardado en el CRM!\n\n¿Desea abrir WhatsApp para enviarle el mensaje de bienvenida y recordatorio de service al cliente?`)) {
-                window.open(urlWhatsApp, '_blank');
-            }
-
-            cargarInventario();
-            cargarCaja();
-            cargarClientes();
-        }
-
-        function filtrarInventario() {
-            const texto = document.getElementById('buscarBiciStockInput').value.toLowerCase();
-            const filtrados = listaInventarioGlobal.filter(b => 
-                b.marca.toLowerCase().includes(texto) || 
-                b.modelo.toLowerCase().includes(texto) || 
-                (b.numero_serie && b.numero_serie.toLowerCase().includes(texto))
-            );
-            renderizarInventario(filtrados);
-        }
-
-        async function eliminarBicicletaStock(id) {
-            if (!confirm("¿Eliminar esta bicicleta del inventario?")) return;
-            const { error } = await supabaseClient.from('inventario_bicicletas').delete().eq('id', id);
-            if (error) return alert('Error: ' + error.message);
-            cargarInventario();
-        }
-
-        // --- TALLER ---
-        async function cargarTaller() {
-            const { data, error } = await supabaseClient.from('taller').select('*').order('id', { ascending: false });
-            if (error) return console.error(error);
-            listaTallerGlobal = data || [];
-
-            const tbody = document.getElementById('tablaTaller');
-            if(!tbody) return;
-            tbody.innerHTML = '';
-            if (data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">No hay bicicletas en el taller.</td></tr>`;
-                return;
-            }
-
-            data.forEach(item => {
-                const msgIngreso = encodeURIComponent(`Hola *${item.cliente}*! Recibimos tu bici (*${item.bicicleta}*). Trabajo: ${item.trabajo}. Presupuesto est.: $${item.presupuesto || 0}.`);
-                const msgLista = encodeURIComponent(`Hola *${item.cliente}*! Tu bicicleta (*${item.bicicleta}*) ya está lista para retirar.`);
-
-                let estados = ['En taller', 'En proceso', 'Esperando repuestos', 'Lista', 'Entregada'];
-                let selectEstado = `<select onchange="actualizarEstado(${item.id}, this.value)" class="border rounded p-1 text-xs font-medium bg-gray-50">`;
-                estados.forEach(est => {
-                    selectEstado += `<option value="${est}" ${item.estado === est ? 'selected' : ''}>${est}</option>`;
-                });
-                selectEstado += `</select>`;
-
-                tbody.innerHTML += `
-                    <tr class="border-b hover:bg-gray-50">
-                        <td class="p-2 font-medium">
-                            ${item.cliente}<br>
-                            <span class="text-xs text-gray-400">${item.telefono}</span>
-                        </td>
-                        <td class="p-2 text-sm text-gray-600">
-                            <strong>${item.bicicleta}</strong><br>
-                            <span class="text-xs text-blue-600">Trabajo: ${item.trabajo}</span><br>
-                            <span class="text-xs text-emerald-600 font-semibold">Presupuesto: $${item.presupuesto || 0}</span>
-                        </td>
-                        <td class="p-2 font-semibold text-emerald-600">$${item.sena || 0}</td>
-                        <td class="p-2">${selectEstado}</td>
-                        <td class="p-2">
-                            <div class="flex items-center gap-1">
-                                <span class="text-xs">$</span>
-                                <input type="number" id="cobro_${item.id}" value="${item.precio_cobrado || ''}" placeholder="0.00" class="border rounded p-1 text-xs w-20">
-                                <button onclick="guardarCobro(${item.id})" class="bg-emerald-600 text-white text-xs px-1.5 py-1 rounded hover:bg-emerald-700" title="Cobrar">💾</button>
-                            </div>
-                        </td>
-                        <td class="p-2 flex flex-col gap-1">
-                            <div class="flex gap-1">
-                                <button onclick="editarIngresoTaller(${item.id}, '${item.cliente}', '${item.telefono}', '${item.bicicleta}', '${item.trabajo}', ${item.presupuesto || 0}, ${item.sena || 0})" class="bg-blue-600 text-white text-xs px-2 py-1 rounded text-center w-full" title="Modificar datos">✏️ Editar</button>
-                                <button onclick="eliminarIngresoTaller(${item.id})" class="bg-rose-600 text-white text-xs px-2 py-1 rounded text-center" title="Eliminar registro">🗑️</button>
-                            </div>
-                            <a href="https://wa.me/549${item.telefono}?text=${msgIngreso}" target="_blank" class="bg-slate-700 text-white text-xs px-2 py-1 rounded text-center">💬 Compr.</a>
-                            <a href="https://wa.me/549${item.telefono}?text=${msgLista}" target="_blank" class="bg-emerald-600 text-white text-xs px-2 py-1 rounded text-center">🟢 Lista</a>
-                        </td>
-                    </tr>`;
-            });
-        }
-
-        async function registrarBicicleta() {
-            const cliente = document.getElementById('inputCliente').value.trim();
-            const telefono = document.getElementById('inputTelefono').value.trim();
-            const bicicleta = document.getElementById('inputBici').value.trim();
-            const trabajo = document.getElementById('inputTrabajo').value.trim();
-            const presupuesto = parseFloat(document.getElementById('inputPresupuesto').value) || 0;
-            const sena = parseFloat(document.getElementById('inputSena').value) || 0;
-
-            if (!cliente || !telefono || !bicicleta || !trabajo) {
-                return alert('Completa los campos principales (Cliente, Teléfono, Bici y Trabajo).');
-            }
-
-            const { error: errorTaller } = await supabaseClient.from('taller').insert([{ 
-                cliente, telefono, bicicleta, trabajo, presupuesto, sena, estado: 'En taller' 
-            }]);
-            
-            if (errorTaller) {
-                return alert('Error al registrar en taller: ' + errorTaller.message);
-            }
-
-            const { data: clienteExistente } = await supabaseClient
-                .from('clientes')
-                .select('id')
-                .eq('telefono', telefono)
-                .maybeSingle();
-
-            if (!clienteExistente) {
-                await supabaseClient.from('clientes').insert([{ 
-                    nombre: cliente, 
-                    telefono: telefono 
-                }]);
-            } else {
-                await supabaseClient.from('clientes')
-                    .update({ nombre: cliente })
-                    .eq('telefono', telefono);
-            }
-
-            if (sena > 0) {
-                await supabaseClient.from('caja').insert([{
-                    tipo: 'Entrada',
-                    categoria: 'Reparaciones',
-                    concepto: 'Reparaciones',
-                    medio_pago: 'Efectivo',
-                    monto: sena,
-                    descripcion: `Seña taller - Cliente: ${cliente} (${bicicleta})`
-                }]);
-            }
-
-            document.getElementById('inputCliente').value = '';
-            document.getElementById('inputTelefono').value = '';
-            document.getElementById('inputBici').value = '';
-            document.getElementById('inputTrabajo').value = '';
-            document.getElementById('inputPresupuesto').value = '';
-            document.getElementById('inputSena').value = '';
-            
-            alert('¡Bicicleta ingresada y cliente sincronizado en el CRM con éxito!');
-            cargarTaller();
-            cargarClientes();
-            cargarCaja();
-        }
-
-        async function editarIngresoTaller(id, cliActual, telActual, biciActual, trabActual, presuActual, senaActual) {
-            const nuevoCliente = prompt("Modificar Nombre del Cliente:", cliActual);
-            if (nuevoCliente === null) return;
-            const nuevoTelefono = prompt("Modificar Teléfono / WhatsApp:", telActual);
-            if (nuevoTelefono === null) return;
-            const nuevaBici = prompt("Modificar Descripción de la Bicicleta:", biciActual);
-            if (nuevaBici === null) return;
-            const nuevoTrabajo = prompt("Modificar Trabajo a Realizar:", trabActual);
-            if (nuevoTrabajo === null) return;
-            const nuevoPresupuesto = prompt("Modificar Presupuesto Estimado ($):", presuActual);
-            if (nuevoPresupuesto === null) return;
-            const nuevaSena = prompt("Modificar Seña / Anticipo ($):", senaActual);
-            if (nuevaSena === null) return;
-
-            const { error } = await supabaseClient.from('taller').update({
-                cliente: nuevoCliente.trim(),
-                telefono: nuevoTelefono.trim(),
-                bicicleta: nuevaBici.trim(),
-                trabajo: nuevoTrabajo.trim(),
-                presupuesto: parseFloat(nuevoPresupuesto) || 0,
-                sena: parseFloat(nuevaSena) || 0
-            }).eq('id', id);
-
-            if (error) return alert('Error al actualizar: ' + error.message);
-            alert('¡Datos de la bicicleta actualizados con éxito!');
-            cargarTaller();
-        }
-
-        async function eliminarIngresoTaller(id) {
-            if (!confirm("¿Estás seguro de eliminar este registro del taller?")) return;
-            const { error } = await supabaseClient.from('taller').delete().eq('id', id);
-            if (error) return alert('Error al eliminar: ' + error.message);
-            cargarTaller();
-        }
-
-        async function actualizarEstado(id, nuevoEstado) {
-            await supabaseClient.from('taller').update({ estado: nuevoEstado }).eq('id', id);
-            cargarTaller();
-        }
-
-        async function guardarCobro(id) {
-            const monto = parseFloat(document.getElementById(`cobro_${id}`).value);
-            if (isNaN(monto) || monto <= 0) return alert('Ingresa un monto válido.');
-
-            const { error: err1 } = await supabaseClient.from('taller').update({ precio_cobrado: monto, estado: 'Entregada' }).eq('id', id);
-            if (err1) return alert('Error al actualizar bici.');
-
-            const { error: err2 } = await supabaseClient.from('caja').insert([{
-                tipo: 'Entrada',
-                categoria: 'Reparaciones',
-                concepto: 'Reparaciones',
-                medio_pago: 'Efectivo',
-                monto: monto,
-                descripcion: `Cobro final reparación - Bici ID #${id}`
-            }]);
-            if (err2) return alert('Error al impactar en caja.');
-
-            alert('¡Cobro registrado y enviado a caja con éxito!');
-            cargarTaller();
-            cargarCaja();
-        }
-
-        // --- CAJA ---
-        async function cargarCaja() {
-            const { data, error } = await supabaseClient.from('caja').select('*').order('id', { ascending: false });
-            if (error) return console.error(error);
-            listaCajaGlobal = data || [];
-            renderizarCaja(listaCajaGlobal);
-        }
-
-        async function registrarMovimientoCaja() {
-            const tipo = document.getElementById('cajaTipo').value;
-            const concepto = document.getElementById('cajaConceptoSelect').value;
-            const medio_pago = document.getElementById('cajaMedioPago').value;
-            const monto = parseFloat(document.getElementById('cajaMonto').value);
-            const descripcion = document.getElementById('cajaDescripcion').value;
-
-            if (isNaN(monto) || monto <= 0) return alert('Ingresa un monto válido.');
-            if (!concepto) return alert('Selecciona un concepto.');
-
-            const { error } = await supabaseClient.from('caja').insert([{ tipo, categoria: concepto, concepto, medio_pago, monto, descripcion }]);
-            if (error) return alert('Error: ' + error.message);
-
-            document.getElementById('cajaMonto').value = '';
-            document.getElementById('cajaDescripcion').value = '';
-            cargarCaja();
-        }
-
-        async function editarMovimientoCaja(id, tipoAct, conceptoAct, medioPagoAct, montoAct, descAct) {
-            const nuevoTipo = prompt("Modificar Tipo ('Entrada' o 'Salida'):", tipoAct);
-            if (!nuevoTipo || (nuevoTipo !== 'Entrada' && nuevoTipo !== 'Salida')) return alert('Tipo inválido.');
-
-            const nuevoConcepto = prompt("Modificar Concepto:", conceptoAct);
-            if (!nuevoConcepto) return;
-
-            const nuevoMedio = prompt("Modificar Medio de Pago (Efectivo, Transferencia, Tarjeta, Débito):", medioPagoAct);
-            if (!nuevoMedio) return;
-
-            const nuevoMonto = prompt("Modificar Monto ($):", montoAct);
-            if (isNaN(parseFloat(nuevoMonto))) return alert('Monto inválido.');
-
-            const nuevaDesc = prompt("Modificar Detalle / Descripción:", descAct || '');
-
-            const { error } = await supabaseClient.from('caja').update({
-                tipo: nuevoTipo,
-                categoria: nuevoConcepto,
-                concepto: nuevoConcepto,
-                medio_pago: nuevoMedio,
-                monto: parseFloat(nuevoMonto),
-                descripcion: nuevaDesc
-            }).eq('id', id);
-
-            if (error) return alert('Error al actualizar movimiento: ' + error.message);
-            alert('¡Movimiento actualizado con éxito!');
-            cargarCaja();
-        }
-
-        function renderizarCaja(datos) {
-            const tbody = document.getElementById('tablaCaja');
-            if(!tbody) return;
-            tbody.innerHTML = '';
-            let totalEntradas = 0, totalSalidas = 0;
-
-            if (datos.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-gray-400">No se encontraron movimientos.</td></tr>`;
-                document.getElementById('resumenTotales').innerHTML = `Entradas: $0 | Salidas: $0 | Balance: $0`;
-                return;
-            }
-
-            datos.forEach(item => {
-                if (item.tipo === 'Entrada') totalEntradas += Number(item.monto);
-                else totalSalidas += Number(item.monto);
-
-                const colorTipo = item.tipo === 'Entrada' ? 'text-emerald-600 font-bold' : 'text-rose-600 font-bold';
-                
-                let fechaFormateada = '-';
-                if (item.fecha) {
-                    try {
-                        const fechaOriginal = new Date(item.fecha);
-                        fechaFormateada = new Intl.DateTimeFormat('es-AR', {
-                            timeZone: 'America/Argentina/Buenos_Aires',
-                            dateStyle: 'short',
-                            timeStyle: 'medium',
-                            hour12: false
-                        }).format(fechaOriginal);
-                    } catch (err) {
-                        fechaFormateada = item.fecha;
-                    }
-                }
-
-                tbody.innerHTML += `
-                    <tr class="border-b hover:bg-gray-50 text-sm">
-                        <td class="p-2 text-xs text-gray-500">${fechaFormateada}</td>
-                        <td class="p-2 ${colorTipo}">${item.tipo}</td>
-                        <td class="p-2 font-medium">${item.concepto}</td>
-                        <td class="p-2 text-gray-600">${item.medio_pago}</td>
-                        <td class="p-2 text-gray-500 text-xs">${item.descripcion || '-'}</td>
-                        <td class="p-2 font-bold">$${Number(item.monto).toFixed(2)}</td>
-                        <td class="p-2 text-center flex justify-center gap-2">
-                            <button onclick="editarMovimientoCaja(${item.id}, '${item.tipo}', '${item.concepto}', '${item.medio_pago}', ${item.monto}, '${item.descripcion || ''}')" class="text-blue-600 text-xs" title="Modificar movimiento">✏️</button>
-                            <button onclick="eliminarMovimiento(${item.id})" class="text-rose-600 text-xs" title="Eliminar">🗑️</button>
-                        </td>
-                    </tr>`;
-            });
-
-            const balance = totalEntradas - totalSalidas;
-            document.getElementById('resumenTotales').innerHTML = `
-                <span class="text-emerald-600">Entradas: $${totalEntradas.toFixed(2)}</span> | 
-                <span class="text-rose-600">Salidas: $${totalSalidas.toFixed(2)}</span> | 
-                <span>Balance: <strong class="${balance >= 0 ? 'text-blue-600' : 'text-rose-600'}">$${balance.toFixed(2)}</strong></span>
-            `;
-        }
-
-        function filtrarCaja() {
-            const texto = document.getElementById('filtroTexto').value.toLowerCase();
-            const tipoFiltro = document.getElementById('filtroTipo').value;
-            const filtrados = listaCajaGlobal.filter(item => {
-                const coincideTexto = (item.concepto && item.concepto.toLowerCase().includes(texto)) || (item.descripcion && item.descripcion.toLowerCase().includes(texto));
-                const coincideTipo = tipoFiltro === 'Todos' || item.tipo === tipoFiltro;
-                return coincideTexto && coincideTipo;
-            });
-            renderizarCaja(filtrados);
-        }
-
-        async function eliminarMovimiento(id) {
-            if (!confirm("¿Eliminar este movimiento?")) return;
-            const { error } = await supabaseClient.from('caja').delete().eq('id', id);
-            if (error) return alert('Error: ' + error.message);
-            cargarCaja();
-        }
-
-        // --- REPORTES Y FINANZAS ---
-        function limpiarFiltrosFechas() {
-            document.getElementById('filtroFechaDesde').value = '';
-            document.getElementById('filtroFechaHasta').value = '';
-            actualizarReportes();
-        }
-
-        function actualizarReportes() {
-            const fechaDesde = document.getElementById('filtroFechaDesde').value;
-            const fechaHasta = document.getElementById('filtroFechaHasta').value;
-
-            let cajaFiltrada = listaCajaGlobal;
-            if (fechaDesde) {
-                cajaFiltrada = cajaFiltrada.filter(item => new Date(item.fecha) >= new Date(fechaDesde));
-            }
-            if (fechaHasta) {
-                const fechaLimite = new Date(fechaHasta);
-                fechaLimite.setDate(fechaLimite.getDate() + 1);
-                cajaFiltrada = cajaFiltrada.filter(item => new Date(item.fecha) < fechaLimite);
-            }
-
-            let totalEntradas = 0;
-            let totalSalidas = 0;
-            let conceptosMap = {};
-
-            listaConceptosGlobal.forEach(c => {
-                conceptosMap[c.nombre] = { entrada: 0, salida: 0 };
-            });
-
-            cajaFiltrada.forEach(item => {
-                const monto = Number(item.monto);
-                const conc = item.concepto || 'General';
-                if (!conceptosMap[conc]) {
-                    conceptosMap[conc] = { entrada: 0, salida: 0 };
-                }
-
-                if (item.tipo === 'Entrada') {
-                    totalEntradas += monto;
-                    conceptosMap[conc].entrada += monto;
-                } else {
-                    totalSalidas += monto;
-                    conceptosMap[conc].salida += monto;
-                }
-            });
-
-            const ingresoNeto = totalEntradas - totalSalidas;
-            const rentabilidad = totalEntradas > 0 ? (ingresoNeto / totalEntradas) * 100 : 0;
-
-            document.getElementById('kpiIngresos').innerText = `$${totalEntradas.toFixed(2)}`;
-            document.getElementById('kpiSalidas').innerText = `$${totalSalidas.toFixed(2)}`;
-            document.getElementById('kpiIngresoNeto').innerText = `$${ingresoNeto.toFixed(2)}`;
-            document.getElementById('kpiRentabilidad').innerText = `${rentabilidad.toFixed(2)}%`;
-
-            let bicisEnTaller = 0;
-            let bicisEntregadas = 0;
-
-            listaTallerGlobal.forEach(item => {
-                if (item.estado === 'Entregada') bicisEntregadas++;
-                else bicisEnTaller++;
-            });
-
-            document.getElementById('kpiBicisTaller').innerText = bicisEnTaller;
-            document.getElementById('kpiBicisEntregadas').innerText = bicisEntregadas;
-
-            renderizarDesgloseConceptos(conceptosMap);
-
-            let datosGraficoConceptos = {};
-            Object.keys(conceptosMap).forEach(k => {
-                const totalConcepto = conceptosMap[k].entrada + conceptosMap[k].salida;
-                if (totalConcepto > 0) datosGraficoConceptos[k] = totalConcepto;
-            });
-
-            renderizarGraficoFinanzas(totalEntradas, totalSalidas);
-            renderizarGraficoConceptos(datosGraficoConceptos);
-        }
-
-        function renderizarDesgloseConceptos(conceptosMap) {
-            const tbody = document.getElementById('tablaDesgloseConceptos');
-            if(!tbody) return;
-            tbody.innerHTML = '';
-
-            const keys = Object.keys(conceptosMap);
-            if (keys.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="p-3 text-center text-gray-400">Sin datos de conceptos.</td></tr>`;
-                return;
-            }
-
-            keys.forEach(conc => {
-                const ent = conceptosMap[conc].entrada;
-                const sal = conceptosMap[conc].salida;
-                const neto = ent - sal;
-
-                if (ent > 0 || sal > 0) {
-                    tbody.innerHTML += `
-                        <tr class="border-b hover:bg-gray-50">
-                            <td class="p-2 font-medium text-slate-700">${conc}</td>
-                            <td class="p-2 text-emerald-600 font-semibold">$${ent.toFixed(2)}</td>
-                            <td class="p-2 text-rose-600 font-semibold">$${sal.toFixed(2)}</td>
-                            <td class="p-2 font-bold ${neto >= 0 ? 'text-blue-600' : 'text-rose-600'}">$${neto.toFixed(2)}</td>
-                        </tr>
-                    `;
-                }
-            });
-        }
-
-        function renderizarGraficoFinanzas(entradas, salidas) {
-            const canvasEl = document.getElementById('graficoFinanzas');
-            if(!canvasEl) return;
-            const ctx = canvasEl.getContext('2d');
-            if (graficoFinanzasInstance) graficoFinanzasInstance.destroy();
-
-            graficoFinanzasInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Entradas', 'Salidas'],
-                    datasets: [{
-                        label: 'Monto ($)',
-                        data: [entradas, salidas],
-                        backgroundColor: ['#10b981', '#f43f5e'],
-                        borderWidth: 1
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-            });
-        }
-
-        function renderizarGraficoConceptos(conceptosMap) {
-            const canvasEl = document.getElementById('graficoConceptos');
-            if(!canvasEl) return;
-            const ctx = canvasEl.getContext('2d');
-            if (graficoConceptosInstance) graficoConceptosInstance.destroy();
-
-            const labels = Object.keys(conceptosMap);
-            const data = Object.values(conceptosMap);
-
-            graficoConceptosInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#64748b']
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-        }
-
-        // --- EXPORTACIÓN ---
-        function exportarExcel() {
-            let datosTabla = [];
-            listaCajaGlobal.forEach(item => {
-                datosTabla.push({
-                    Fecha: new Date(item.fecha).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }),
-                    Tipo: item.tipo,
-                    Concepto: item.concepto,
-                    'Medio de Pago': item.medio_pago,
-                    Detalle: item.descripcion || '',
-                    Monto: item.monto
-                });
-            });
-
-            if(datosTabla.length === 0) return alert('No hay datos para exportar.');
-
-            const worksheet = XLSX.utils.json_to_sheet(datosTabla);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Reporte Caja");
-            XLSX.writeFile(workbook, "Reporte_Bicicleteria_Abasto.xlsx");
-        }
-
-        function exportarPDF() {
-            const elemento = document.getElementById('areaExportable');
-            const opciones = {
-                margin:       10,
-                filename:     'Reporte_Metricas_Bicicleteria.pdf',
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-            html2pdf().from(elemento).set(opciones).save();
-        }
-    </script>
+<body class="font-sans text-slate-800">
+<header class="bg-slate-800 text-white p-4 sticky top-0 z-30 shadow">
+ <div class="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between gap-3">
+  <div class="flex items-center gap-4"><h1 class="text-xl font-bold">🚲 Bicicletería del Abasto</h1><span id="reloj" class="text-xs bg-slate-700 px-2 py-1 rounded">--:--:--</span></div>
+  <nav class="flex flex-wrap gap-2">
+   <button class="tab px-3 py-2 rounded bg-blue-600" onclick="tab('dashboard')" id="t-dashboard">🏠 Inicio</button>
+   <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('taller')" id="t-taller">🛠️ Taller</button>
+   <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('ventas')" id="t-ventas">🛒 Ventas</button>
+   <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('caja')" id="t-caja">💰 Caja</button>
+   <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('crm')" id="t-crm">👥 CRM</button>
+   <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('stock')" id="t-stock">📦 Stock</button>
+   <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('compras')" id="t-compras">🚚 Compras</button>
+   <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('reportes')" id="t-reportes">📊 Reportes</button>
+  </nav>
+ </div>
+</header>
+
+<main class="max-w-7xl mx-auto p-4 space-y-6">
+<section id="dashboard" class="space-y-5">
+ <div class="flex flex-col md:flex-row justify-between gap-3 items-start md:items-center">
+  <div><h2 class="text-2xl font-bold">Dashboard</h2><p class="text-sm text-slate-500">Resumen operativo, comercial y financiero.</p></div>
+  <div class="flex gap-2"><button onclick="abrirMovimiento()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg">➕ Movimiento</button><button onclick="tab('taller')" class="bg-blue-600 text-white px-4 py-2 rounded-lg">🛠️ Nueva OT</button></div>
+ </div>
+ <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+  <div class="card p-4 kpi"><div class="small text-slate-500">Ventas del período</div><div id="dVentas" class="text-2xl font-bold money">$0</div></div>
+  <div class="card p-4 kpi"><div class="small text-slate-500">Caja neta</div><div id="dCaja" class="text-2xl font-bold money">$0</div></div>
+  <div class="card p-4 kpi"><div class="small text-slate-500">En taller</div><div id="dTaller" class="text-2xl font-bold">0</div></div>
+  <div class="card p-4 kpi"><div class="small text-slate-500">Clientes</div><div id="dClientes" class="text-2xl font-bold">0</div></div>
+ </div>
+ <div class="grid lg:grid-cols-3 gap-4">
+  <div class="card p-4"><h3 class="font-semibold mb-3">⚠️ Alertas</h3><div id="alertas" class="space-y-2 text-sm"></div></div>
+  <div class="card p-4 lg:col-span-2"><h3 class="font-semibold mb-3">📈 Evolución de caja — últimos 14 días</h3><div class="h-64"><canvas id="chartDashboard"></canvas></div></div>
+ </div>
+ <div class="card p-4"><h3 class="font-semibold mb-3">🔔 Recordatorios próximos</h3><div id="recordatoriosDash" class="grid md:grid-cols-3 gap-3"></div></div>
+</section>
+
+<section id="taller" class="hidden space-y-5">
+ <div class="card p-5"><h2 class="text-xl font-bold mb-4">🛠️ Orden de Trabajo</h2>
+  <div class="grid md:grid-cols-3 gap-3">
+   <input id="otCliente" class="border p-2 rounded-lg" placeholder="Cliente">
+   <input id="otTelefono" class="border p-2 rounded-lg" placeholder="WhatsApp">
+   <input id="otBici" class="border p-2 rounded-lg" placeholder="Bicicleta">
+   <input id="otTrabajo" class="border p-2 rounded-lg md:col-span-2" placeholder="Trabajo solicitado">
+   <input id="otPresupuesto" type="number" class="border p-2 rounded-lg" placeholder="Presupuesto">
+   <input id="otSena" type="number" class="border p-2 rounded-lg" placeholder="Seña / anticipo">
+   <input id="otCosto" type="number" class="border p-2 rounded-lg" placeholder="Costo estimado de repuestos">
+   <select id="otEstado" class="border p-2 rounded-lg"><option>En taller</option><option>En proceso</option><option>Esperando repuestos</option><option>Lista</option><option>Entregada</option></select>
+   <input id="otFechaPromesa" type="date" class="border p-2 rounded-lg">
+  </div>
+  <div class="flex flex-wrap gap-2 mt-4"><button onclick="guardarOT()" class="bg-blue-600 text-white px-4 py-2 rounded-lg">💾 Guardar OT</button><button onclick="limpiarOT()" class="bg-slate-200 px-4 py-2 rounded-lg">Limpiar</button></div>
+ </div>
+ <div class="card p-4 overflow-x-auto"><div class="flex justify-between items-center mb-3"><h3 class="font-semibold">Órdenes de trabajo</h3><input id="buscarOT" oninput="renderOT()" class="border p-2 rounded-lg text-sm" placeholder="Buscar cliente/bici/trabajo"></div>
+ <table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2">OT</th><th class="p-2">Cliente</th><th class="p-2">Bici / trabajo</th><th class="p-2">Presupuesto</th><th class="p-2">Seña</th><th class="p-2">Estado</th><th class="p-2">Saldo</th><th class="p-2">A cobrar</th><th class="p-2">Acciones</th></tr></thead><tbody id="tablaOT"></tbody></table></div>
+</section>
+
+<section id="ventas" class="hidden space-y-5">
+ <div class="card p-5"><h2 class="text-xl font-bold mb-4">🛒 Nueva venta</h2>
+  <div class="grid md:grid-cols-4 gap-3">
+   <input id="vCliente" class="border p-2 rounded-lg" placeholder="Cliente">
+   <input id="vTelefono" class="border p-2 rounded-lg" placeholder="WhatsApp">
+   <input id="vProducto" class="border p-2 rounded-lg" placeholder="Producto / servicio">
+   <input id="vCosto" type="number" class="border p-2 rounded-lg" placeholder="Costo">
+   <input id="vPrecio" type="number" class="border p-2 rounded-lg" placeholder="Precio de venta">
+   <input id="vCantidad" type="number" value="1" min="1" class="border p-2 rounded-lg" placeholder="Cantidad">
+   <select id="vMedio" class="border p-2 rounded-lg"><option>Efectivo</option><option>Transferencia</option><option>Débito</option><option>Crédito</option><option>Mercado Pago</option><option>Otro</option></select>
+   <input id="vNotas" class="border p-2 rounded-lg" placeholder="Notas">
+  </div>
+  <button onclick="guardarVenta()" class="mt-4 bg-emerald-600 text-white px-4 py-2 rounded-lg">💰 Registrar venta</button>
+ </div>
+ <div class="card p-4 overflow-x-auto"><h3 class="font-semibold mb-3">Ventas</h3><table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2">Fecha</th><th class="p-2">Cliente</th><th class="p-2">Producto</th><th class="p-2">Cantidad</th><th class="p-2">Venta</th><th class="p-2">Costo</th><th class="p-2">Ganancia</th><th class="p-2">Margen</th><th class="p-2">Acciones</th></tr></thead><tbody id="tablaVentas"></tbody></table></div>
+</section>
+
+<section id="caja" class="hidden space-y-5">
+ <div class="card p-5">
+  <div class="flex flex-col md:flex-row justify-between gap-3 items-start md:items-center">
+   <div><h2 class="text-xl font-bold">💰 Caja y Finanzas</h2><p class="text-sm text-slate-500">Ingresos, egresos, medios de pago, transferencias y arqueos.</p></div>
+   <div class="flex flex-wrap gap-2"><button onclick="abrirGestionConceptos()" class="bg-slate-700 text-white px-3 py-2 rounded-lg text-sm">⚙️ Conceptos</button><button onclick="abrirArqueo()" class="bg-slate-800 text-white px-4 py-2 rounded-lg">🧾 Arqueo de caja</button></div>
+  </div>
+  <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-4">
+   <div class="bg-emerald-50 p-3 rounded-lg"><span class="small">Entradas</span><div id="cEntradas" class="font-bold text-emerald-700">$0</div></div>
+   <div class="bg-rose-50 p-3 rounded-lg"><span class="small">Salidas</span><div id="cSalidas" class="font-bold text-rose-700">$0</div></div>
+   <div class="bg-blue-50 p-3 rounded-lg"><span class="small">Neto</span><div id="cNeto" class="font-bold text-blue-700">$0</div></div>
+   <div class="bg-amber-50 p-3 rounded-lg"><span class="small">Efectivo</span><div id="cEfectivo" class="font-bold">$0</div></div>
+   <div class="bg-violet-50 p-3 rounded-lg"><span class="small">Transferencias</span><div id="cTransfer" class="font-bold">$0</div></div>
+  </div>
+  <div class="grid md:grid-cols-5 gap-2 mt-4">
+   <select id="mTipo" onchange="actualizarSelectConceptos()" class="border p-2 rounded-lg"><option>Entrada</option><option>Salida</option></select>
+   <select id="mConcepto" class="border p-2 rounded-lg"></select>
+   <select id="mMedio" class="border p-2 rounded-lg"><option>Efectivo</option><option>Transferencia</option><option>Débito</option><option>Crédito</option><option>Mercado Pago</option><option>Otro</option></select>
+   <input id="mMonto" type="number" class="border p-2 rounded-lg" placeholder="Monto">
+   <input id="mDescripcion" class="border p-2 rounded-lg" placeholder="Detalle">
+  </div>
+  <button onclick="guardarMovimiento()" class="mt-3 bg-emerald-600 text-white px-4 py-2 rounded-lg">➕ Agregar movimiento</button>
+ </div>
+ <div class="card p-4 overflow-x-auto"><div class="flex flex-wrap gap-2 justify-between mb-3"><h3 class="font-semibold">Movimientos</h3><div class="flex gap-2"><input id="fCaja" oninput="renderCaja()" class="border p-2 rounded-lg text-sm" placeholder="Buscar"><select id="ftCaja" onchange="renderCaja()" class="border p-2 rounded-lg text-sm"><option>Todos</option><option>Entrada</option><option>Salida</option></select></div></div>
+ <table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2">Fecha</th><th class="p-2">Tipo</th><th class="p-2">Concepto</th><th class="p-2">Medio</th><th class="p-2">Detalle</th><th class="p-2">Monto</th><th class="p-2">Acciones</th></tr></thead><tbody id="tablaCaja"></tbody></table></div>
+ <div class="card p-4"><h3 class="font-semibold mb-3">🧾 Últimos arqueos</h3><div id="listaArqueos"></div></div>
+</section>
+
+<section id="crm" class="hidden space-y-5">
+ <div class="card p-5"><h2 class="text-xl font-bold mb-4">👥 CRM comercial</h2>
+  <div class="grid md:grid-cols-4 gap-3">
+   <input id="cliNombre" class="border p-2 rounded-lg" placeholder="Nombre y apellido">
+   <input id="cliTel" class="border p-2 rounded-lg" placeholder="WhatsApp">
+   <input id="cliEmail" class="border p-2 rounded-lg" placeholder="Email">
+   <input id="cliDireccion" class="border p-2 rounded-lg" placeholder="Dirección">
+   <select id="cliSegmento" class="border p-2 rounded-lg"><option>Nuevo</option><option>Frecuente</option><option>Inactivo</option><option>VIP</option></select>
+   <input id="cliNotas" class="border p-2 rounded-lg md:col-span-2" placeholder="Notas / intereses">
+  </div><button onclick="guardarCliente()" class="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg">💾 Guardar cliente</button>
+ </div>
+ <div class="card p-4 overflow-x-auto"><div class="flex justify-between mb-3"><h3 class="font-semibold">Base de clientes</h3><input id="buscarCli" oninput="renderCRM()" class="border p-2 rounded-lg text-sm" placeholder="Buscar"></div>
+ <table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2">Cliente</th><th class="p-2">WhatsApp</th><th class="p-2">Segmento</th><th class="p-2">Compras</th><th class="p-2">Gastado</th><th class="p-2">Última actividad</th><th class="p-2">Acciones</th></tr></thead><tbody id="tablaCRM"></tbody></table></div>
+</section>
+
+<section id="stock" class="hidden space-y-5">
+ <div class="card p-5"><h2 class="text-xl font-bold mb-4">📦 Stock</h2><div class="grid md:grid-cols-4 gap-3">
+ <input id="sMarca" class="border p-2 rounded-lg" placeholder="Marca"><input id="sModelo" class="border p-2 rounded-lg" placeholder="Modelo / producto"><input id="sColor" class="border p-2 rounded-lg" placeholder="Color / talle"><input id="sPrecio" type="number" class="border p-2 rounded-lg" placeholder="Precio venta"><input id="sCosto" type="number" class="border p-2 rounded-lg" placeholder="Costo"><input id="sCantidad" type="number" value="1" class="border p-2 rounded-lg" placeholder="Unidades">
+ </div><button onclick="guardarStock()" class="mt-3 bg-emerald-600 text-white px-4 py-2 rounded-lg">➕ Agregar stock</button></div>
+ <div class="card p-4 overflow-x-auto"><table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2">Producto</th><th class="p-2">Variante</th><th class="p-2">Stock</th><th class="p-2">Costo</th><th class="p-2">Precio</th><th class="p-2">Margen</th><th class="p-2">Acciones</th></tr></thead><tbody id="tablaStock"></tbody></table></div>
+</section>
+
+<section id="compras" class="hidden space-y-5">
+ <div class="card p-5">
+  <div class="flex flex-col md:flex-row justify-between gap-3 items-start md:items-center mb-4">
+   <h2 class="text-xl font-bold">🚚 Proveedores y compras</h2>
+   <button onclick="abrirGestionProveedores()" class="bg-slate-700 text-white px-3 py-2 rounded-lg text-sm">⚙️ Gestionar proveedores</button>
+  </div>
+  <div class="grid md:grid-cols-4 gap-3">
+   <select id="pNombreSelect" class="border p-2 rounded-lg"></select>
+   <input id="pProducto" class="border p-2 rounded-lg" placeholder="Producto">
+   <input id="pCantidad" type="number" class="border p-2 rounded-lg" placeholder="Cantidad">
+   <input id="pCosto" type="number" class="border p-2 rounded-lg" placeholder="Costo unitario">
+   <select id="pMedio" class="border p-2 rounded-lg"><option>Efectivo</option><option>Transferencia</option><option>Crédito proveedor</option><option>Otro</option></select>
+  </div>
+  <button onclick="guardarCompra()" class="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg">🧾 Registrar compra</button>
+ </div>
+ <div class="grid md:grid-cols-2 gap-4">
+  <div class="card p-4"><h3 class="font-semibold mb-3">Proveedores</h3><div id="listaProveedores"></div></div>
+  <div class="card p-4"><h3 class="font-semibold mb-3">Compras recientes</h3><div id="listaCompras"></div></div>
+ </div>
+</section>
+
+<section id="reportes" class="hidden space-y-5">
+ <div class="card p-5"><div class="flex flex-wrap gap-2 items-center justify-between"><h2 class="text-xl font-bold">📊 Reportes y análisis</h2><div class="flex flex-wrap gap-2"><button onclick="periodo('hoy')" class="bg-slate-200 px-3 py-2 rounded">Hoy</button><button onclick="periodo('semana')" class="bg-slate-200 px-3 py-2 rounded">Semana</button><button onclick="periodo('mes')" class="bg-slate-200 px-3 py-2 rounded">Mes</button><button onclick="periodo('anio')" class="bg-slate-200 px-3 py-2 rounded">Año</button><button onclick="periodo('todo')" class="bg-slate-200 px-3 py-2 rounded">Todo</button></div></div>
+ <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+  <div class="card p-3"><span class="small">Facturación (ventas + taller)</span><div id="rFact" class="text-xl font-bold">$0</div></div>
+  <div class="card p-3"><span class="small">Costo de ventas</span><div id="rCosto" class="text-xl font-bold">$0</div></div>
+  <div class="card p-3"><span class="small">Ganancia bruta</span><div id="rGanancia" class="text-xl font-bold text-emerald-600">$0</div></div>
+  <div class="card p-3"><span class="small">Margen bruto</span><div id="rMargen" class="text-xl font-bold text-blue-600">0%</div></div>
+ </div>
+ <div class="grid md:grid-cols-2 gap-3">
+  <div class="card p-3 bg-rose-50"><span class="small text-rose-700">Total Gastado en Proveedores (Compras)</span><div id="rTotalCompras" class="text-xl font-bold text-rose-800">$0</div></div>
+  <div class="card p-3 bg-emerald-50"><span class="small text-emerald-700">Resultado Neto (Ganancia Bruta - Gastos prov.)</span><div id="rResultadoNeto" class="text-xl font-bold text-emerald-800">$0</div></div>
+ </div>
+ <div class="grid lg:grid-cols-2 gap-4"><div class="card p-4"><h3 class="font-semibold mb-3">Ingresos / egresos por período</h3><div class="h-72"><canvas id="chartFin"></canvas></div></div><div class="card p-4"><h3 class="font-semibold mb-3">Ventas por concepto</h3><div class="h-72"><canvas id="chartConcept"></canvas></div></div></div>
+ <div class="grid lg:grid-cols-3 gap-4">
+  <div class="card p-4"><h3 class="font-semibold mb-3">💳 Por medio de pago</h3><div id="reporteMedios"></div></div>
+  <div class="card p-4"><h3 class="font-semibold mb-3">🚚 Gastos por proveedor</h3><div id="reporteProveedores" class="max-h-72 overflow-auto"></div></div>
+  <div class="card p-4"><h3 class="font-semibold mb-3">📅 Resumen por día</h3><div id="reporteDias" class="max-h-72 overflow-auto"></div></div>
+ </div>
+ <div class="flex gap-2"><button onclick="exportExcel()" class="bg-emerald-700 text-white px-4 py-2 rounded">📥 Excel</button><button onclick="exportPDF()" class="bg-rose-700 text-white px-4 py-2 rounded">📄 PDF</button></div>
+</section>
+</main>
+
+<div id="modal" class="fixed inset-0 hidden items-center justify-center modal z-50 p-4"><div class="bg-white rounded-xl max-w-lg w-full p-5 shadow-2xl max-h-[90vh] overflow-y-auto"><div class="flex justify-between"><h3 id="modalTitle" class="font-bold text-lg">Formulario</h3><button onclick="cerrarModal()">✕</button></div><div id="modalBody" class="mt-4"></div></div></div>
+
+<script>
+const SUPABASE_URL='https://twezzstssnjrrnrzwdkv.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3ZXp6c3Rzc25qcnJucnp3ZGt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyMDExMjIsImV4cCI6MjEwMzc3NzEyMn0.nWtJHz6rPMoC9G70tIYBtgLBxPj8WI6snelIOZTR4V0';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const KEY='abasto_v2_';
+let state={
+ movimientos:[], ventas:[], clientes:[], ots:[], stock:[], compras:[], proveedores:[], arqueos:[], recordatorios:[],
+ conceptosEntrada:['Venta','Reparaciones','Seña taller','General','Otro'],
+ conceptosSalida:['Compra a proveedores','Alquiler','Servicios','Sueldos','General','Otro']
+};
+let chartFin=null,chartConcept=null,chartDash=null, periodoActual='mes';
+
+function load(){
+ for(const k in state){
+  try{
+   const val=JSON.parse(localStorage.getItem(KEY+k));
+   if(val!==null) state[k]=val;
+  }catch{}
+ }
+}
+function save(k){localStorage.setItem(KEY+k,JSON.stringify(state[k]))}
+function id(){return Date.now()+Math.floor(Math.random()*999)}
+function money(n){return '$'+Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function fecha(x){return new Date(x).toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'})}
+function isoDate(x){return new Date(x).toISOString().slice(0,10)}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function tab(t){document.querySelectorAll('main>section').forEach(s=>s.classList.add('hidden'));document.getElementById(t).classList.remove('hidden');document.querySelectorAll('.tab').forEach(b=>b.classList.remove('tab-active'));document.getElementById('t-'+t).classList.add('tab-active');refresh()}
+function reloj(){document.getElementById('reloj').textContent=new Intl.DateTimeFormat('es-AR',{timeZone:'America/Argentina/Buenos_Aires',dateStyle:'short',timeStyle:'medium',hour12:false}).format(new Date())}
+setInterval(reloj,1000);
+
+async function syncLegacy(){
+ try{
+  const {data}=await sb.from('caja').select('*').order('id',{ascending:false}).limit(1000);
+  if(data?.length){const existing=new Set(state.movimientos.map(x=>String(x.legacy_id||'')));data.forEach(x=>{if(!existing.has(String(x.id)))state.movimientos.push({id:'legacy_'+x.id,legacy_id:x.id,fecha:x.fecha||new Date().toISOString(),tipo:x.tipo||'Entrada',concepto:x.concepto||x.categoria||'General',medio:x.medio_pago||'Efectivo',monto:Number(x.monto)||0,descripcion:x.descripcion||''})});save('movimientos')}
+ }catch(e){}
+ try{
+  const {data}=await sb.from('clientes').select('*').order('id',{ascending:false}).limit(1000);
+  if(data?.length){const tel=new Set(state.clientes.map(x=>x.telefono).filter(Boolean));data.forEach(x=>{if(x.telefono&&!tel.has(x.telefono))state.clientes.push({id:'legacy_'+x.id,nombre:x.nombre||'',telefono:x.telefono||'',email:x.email||'',direccion:x.direccion||'',segmento:'Nuevo',notas:'',fecha:x.created_at||new Date().toISOString()})});save('clientes')}
+ }catch(e){}
+ try{
+  const {data}=await sb.from('taller').select('*').order('id',{ascending:false}).limit(1000);
+  if(data?.length){const ids=new Set(state.ots.map(x=>String(x.legacy_id||'')));data.forEach(x=>{if(!ids.has(String(x.id)))state.ots.push({id:'legacy_'+x.id,legacy_id:x.id,fecha:x.created_at||new Date().toISOString(),cliente:x.cliente,telefono:x.telefono,bici:x.bicicleta,trabajo:x.trabajo,presupuesto:Number(x.presupuesto)||0,sena:Number(x.sena)||0,costo:Number(x.costo)||0,estado:x.estado||'En taller',promesa:''})});save('ots')}
+ }catch(e){}
+ try{
+  const {data}=await sb.from('inventario_bicicletas').select('*').order('id',{ascending:false}).limit(1000);
+  if(data?.length){const ids=new Set(state.stock.map(x=>String(x.legacy_id||'')));data.forEach(x=>{if(!ids.has(String(x.id)))state.stock.push({id:'legacy_'+x.id,legacy_id:x.id,marca:x.marca||'',modelo:x.modelo||'',variante:(x.color||'')+' / '+(x.talle||''),precio:Number(x.precio)||0,costo:0,cantidad:Number(x.stock)||0})});save('stock')}
+ }catch(e){}
+}
+
+function refresh(){
+ renderOT(); renderCaja(); renderCRM(); renderStock(); renderCompras(); renderVentas(); renderArqueos(); dashboard(); reportes(); actualizarSelectConceptos(); actualizarSelectProveedores();
+}
+
+function abrirModal(title,body){document.getElementById('modalTitle').textContent=title;document.getElementById('modalBody').innerHTML=body;document.getElementById('modal').classList.remove('hidden');document.getElementById('modal').classList.add('flex')}
+function cerrarModal(){document.getElementById('modal').classList.add('hidden');document.getElementById('modal').classList.remove('flex')}
+
+/* --- TALLER --- */
+function guardarOT(){
+ const o={id:id(),fecha:new Date().toISOString(),cliente:otCliente.value.trim(),telefono:otTelefono.value.trim(),bici:otBici.value.trim(),trabajo:otTrabajo.value.trim(),presupuesto:+otPresupuesto.value||0,sena:+otSena.value||0,costo:+otCosto.value||0,estado:otEstado.value,promesa:otFechaPromesa.value};
+ if(!o.cliente||!o.bici||!o.trabajo)return alert('Completa cliente, bicicleta y trabajo.');
+ state.ots.unshift(o);save('ots');
+ if(o.sena>0) agregarMovInterno('Entrada','Seña taller','Efectivo',o.sena,'Seña OT #'+o.id);
+ const c=state.clientes.find(x=>x.telefono&&x.telefono===o.telefono);if(!c)state.clientes.push({id:id(),nombre:o.cliente,telefono:o.telefono,email:'',direccion:'',segmento:'Nuevo',notas:'Cliente de taller',fecha:new Date().toISOString()});save('clientes');
+ limpiarOT();refresh();alert('OT registrada.');
+}
+function limpiarOT(){['otCliente','otTelefono','otBici','otTrabajo','otPresupuesto','otSena','otCosto','otFechaPromesa'].forEach(x=>document.getElementById(x).value='');otEstado.value='En taller'}
+function renderOT(){
+ const q=(document.getElementById('buscarOT')?.value||'').toLowerCase();
+ const rows=state.ots.filter(o=>(o.cliente+' '+o.bici+' '+o.trabajo).toLowerCase().includes(q));
+ tablaOT.innerHTML=rows.map(o=>{
+  const saldo=Math.max(0,(o.presupuesto||0)-(o.sena||0));
+  const lista=(o.estado==='Lista'||o.estado==='Entregada');
+  const montoCobrar=(o.montoCobrar!=null?o.montoCobrar:saldo);
+  return `<tr class="border-b"><td class="p-2 font-semibold">#${String(o.id).slice(-6)}</td><td class="p-2">${esc(o.cliente)}<br><span class="small">${esc(o.telefono)}</span></td><td class="p-2">${esc(o.bici)}<br><span class="small">${esc(o.trabajo)}</span></td><td class="p-2">${money(o.presupuesto)}</td><td class="p-2">${money(o.sena)}</td><td class="p-2"><select onchange="cambiarOT('${o.id}',this.value)" class="border rounded p-1"><option ${o.estado==='En taller'?'selected':''}>En taller</option><option ${o.estado==='En proceso'?'selected':''}>En proceso</option><option ${o.estado==='Esperando repuestos'?'selected':''}>Esperando repuestos</option><option ${o.estado==='Lista'?'selected':''}>Lista</option><option ${o.estado==='Entregada'?'selected':''}>Entregada</option></select></td><td class="p-2 font-semibold">${money(saldo)}</td><td class="p-2"><input type="number" class="border rounded p-1 w-24 ${lista?'':'bg-slate-100 text-slate-400'}" ${lista?'':'disabled'} value="${montoCobrar}" title="${lista?'Monto a cobrar al entregar':'Se habilita cuando la bici está Lista'}" onchange="setMontoCobrar('${o.id}',this.value)"></td><td class="p-2 flex gap-1 flex-wrap"><button onclick="editarOT('${o.id}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs" title="Modificar datos">✏️</button><button onclick="otWhatsApp('${o.id}')" class="bg-green-600 text-white px-2 py-1 rounded text-xs" title="Enviar WhatsApp al cliente">💬</button><button onclick="reciboOT('${o.id}')" class="bg-purple-600 text-white px-2 py-1 rounded text-xs" title="Generar recibo y enviar WhatsApp">🧾</button><button onclick="cobrarOT('${o.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">Cobrar</button><button onclick="borrar('ots','${o.id}')" class="text-rose-600">🗑️</button></td></tr>`
+ }).join('')||'<tr><td colspan="9" class="p-4 text-center text-slate-400">Sin órdenes.</td></tr>';
+}
+function setMontoCobrar(i,v){const o=state.ots.find(x=>String(x.id)===String(i));if(!o)return;o.montoCobrar=Math.max(0,+v||0);save('ots')}
+function cambiarOT(i,e){const o=state.ots.find(x=>String(x.id)===String(i));if(o){o.estado=e;if((e==='Lista'||e==='Entregada')&&o.montoCobrar==null){o.montoCobrar=Math.max(0,(o.presupuesto||0)-(o.sena||0))}save('ots');renderOT();dashboard()}}
+function otWhatsApp(i){
+ const o=state.ots.find(x=>String(x.id)===String(i));if(!o)return;
+ if(!o.telefono)return alert('Este cliente no tiene WhatsApp cargado.');
+ const saldo=Math.max(0,(o.presupuesto||0)-(o.sena||0));
+ const montoCobrar=(o.montoCobrar!=null?o.montoCobrar:saldo);
+ let msg;
+ if(o.estado==='Lista'){
+  msg=`Hola ${o.cliente}! 🚲 Te contamos que tu bicicleta (${o.bici}) ya está lista para retirar.\n\n🔧 Trabajo realizado: ${o.trabajo}\n💰 Monto a abonar al retirar: ${money(montoCobrar)}\n\n¡Te esperamos! - Bicicletería del Abasto`;
+ }else if(o.estado==='Entregada'){
+  msg=`Hola ${o.cliente}! Gracias por confiar en Bicicletería del Abasto para el service de tu ${o.bici}. Cualquier consulta, escribinos. 🚲`;
+ }else{
+  msg=`Hola ${o.cliente}! Te escribimos por tu bicicleta (${o.bici}) que está en nuestro taller. Estado actual: ${o.estado}. Trabajo: ${o.trabajo}. Ante cualquier consulta, quedamos a disposición. - Bicicletería del Abasto`;
+ }
+ window.open('https://wa.me/549'+o.telefono.replace(/\D/g,'')+'?text='+encodeURIComponent(msg),'_blank');
+}
+
+function editarOT(i){
+ const o=state.ots.find(x=>String(x.id)===String(i)); if(!o)return;
+ const body=`<div class="space-y-3">
+  <div><label class="small text-slate-500">Cliente</label><input id="editOtCliente" class="border p-2 rounded w-full" value="${esc(o.cliente)}"></div>
+  <div><label class="small text-slate-500">Teléfono / WhatsApp</label><input id="editOtTel" class="border p-2 rounded w-full" value="${esc(o.telefono)}"></div>
+  <div><label class="small text-slate-500">Bicicleta</label><input id="editOtBici" class="border p-2 rounded w-full" value="${esc(o.bici)}"></div>
+  <div><label class="small text-slate-500">Trabajo solicitado</label><input id="editOtTrabajo" class="border p-2 rounded w-full" value="${esc(o.trabajo)}"></div>
+  <div class="grid grid-cols-2 gap-2">
+   <div><label class="small text-slate-500">Presupuesto</label><input id="editOtPres" type="number" class="border p-2 rounded w-full" value="${o.presupuesto||0}"></div>
+   <div><label class="small text-slate-500">Seña / Anticipo</label><input id="editOtSena" type="number" class="border p-2 rounded w-full" value="${o.sena||0}"></div>
+  </div>
+  <div><label class="small text-slate-500">Estado</label><select id="editOtEstado" class="border p-2 rounded w-full"><option ${o.estado==='En taller'?'selected':''}>En taller</option><option ${o.estado==='En proceso'?'selected':''}>En proceso</option><option ${o.estado==='Esperando repuestos'?'selected':''}>Esperando repuestos</option><option ${o.estado==='Lista'?'selected':''}>Lista</option><option ${o.estado==='Entregada'?'selected':''}>Entregada</option></select></div>
+  <button onclick="guardarEdicionOT('${o.id}')" class="bg-blue-600 text-white px-4 py-2 rounded w-full font-semibold">Guardar cambios</button>
+ </div>`;
+ abrirModal('Modificar Orden de Trabajo #' + String(o.id).slice(-6), body);
+}
+function guardarEdicionOT(i){
+ const o=state.ots.find(x=>String(x.id)===String(i)); if(!o)return;
+ o.cliente=document.getElementById('editOtCliente').value.trim();
+ o.telefono=document.getElementById('editOtTel').value.trim();
+ o.bici=document.getElementById('editOtBici').value.trim();
+ o.trabajo=document.getElementById('editOtTrabajo').value.trim();
+ o.presupuesto=+document.getElementById('editOtPres').value||0;
+ o.sena=+document.getElementById('editOtSena').value||0;
+ o.estado=document.getElementById('editOtEstado').value;
+ save('ots'); cerrarModal(); refresh(); alert('Orden actualizada correctamente.');
+}
+
+function reciboOT(i){
+ const o=state.ots.find(x=>String(x.id)===String(i)); if(!o)return;
+ const saldo=Math.max(0,(o.presupuesto||0)-(o.sena||0));
+ const textoWP=`🚲 *BICICLETERÍA DEL ABASTO* \n*Comprobante de Taller / Orden #${String(o.id).slice(-6)}*\n\n📅 Fecha: ${fecha(o.fecha)}\n👤 Cliente: ${o.cliente}\n🚲 Bicicleta: ${o.bici}\n🔧 Trabajo: ${o.trabajo}\n💼 Estado: ${o.estado}\n\n💰 Presupuesto: ${money(o.presupuesto)}\n💵 Seña abonada: ${money(o.sena)}\n📌 *Saldo pendiente: ${money(saldo)}*\n\n¡Gracias por confiar en nosotros!`;
+ 
+ const body=`<div class="space-y-4">
+  <div class="p-4 bg-slate-50 border rounded-lg font-mono text-xs whitespace-pre-line leading-relaxed">${textoWP}</div>
+  <div class="flex gap-2">
+   <a href="https://wa.me/549${(o.telefono||'').replace(/\D/g,'')}?text=${encodeURIComponent(textoWP)}" target="_blank" class="bg-emerald-600 text-white px-4 py-2 rounded text-center flex-1 font-semibold">📲 Enviar por WhatsApp</a>
+   <button onclick="cerrarModal()" class="bg-slate-200 px-4 py-2 rounded">Cerrar</button>
+  </div>
+ </div>`;
+ abrirModal('Comprobante de Orden #' + String(o.id).slice(-6), body);
+}
+
+function cobrarOT(i){
+ const o=state.ots.find(x=>String(x.id)===String(i));if(!o)return;
+ const saldo=Math.max(0,(o.presupuesto||0)-(o.sena||0));
+ const lista=(o.estado==='Lista'||o.estado==='Entregada');
+ const sugerido=lista&&o.montoCobrar!=null?o.montoCobrar:saldo;
+ const m=+prompt('Monto a cobrar',sugerido)||0;if(m<=0)return;
+ agregarMovInterno('Entrada','Reparaciones','Efectivo',m,'Cobro OT #'+String(i).slice(-6));
+ o.sena=(o.sena||0)+m; o.estado='Entregada'; o.montoCobrar=0; save('ots'); refresh();
+}
+
+/* --- CAJA & CONCEPTOS --- */
+function actualizarSelectConceptos(){
+ const tipo=document.getElementById('mTipo')?.value || 'Entrada';
+ const sel=document.getElementById('mConcepto'); if(!sel)return;
+ const lista=(tipo==='Entrada'?state.conceptosEntrada:state.conceptosSalida);
+ sel.innerHTML=lista.map(c=>`<option>${c}</option>`).join('');
+}
+function abrirGestionConceptos(){
+ const body=`<div class="space-y-4">
+  <p class="text-sm text-slate-500">Agrega o elimina conceptos personalizados para ingresos y egresos.</p>
+  <div class="grid grid-cols-2 gap-4">
+   <div>
+    <h4 class="font-semibold text-sm mb-2 text-emerald-700">Conceptos de Entrada</h4>
+    <div id="listaCEnt" class="space-y-1 mb-2 max-h-40 overflow-auto"></div>
+    <div class="flex gap-1"><input id="nuevoCEnt" class="border p-1 rounded text-sm flex-1" placeholder="Nuevo..."><button onclick="addConcepto('Entrada')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">+</button></div>
+   </div>
+   <div>
+    <h4 class="font-semibold text-sm mb-2 text-rose-700">Conceptos de Salida</h4>
+    <div id="listaCSal" class="space-y-1 mb-2 max-h-40 overflow-auto"></div>
+    <div class="flex gap-1"><input id="nuevoCSal" class="border p-1 rounded text-sm flex-1" placeholder="Nuevo..."><button onclick="addConcepto('Salida')" class="bg-rose-600 text-white px-2 py-1 rounded text-xs">+</button></div>
+   </div>
+  </div>
+  <button onclick="cerrarModal(); refresh();" class="bg-slate-800 text-white px-4 py-2 rounded w-full">Listo</button>
+ </div>`;
+ abrirModal('⚙️ Gestionar Conceptos de Caja', body);
+ renderListasConceptosModal();
+}
+function renderListasConceptosModal(){
+ const le=document.getElementById('listaCEnt'), ls=document.getElementById('listaCSal');
+ if(le) le.innerHTML=state.conceptosEntrada.map((c,idx)=>`<div class="flex justify-between items-center text-sm border-b py-1"><span>${c}</span>${idx>0?`<button onclick="delConcepto('Entrada',${idx})" class="text-rose-600 text-xs">✕</button>`:''}</div>`).join('');
+ if(ls) ls.innerHTML=state.conceptosSalida.map((c,idx)=>`<div class="flex justify-between items-center text-sm border-b py-1"><span>${c}</span>${idx>0?`<button onclick="delConcepto('Salida',${idx})" class="text-rose-600 text-xs">✕</button>`:''}</div>`).join('');
+}
+function addConcepto(tipo){
+ const input=document.getElementById(tipo==='Entrada'?'nuevoCEnt':'nuevoCSal');
+ const val=input?.value.trim(); if(!val)return;
+ if(tipo==='Entrada') state.conceptosEntrada.push(val); else state.conceptosSalida.push(val);
+ save(tipo==='Entrada'?'conceptosEntrada':'conceptosSalida');
+ input.value=''; renderListasConceptosModal(); actualizarSelectConceptos();
+}
+function delConcepto(tipo,idx){
+ if(tipo==='Entrada') state.conceptosEntrada.splice(idx,1); else state.conceptosSalida.splice(idx,1);
+ save(tipo==='Entrada'?'conceptosEntrada':'conceptosSalida');
+ renderListasConceptosModal(); actualizarSelectConceptos();
+}
+
+function agregarMovInterno(tipo,concepto,medio,monto,descripcion){state.movimientos.unshift({id:id(),fecha:new Date().toISOString(),tipo,concepto,medio,monto:Number(monto),descripcion});save('movimientos')}
+function guardarMovimiento(){const m=+mMonto.value;if(m<=0)return alert('Monto inválido.');agregarMovInterno(mTipo.value,mConcepto.value,mMedio.value,m,mDescripcion.value.trim());mMonto.value='';mDescripcion.value='';refresh()}
+function abrirMovimiento(){tab('caja');setTimeout(()=>mMonto.focus(),100)}
+function editarMov(i){const m=state.movimientos.find(x=>String(x.id)===String(i));if(!m)return;const body=`<div class="space-y-3"><select id="emTipo" class="border p-2 rounded w-full"><option ${m.tipo==='Entrada'?'selected':''}>Entrada</option><option ${m.tipo==='Salida'?'selected':''}>Salida</option></select><input id="emConc" class="border p-2 rounded w-full" value="${esc(m.concepto)}"><select id="emMedio" class="border p-2 rounded w-full">${['Efectivo','Transferencia','Débito','Crédito','Mercado Pago','Otro'].map(x=>`<option ${x===m.medio?'selected':''}>${x}</option>`).join('')}</select><input id="emMonto" type="number" class="border p-2 rounded w-full" value="${m.monto}"><textarea id="emDesc" class="border p-2 rounded w-full">${esc(m.descripcion)}</textarea><button onclick="guardarEdMov('${m.id}')" class="bg-blue-600 text-white px-4 py-2 rounded">Guardar cambios</button></div>`;abrirModal('Modificar movimiento',body)}
+function guardarEdMov(i){const m=state.movimientos.find(x=>String(x.id)===String(i));if(!m)return;m.tipo=emTipo.value;m.concepto=emConc.value;m.medio=emMedio.value;m.monto=+emMonto.value;m.descripcion=emDesc.value;save('movimientos');cerrarModal();refresh()}
+function renderCaja(){const q=(document.getElementById('fCaja')?.value||'').toLowerCase(),t=document.getElementById('ftCaja')?.value||'Todos';let a=state.movimientos.filter(m=>(t==='Todos'||m.tipo===t)&&((m.concepto+' '+m.descripcion+' '+m.medio).toLowerCase().includes(q)));let en=0,sa=0,ef=0,tr=0;a.forEach(m=>{if(m.tipo==='Entrada')en+=m.monto;else sa+=m.monto;if(m.medio==='Efectivo')ef+=(m.tipo==='Entrada'?m.monto:-m.monto);if(m.medio==='Transferencia')tr+=(m.tipo==='Entrada'?m.monto:-m.monto)});cEntradas.textContent=money(en);cSalidas.textContent=money(sa);cNeto.textContent=money(en-sa);cEfectivo.textContent=money(ef);cTransfer.textContent=money(tr);tablaCaja.innerHTML=a.map(m=>`<tr class="border-b"><td class="p-2 small">${fecha(m.fecha)}</td><td class="p-2 ${m.tipo==='Entrada'?'text-emerald-600':'text-rose-600'} font-semibold">${m.tipo}</td><td class="p-2">${esc(m.concepto)}</td><td class="p-2">${esc(m.medio)}</td><td class="p-2">${esc(m.descripcion)}</td><td class="p-2 font-bold">${money(m.monto)}</td><td class="p-2"><button onclick="editarMov('${m.id}')" class="text-blue-600">✏️</button> <button onclick="borrar('movimientos','${m.id}')" class="text-rose-600">🗑️</button></td></tr>`).join('')||'<tr><td colspan="7" class="p-4 text-center">Sin movimientos.</td></tr>'}
+function abrirArqueo(){const efectivo=state.movimientos.reduce((s,m)=>s+(m.medio==='Efectivo'?(m.tipo==='Entrada'?m.monto:-m.monto):0),0);abrirModal('🧾 Arqueo de caja',`<div class="space-y-3"><p>Saldo teórico de efectivo: <b>${money(efectivo)}</b></p><input id="arqueoReal" type="number" class="border p-2 rounded w-full" placeholder="Efectivo contado"><input id="arqueoObs" class="border p-2 rounded w-full" placeholder="Observaciones"><button onclick="guardarArqueo(${efectivo})" class="bg-slate-800 text-white px-4 py-2 rounded">Cerrar arqueo</button></div>`)}
+function guardarArqueo(teorico){const real=+arqueoReal.value||0;state.arqueos.unshift({id:id(),fecha:new Date().toISOString(),teorico,real,diferencia:real-teorico,obs:arqueoObs.value});save('arqueos');cerrarModal();renderArqueos()}
+function renderArqueos(){listaArqueos.innerHTML=state.arqueos.slice(0,10).map(a=>`<div class="border-b py-2 flex justify-between"><span>${fecha(a.fecha)}<br><span class="small">${esc(a.obs||'')}</span></span><span>Teórico ${money(a.teorico)} · Real ${money(a.real)} · <b class="${a.diferencia===0?'text-emerald-600':'text-rose-600'}">${money(a.diferencia)}</b></span></div>`).join('')||'<p class="text-slate-400">Todavía no hay arqueos.</p>'}
+
+/* --- CRM & HISTORIAL --- */
+function guardarCliente(){const c={id:id(),nombre:cliNombre.value.trim(),telefono:cliTel.value.trim(),email:cliEmail.value.trim(),direccion:cliDireccion.value.trim(),segmento:cliSegmento.value,notas:cliNotas.value.trim(),fecha:new Date().toISOString()};if(!c.nombre)return alert('Nombre obligatorio.');state.clientes.unshift(c);save('clientes');['cliNombre','cliTel','cliEmail','cliDireccion','cliNotas'].forEach(x=>document.getElementById(x).value='');refresh()}
+function renderCRM(){
+ const q=(buscarCli?.value||'').toLowerCase();
+ tablaCRM.innerHTML=state.clientes.filter(c=>(c.nombre+' '+c.telefono+' '+c.email).toLowerCase().includes(q)).map(c=>{
+  const vs=state.ventas.filter(v=>(c.telefono&&v.telefono===c.telefono)||(v.cliente&&v.cliente.toLowerCase()===c.nombre.toLowerCase()));
+  const ots=state.ots.filter(o=>(c.telefono&&o.telefono===c.telefono)||(o.cliente&&o.cliente.toLowerCase()===c.nombre.toLowerCase()));
+  const gVentas=vs.reduce((s,v)=>s+v.total,0);
+  const gTaller=ots.reduce((s,o)=>s+(o.sena||0),0);
+  const g=gVentas+gTaller;
+  const cantidadOps=vs.length+ots.length;
+  const last=[...vs,...ots].map(x=>x.fecha).sort().reverse()[0]||c.fecha;
+  return `<tr class="border-b"><td class="p-2 font-semibold">${esc(c.nombre)}<br><span class="small">${esc(c.email)}</span></td><td class="p-2"><a class="text-blue-600" target="_blank" href="https://wa.me/549${(c.telefono||'').replace(/\D/g,'')}">${esc(c.telefono||'-')}</a></td><td class="p-2">${esc(c.segmento)}</td><td class="p-2">${cantidadOps}</td><td class="p-2 font-semibold">${money(g)}</td><td class="p-2 small">${fecha(last)}</td><td class="p-2 flex gap-1"><button onclick="historialCliente('${c.id}')" class="bg-indigo-600 text-white px-2 py-1 rounded text-xs" title="Historial compras y service">📜</button><button onclick="crmWP('${c.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs" title="Recordar">💬</button><button onclick="borrar('clientes','${c.id}')" class="text-rose-600">🗑️</button></td></tr>`
+ }).join('')||'<tr><td colspan="7" class="p-4 text-center">Sin clientes.</td></tr>';
+}
+function historialCliente(i){
+ const c=state.clientes.find(x=>String(x.id)===String(i)); if(!c)return;
+ const vs=state.ventas.filter(v=>(c.telefono&&v.telefono===c.telefono)||(v.cliente&&v.cliente.toLowerCase()===c.nombre.toLowerCase()));
+ const ots=state.ots.filter(o=>(c.telefono&&o.telefono===c.telefono)||(o.cliente&&o.cliente.toLowerCase()===c.nombre.toLowerCase()));
+ const totalVentas=vs.reduce((s,v)=>s+v.total,0);
+ const totalTaller=ots.reduce((s,o)=>s+(o.sena||0),0);
+ const totalGastado=totalVentas+totalTaller;
+ 
+ let html=`<div class="space-y-4">
+  <div class="bg-slate-50 p-3 rounded-lg text-sm">
+   <p><b>Teléfono:</b> ${esc(c.telefono||'No especificado')}</p>
+   <p><b>Email:</b> ${esc(c.email||'No especificado')}</p>
+   <p><b>Total gastado (ventas + taller):</b> <span class="text-emerald-700 font-bold">${money(totalGastado)}</span></p>
+  </div>
+  <div>
+   <h4 class="font-semibold text-sm mb-2">🛒 Historial de Ventas / Compras (${vs.length})</h4>
+   <div class="space-y-1 max-h-40 overflow-auto text-xs">
+    ${vs.map(v=>`<div class="border-b py-1 flex justify-between"><span>${fecha(v.fecha)} - ${esc(v.producto)} (${v.cantidad} un.)</span><b class="money">${money(v.total)}</b></div>`).join('')||'<p class="text-slate-400">Sin compras registradas.</p>'}
+   </div>
+  </div>
+  <div>
+   <h4 class="font-semibold text-sm mb-2">🛠️ Historial de Taller / Services (${ots.length})</h4>
+   <div class="space-y-1 max-h-40 overflow-auto text-xs">
+    ${ots.map(o=>`<div class="border-b py-1 flex justify-between"><span>#${String(o.id).slice(-6)} - ${esc(o.bici)}: ${esc(o.trabajo)}</span><span class="font-semibold">${o.estado} (${money(o.presupuesto)})</span></div>`).join('')||'<p class="text-slate-400">Sin órdenes de taller registradas.</p>'}
+   </div>
+  </div>
+ </div>`;
+ abrirModal('Historial de ' + c.nombre, html);
+}
+function crmWP(i){const c=state.clientes.find(x=>String(x.id)===String(i));if(!c?.telefono)return;window.open('https://wa.me/549'+c.telefono.replace(/\D/g,'')+'?text='+encodeURIComponent(`Hola ${c.nombre}! Te escribimos de Bicicletería del Abasto. ¿Cómo estás? Si necesitás service o algún repuesto, estamos a disposición.`),'_blank')}
+
+/* --- STOCK --- */
+function guardarStock(){const x={id:id(),marca:sMarca.value.trim(),modelo:sModelo.value.trim(),variante:sColor.value.trim(),precio:+sPrecio.value||0,costo:+sCosto.value||0,cantidad:+sCantidad.value||0};if(!x.modelo)return alert('Producto obligatorio.');state.stock.unshift(x);save('stock');['sMarca','sModelo','sColor','sPrecio','sCosto'].forEach(y=>document.getElementById(y).value='');sCantidad.value=1;refresh()}
+function renderStock(){tablaStock.innerHTML=state.stock.map(x=>{const mg=x.precio?((x.precio-x.costo)/x.precio*100):0;return `<tr class="border-b"><td class="p-2 font-semibold">${esc(x.marca)} ${esc(x.modelo)}</td><td class="p-2">${esc(x.variante)}</td><td class="p-2">${x.cantidad}</td><td class="p-2">${money(x.costo)}</td><td class="p-2">${money(x.precio)}</td><td class="p-2">${mg.toFixed(1)}%</td><td class="p-2"><button onclick="venderStock('${x.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">Vender</button> <button onclick="borrar('stock','${x.id}')" class="text-rose-600">🗑️</button></td></tr>`}).join('')||'<tr><td colspan="7" class="p-4 text-center">Sin stock.</td></tr>'}
+function venderStock(i){const x=state.stock.find(s=>String(s.id)===String(i));if(!x||x.cantidad<=0)return;const c=prompt('Cliente (opcional)','');const medio=prompt('Medio de pago','Efectivo')||'Efectivo';const cant=+prompt('Cantidad',1)||1;if(cant>x.cantidad)return alert('Stock insuficiente.');x.cantidad-=cant;save('stock');const total=x.precio*cant,costo=x.costo*cant;state.ventas.unshift({id:id(),fecha:new Date().toISOString(),cliente:c||'Consumidor final',telefono:'',producto:x.marca+' '+x.modelo,total,costo,ganancia:total-costo,cantidad:cant,medio});save('ventas');agregarMovInterno('Entrada','Venta de productos',medio,total,'Venta '+x.modelo);refresh()}
+
+function guardarVenta(){const cantidad=+vCantidad.value||1,total=(+vPrecio.value||0)*cantidad,costo=(+vCosto.value||0)*cantidad;if(total<=0)return alert('Precio inválido.');const v={id:id(),fecha:new Date().toISOString(),cliente:vCliente.value.trim()||'Consumidor final',telefono:vTelefono.value.trim(),producto:vProducto.value.trim()||'Venta general',total,costo,ganancia:total-costo,cantidad,medio:vMedio.value,notas:vNotas.value.trim()};state.ventas.unshift(v);save('ventas');agregarMovInterno('Entrada','Venta',v.medio,total,v.producto+' - '+v.cliente);const c=state.clientes.find(x=>x.telefono&&x.telefono===v.telefono);if(v.telefono&&!c)state.clientes.unshift({id:id(),nombre:v.cliente,telefono:v.telefono,email:'',direccion:'',segmento:'Nuevo',notas:'',fecha:new Date().toISOString()});save('clientes');['vCliente','vTelefono','vProducto','vCosto','vPrecio','vNotas'].forEach(x=>document.getElementById(x).value='');vCantidad.value=1;refresh()}
+function renderVentas(){tablaVentas.innerHTML=state.ventas.map(v=>{const mg=v.total?((v.ganancia/v.total)*100):0;return `<tr class="border-b"><td class="p-2 small">${fecha(v.fecha)}</td><td class="p-2">${esc(v.cliente)}</td><td class="p-2">${esc(v.producto)}</td><td class="p-2">${v.cantidad}</td><td class="p-2">${money(v.total)}</td><td class="p-2">${money(v.costo)}</td><td class="p-2 text-emerald-600 font-semibold">${money(v.ganancia)}</td><td class="p-2">${mg.toFixed(1)}%</td><td class="p-2"><button onclick="borrar('ventas','${v.id}')" class="text-rose-600">🗑️</button></td></tr>`}).join('')||'<tr><td colspan="9" class="p-4 text-center">Sin ventas.</td></tr>'}
+
+/* --- COMPRAS & PROVEEDORES --- */
+function actualizarSelectProveedores(){
+ const sel=document.getElementById('pNombreSelect'); if(!sel)return;
+ if(state.proveedores.length===0){
+  sel.innerHTML=`<option value="">(Sin proveedores - Agregue uno)</option>`;
+  return;
+ }
+ sel.innerHTML=state.proveedores.map(p=>`<option>${esc(p.nombre)}</option>`).join('');
+}
+function abrirGestionProveedores(){
+ const body=`<div class="space-y-4">
+  <p class="text-sm text-slate-500">Agregue o edite los proveedores habituales.</p>
+  <div class="space-y-2">
+   <input id="provNombre" class="border p-2 rounded w-full" placeholder="Nombre del proveedor">
+   <input id="provContacto" class="border p-2 rounded w-full" placeholder="Datos de contacto / Tel / Web">
+   <button onclick="agregarProveedorModal()" class="bg-blue-600 text-white px-4 py-2 rounded w-full font-semibold">➕ Guardar Proveedor</button>
+  </div>
+  <div class="border-t pt-3">
+   <h4 class="font-semibold text-sm mb-2">Proveedores registrados:</h4>
+   <div id="listaProvModal" class="space-y-2 max-h-48 overflow-auto"></div>
+  </div>
+ </div>`;
+ abrirModal('⚙️ Gestionar Proveedores', body);
+ renderListaProvModal();
+}
+function renderListaProvModal(){
+ const div=document.getElementById('listaProvModal'); if(!div)return;
+ div.innerHTML=state.proveedores.map(p=>`<div class="border p-2 rounded flex justify-between items-center text-sm"><div><b>${esc(p.nombre)}</b><br><span class="small text-slate-500">${esc(p.contacto||'-')}</span></div><button onclick="borrarProveedor('${p.id}')" class="text-rose-600 text-xs">🗑️</button></div>`).join('')||'<p class="text-slate-400 text-sm">No hay proveedores cargados.</p>';
+}
+function agregarProveedorModal(){
+ const nombre=document.getElementById('provNombre').value.trim();
+ const contacto=document.getElementById('provContacto').value.trim();
+ if(!nombre)return alert('Ingresa el nombre del proveedor.');
+ state.proveedores.unshift({id:id(),nombre,contacto}); save('proveedores');
+ document.getElementById('provNombre').value=''; document.getElementById('provContacto').value='';
+ renderListaProvModal(); actualizarSelectProveedores(); renderCompras();
+}
+function borrarProveedor(i){
+ state.proveedores=state.proveedores.filter(p=>String(p.id)!==String(i));
+ save('proveedores'); renderListaProvModal(); actualizarSelectProveedores(); renderCompras();
+}
+
+function guardarCompra(){
+ const provNombre=document.getElementById('pNombreSelect')?.value;
+ const q=+pCantidad.value||1, c=+pCosto.value||0, total=q*c;
+ if(!provNombre||total<=0)return alert('Selecciona proveedor, cantidad y costo válidos.');
+ state.compras.unshift({id:id(),fecha:new Date().toISOString(),proveedor:provNombre,producto:pProducto.value.trim()||'Insumos / Repuestos',cantidad:q,costo:c,total,medio:pMedio.value});
+ save('compras');
+ agregarMovInterno('Salida','Compra a proveedores',pMedio.value,total,provNombre+' - '+(pProducto.value||'Insumos'));
+ pProducto.value=''; pCantidad.value=''; pCosto.value=''; refresh();
+}
+function renderCompras(){
+ listaProveedores.innerHTML=state.proveedores.map(p=>`<div class="border-b py-2"><b>${esc(p.nombre)}</b><br><span class="small">${esc(p.contacto||'Sin contacto')}</span></div>`).join('')||'<p class="text-slate-400">Sin proveedores.</p>';
+ listaCompras.innerHTML=state.compras.slice(0,20).map(c=>`<div class="border-b py-2 flex justify-between"><span><b>${esc(c.proveedor)}</b> · ${esc(c.producto)}<br><span class="small">${fecha(c.fecha)} · ${c.cantidad} un.</span></span><b class="money">${money(c.total)}</b></div>`).join('')||'<p class="text-slate-400">Sin compras.</p>';
+}
+
+function borrar(k,i){if(!confirm('¿Eliminar este registro?'))return;state[k]=state[k].filter(x=>String(x.id)!==String(i));save(k);refresh()}
+function rango(){const now=new Date();let from=new Date(0),to=new Date();if(periodoActual==='hoy'){from=new Date();from.setHours(0,0,0,0)}if(periodoActual==='semana'){from=new Date();from.setDate(now.getDate()-6);from.setHours(0,0,0,0)}if(periodoActual==='mes'){from=new Date(now.getFullYear(),now.getMonth(),1)}if(periodoActual==='anio'){from=new Date(now.getFullYear(),0,1)}return [from,to]}
+function periodo(p){periodoActual=p;reportes()}
+function filtrarMov(){const [f,t]=rango();return state.movimientos.filter(m=>{const d=new Date(m.fecha);return d>=f&&d<=t})}
+function filtrarVentas(){const [f,t]=rango();return state.ventas.filter(v=>{const d=new Date(v.fecha);return d>=f&&d<=t})}
+function filtrarCompras(){const [f,t]=rango();return state.compras.filter(c=>{const d=new Date(c.fecha);return d>=f&&d<=t})}
+
+function reportes(){
+ const vs=filtrarVentas(), ms=filtrarMov(), cs=filtrarCompras();
+ const tallerIngresos=ms.filter(m=>m.tipo==='Entrada'&&(m.concepto==='Reparaciones'||m.concepto==='Seña taller')).reduce((s,m)=>s+m.monto,0);
+ const fact=vs.reduce((s,v)=>s+v.total,0)+tallerIngresos, cost=vs.reduce((s,v)=>s+v.costo,0), gan=fact-cost; 
+ const totalCompras=cs.reduce((s,c)=>s+c.total,0);
+ const resultadoNeto=gan - totalCompras;
+
+ rFact.textContent=money(fact); rCosto.textContent=money(cost); rGanancia.textContent=money(gan); rMargen.textContent=(fact?gan/fact*100:0).toFixed(2)+'%';
+ rTotalCompras.textContent=money(totalCompras);
+ rResultadoNeto.textContent=money(resultadoNeto);
+ rResultadoNeto.className=resultadoNeto>=0?'text-xl font-bold text-emerald-800':'text-xl font-bold text-rose-800';
+
+ let medios={}; ms.forEach(m=>{medios[m.medio]=(medios[m.medio]||0)+(m.tipo==='Entrada'?m.monto:-m.monto)});
+ reporteMedios.innerHTML=Object.entries(medios).map(([k,v])=>`<div class="flex justify-between border-b py-2 text-sm"><span>${esc(k)}</span><b class="money">${money(v)}</b></div>`).join('')||'Sin datos';
+
+ let provGastos={}; cs.forEach(c=>{provGastos[c.proveedor]=(provGastos[c.proveedor]||0)+c.total});
+ reporteProveedores.innerHTML=Object.entries(provGastos).map(([k,v])=>`<div class="flex justify-between border-b py-2 text-sm"><span>${esc(k)}</span><b class="money text-rose-700">${money(v)}</b></div>`).join('')||'Sin compras a proveedores';
+
+ let dias={}; ms.forEach(m=>{const d=isoDate(m.fecha);dias[d]??={e:0,s:0};if(m.tipo==='Entrada')dias[d].e+=m.monto;else dias[d].s+=m.monto});
+ reporteDias.innerHTML=Object.entries(dias).sort((a,b)=>b[0].localeCompare(a[0])).map(([d,x])=>`<div class="flex justify-between border-b py-2 text-sm"><span>${d}</span><span><span class="text-emerald-700">+${money(x.e)}</span> / <span class="text-rose-700">-${money(x.s)}</span></span></div>`).join('')||'Sin datos';
+ 
+ renderCharts(ms,vs);
+}
+function renderCharts(ms,vs){
+ const byDay={}; ms.forEach(m=>{const d=isoDate(m.fecha);byDay[d]??={e:0,s:0};if(m.tipo==='Entrada')byDay[d].e+=m.monto;else byDay[d].s+=m.monto});
+ const labels=Object.keys(byDay).sort();
+ if(chartFin)chartFin.destroy();
+ chartFin=new Chart(document.getElementById('chartFin'),{type:'bar',data:{labels,datasets:[{label:'Entradas',data:labels.map(d=>byDay[d].e)},{label:'Salidas',data:labels.map(d=>byDay[d].s)}]},options:{responsive:true,maintainAspectRatio:false}});
+ 
+ let cat={}; vs.forEach(v=>cat[v.producto]=(cat[v.producto]||0)+v.total);
+ if(chartConcept)chartConcept.destroy();
+ chartConcept=new Chart(document.getElementById('chartConcept'),{type:'doughnut',data:{labels:Object.keys(cat),datasets:[{data:Object.values(cat)}]},options:{responsive:true,maintainAspectRatio:false}});
+}
+
+function dashboard(){
+ const vs=filtrarVentas(),ms=filtrarMov(),en=ms.filter(m=>m.tipo==='Entrada').reduce((s,m)=>s+m.monto,0),sa=ms.filter(m=>m.tipo==='Salida').reduce((s,m)=>s+m.monto,0);
+ dVentas.textContent=money(vs.reduce((s,v)=>s+v.total,0));dCaja.textContent=money(en-sa);dTaller.textContent=state.ots.filter(o=>o.estado!=='Entregada').length;dClientes.textContent=state.clientes.length;
+ const low=state.stock.filter(s=>s.cantidad<=2);
+ alertas.innerHTML=(low.length?`<div class="bg-amber-50 p-2 rounded">📦 ${low.length} productos con stock bajo.</div>`:'')+(state.ots.filter(o=>o.estado==='Esperando repuestos').length?`<div class="bg-rose-50 p-2 rounded">🔧 Hay OT esperando repuestos.</div>`:'')+(state.arqueos.length&&Math.abs(state.arqueos[0].diferencia)>0?`<div class="bg-rose-50 p-2 rounded">💰 Último arqueo con diferencia.</div>`:'')||'<div class="text-slate-400">Sin alertas críticas.</div>';
+ recordatoriosDash.innerHTML=state.recordatorios.slice(0,6).map(r=>`<div class="border rounded p-3"><b>${esc(r.cliente)}</b><br><span class="small">${esc(r.texto)} · ${r.fecha}</span></div>`).join('')||'<div class="text-slate-400">No hay recordatorios.</div>';
+ 
+ let days={}; for(let i=13;i>=0;i--){let d=new Date();d.setDate(d.getDate()-i);days[isoDate(d)]=0}
+ ms.forEach(m=>{const d=isoDate(m.fecha);if(days[d]!==undefined)days[d]+=m.tipo==='Entrada'?m.monto:-m.monto});
+ if(chartDash)chartDash.destroy();
+ chartDash=new Chart(document.getElementById('chartDashboard'),{type:'line',data:{labels:Object.keys(days),datasets:[{label:'Caja neta',data:Object.values(days),tension:.25}]},options:{responsive:true,maintainAspectRatio:false}});
+}
+
+function exportExcel(){const data=filtrarMov().map(m=>({Fecha:fecha(m.fecha),Tipo:m.tipo,Concepto:m.concepto,Medio:m.medio,Detalle:m.descripcion,Monto:m.monto}));const ws=XLSX.utils.json_to_sheet(data);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Caja');XLSX.writeFile(wb,'Reporte_Bicicleteria_Abasto.xlsx')}
+function exportPDF(){html2pdf().from(document.getElementById('reportes')).set({margin:8,filename:'Reporte_Bicicleteria_Abasto.pdf',html2canvas:{scale:1.5},jsPDF:{format:'a4',orientation:'portrait'}}).save()}
+
+load(); reloj(); syncLegacy().then(refresh);
+</script>
 </body>
 </html>
