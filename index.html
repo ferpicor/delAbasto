@@ -19,7 +19,7 @@ input,select,textarea{min-width:0}
 <body class="font-sans text-slate-800">
 <header class="bg-slate-800 text-white p-4 sticky top-0 z-30 shadow">
  <div class="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between gap-3">
-  <div class="flex items-center gap-4"><h1 class="text-xl font-bold">🚲 Bicicletería del Abasto</h1><span id="reloj" class="text-xs bg-slate-700 px-2 py-1 rounded">--:--:--</span></div>
+  <div class="flex items-center gap-4"><h1 class="text-xl font-bold">🚲 Bicicletería del Abasto</h1><span id="reloj" class="text-xs bg-slate-700 px-2 py-1 rounded">--:--:--</span><span id="syncStatus" class="text-xs bg-amber-600 px-2 py-1 rounded">⏳ Conectando...</span></div>
   <nav class="flex flex-wrap gap-2">
    <button class="tab px-3 py-2 rounded bg-blue-600" onclick="tab('dashboard')" id="t-dashboard">🏠 Inicio</button>
    <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('taller')" id="t-taller">🛠️ Taller</button>
@@ -63,7 +63,8 @@ input,select,textarea{min-width:0}
    <input id="otSena" type="number" class="border p-2 rounded-lg" placeholder="Seña / anticipo">
    <input id="otCosto" type="number" class="border p-2 rounded-lg" placeholder="Costo estimado de repuestos">
    <select id="otEstado" class="border p-2 rounded-lg"><option>En taller</option><option>En proceso</option><option>Esperando repuestos</option><option>Lista</option><option>Entregada</option></select>
-   <input id="otFechaPromesa" type="date" class="border p-2 rounded-lg">
+   <div><label class="small text-slate-500 block mb-1">Fecha de ingreso</label><input id="otFechaIngreso" type="date" class="border p-2 rounded-lg w-full"></div>
+   <div><label class="small text-slate-500 block mb-1">Fecha promesa</label><input id="otFechaPromesa" type="date" class="border p-2 rounded-lg w-full"></div>
   </div>
   <div class="flex flex-wrap gap-2 mt-4"><button onclick="guardarOT()" class="bg-blue-600 text-white px-4 py-2 rounded-lg">💾 Guardar OT</button><button onclick="limpiarOT()" class="bg-slate-200 px-4 py-2 rounded-lg">Limpiar</button></div>
  </div>
@@ -159,24 +160,45 @@ input,select,textarea{min-width:0}
 </section>
 
 <section id="reportes" class="hidden space-y-5">
- <div class="card p-5"><div class="flex flex-wrap gap-2 items-center justify-between"><h2 class="text-xl font-bold">📊 Reportes y análisis</h2><div class="flex flex-wrap gap-2"><button onclick="periodo('hoy')" class="bg-slate-200 px-3 py-2 rounded">Hoy</button><button onclick="periodo('semana')" class="bg-slate-200 px-3 py-2 rounded">Semana</button><button onclick="periodo('mes')" class="bg-slate-200 px-3 py-2 rounded">Mes</button><button onclick="periodo('anio')" class="bg-slate-200 px-3 py-2 rounded">Año</button><button onclick="periodo('todo')" class="bg-slate-200 px-3 py-2 rounded">Todo</button></div></div>
- <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-  <div class="card p-3"><span class="small">Facturación (ventas + taller)</span><div id="rFact" class="text-xl font-bold">$0</div></div>
-  <div class="card p-3"><span class="small">Costo de ventas</span><div id="rCosto" class="text-xl font-bold">$0</div></div>
+ <div class="card p-5">
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+   <div><h2 class="text-xl font-bold">📊 Reportes y análisis</h2><p class="text-sm text-slate-500">Todo el flujo financiero toma los movimientos reales registrados en Caja.</p></div>
+   <div class="flex flex-wrap gap-2"><button onclick="periodo('hoy')" class="bg-slate-200 px-3 py-2 rounded">Hoy</button><button onclick="periodo('semana')" class="bg-slate-200 px-3 py-2 rounded">Semana</button><button onclick="periodo('mes')" class="bg-slate-200 px-3 py-2 rounded">Mes</button><button onclick="periodo('anio')" class="bg-slate-200 px-3 py-2 rounded">Año</button><button onclick="periodo('todo')" class="bg-slate-200 px-3 py-2 rounded">Todo</button></div>
+  </div>
+  <div class="grid md:grid-cols-3 gap-3 mt-4">
+   <div><label class="small text-slate-500">Concepto de Caja</label><select id="rConceptoFiltro" onchange="reportes()" class="border p-2 rounded-lg w-full"><option value="Todos">Todos los conceptos</option></select></div>
+   <div><label class="small text-slate-500">Agrupar movimiento por</label><select id="rAgrupar" onchange="reportes()" class="border p-2 rounded-lg w-full"><option value="dia">Día</option><option value="mes">Mes</option><option value="anio">Año</option></select></div>
+   <div><label class="small text-slate-500">Medio de pago</label><select id="rMedioFiltro" onchange="reportes()" class="border p-2 rounded-lg w-full"><option value="Todos">Todos</option><option>Efectivo</option><option>Transferencia</option><option>Débito</option><option>Crédito</option><option>Mercado Pago</option><option>Otro</option></select></div>
+  </div>
+ </div>
+ <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+  <div class="card p-3 bg-emerald-50"><span class="small">Entradas de Caja</span><div id="rCajaEntradas" class="text-xl font-bold text-emerald-700">$0</div></div>
+  <div class="card p-3 bg-rose-50"><span class="small">Salidas de Caja</span><div id="rCajaSalidas" class="text-xl font-bold text-rose-700">$0</div></div>
+  <div class="card p-3 bg-blue-50"><span class="small">Dinero movido</span><div id="rCajaMovimiento" class="text-xl font-bold text-blue-700">$0</div></div>
+  <div class="card p-3 bg-violet-50"><span class="small">Saldo / dinero que queda</span><div id="rCajaSaldo" class="text-xl font-bold text-violet-700">$0</div></div>
+ </div>
+ <div class="card p-4 border-l-4 border-l-amber-500">
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+   <div><h3 class="font-semibold">📈 Rentabilidad comercial</h3><p class="small text-slate-500">Se calcula aparte de Caja para no contar dos veces una venta. Usa ventas registradas + cobros de taller, menos sus costos directos conocidos.</p></div>
+   <span class="small bg-amber-50 text-amber-800 px-2 py-1 rounded">No incluye egresos generales de Caja</span>
+  </div>
+ </div>
+ <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+  <div class="card p-3"><span class="small">Ventas de productos</span><div id="rVentasProductos" class="text-xl font-bold">$0</div></div>
+  <div class="card p-3"><span class="small">Ingresos de taller</span><div id="rIngresosTaller" class="text-xl font-bold">$0</div></div>
+  <div class="card p-3"><span class="small">Costos directos</span><div id="rCosto" class="text-xl font-bold">$0</div></div>
   <div class="card p-3"><span class="small">Ganancia bruta</span><div id="rGanancia" class="text-xl font-bold text-emerald-600">$0</div></div>
   <div class="card p-3"><span class="small">Margen bruto</span><div id="rMargen" class="text-xl font-bold text-blue-600">0%</div></div>
  </div>
- <div class="grid md:grid-cols-2 gap-3">
-  <div class="card p-3 bg-rose-50"><span class="small text-rose-700">Total Gastado en Proveedores (Compras)</span><div id="rTotalCompras" class="text-xl font-bold text-rose-800">$0</div></div>
-  <div class="card p-3 bg-emerald-50"><span class="small text-emerald-700">Resultado Neto (Ganancia Bruta - Gastos prov.)</span><div id="rResultadoNeto" class="text-xl font-bold text-emerald-800">$0</div></div>
- </div>
- <div class="grid lg:grid-cols-2 gap-4"><div class="card p-4"><h3 class="font-semibold mb-3">Ingresos / egresos por período</h3><div class="h-72"><canvas id="chartFin"></canvas></div></div><div class="card p-4"><h3 class="font-semibold mb-3">Ventas por concepto</h3><div class="h-72"><canvas id="chartConcept"></canvas></div></div></div>
+ <div class="card p-3 bg-slate-50"><div class="flex justify-between gap-3"><span class="text-sm font-semibold">Facturación comercial total</span><div id="rFact" class="text-lg font-bold">$0</div></div><p class="small text-slate-500 mt-1">Este total no suma movimientos de Caja: Caja se analiza arriba como flujo de dinero.</p></div>
+ <div class="grid lg:grid-cols-2 gap-4"><div class="card p-4"><h3 class="font-semibold mb-3">Entradas, salidas y saldo de Caja</h3><div class="h-72"><canvas id="chartFin"></canvas></div></div><div class="card p-4"><h3 class="font-semibold mb-3">Movimiento por concepto</h3><div class="h-72"><canvas id="chartConcept"></canvas></div></div></div>
+ <div class="card p-4 overflow-x-auto"><h3 class="font-semibold mb-3">📅 Flujo de Caja agrupado</h3><table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2 text-left">Período</th><th class="p-2 text-right">Entradas</th><th class="p-2 text-right">Salidas</th><th class="p-2 text-right">Movido</th><th class="p-2 text-right">Saldo</th></tr></thead><tbody id="reporteFlujo"></tbody></table></div>
  <div class="grid lg:grid-cols-3 gap-4">
-  <div class="card p-4"><h3 class="font-semibold mb-3">💳 Por medio de pago</h3><div id="reporteMedios"></div></div>
-  <div class="card p-4"><h3 class="font-semibold mb-3">🚚 Gastos por proveedor</h3><div id="reporteProveedores" class="max-h-72 overflow-auto"></div></div>
-  <div class="card p-4"><h3 class="font-semibold mb-3">📅 Resumen por día</h3><div id="reporteDias" class="max-h-72 overflow-auto"></div></div>
+  <div class="card p-4"><h3 class="font-semibold mb-3">🏷️ Resumen por concepto</h3><div id="reporteConceptos" class="max-h-80 overflow-auto"></div></div>
+  <div class="card p-4"><h3 class="font-semibold mb-3">💳 Por medio de pago</h3><div id="reporteMedios" class="max-h-80 overflow-auto"></div></div>
+  <div class="card p-4"><h3 class="font-semibold mb-3">📅 Resumen por día</h3><div id="reporteDias" class="max-h-80 overflow-auto"></div></div>
  </div>
- <div class="flex gap-2"><button onclick="exportExcel()" class="bg-emerald-700 text-white px-4 py-2 rounded">📥 Excel</button><button onclick="exportPDF()" class="bg-rose-700 text-white px-4 py-2 rounded">📄 PDF</button></div>
+ <div class="flex gap-2"><button onclick="exportExcel()" class="bg-emerald-700 text-white px-4 py-2 rounded">📥 Excel Caja</button><button onclick="exportPDF()" class="bg-rose-700 text-white px-4 py-2 rounded">📄 PDF</button></div>
 </section>
 </main>
 
@@ -187,48 +209,81 @@ const SUPABASE_URL='https://twezzstssnjrrnrzwdkv.supabase.co';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3ZXp6c3Rzc25qcnJucnp3ZGt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyMDExMjIsImV4cCI6MjEwMzc3NzEyMn0.nWtJHz6rPMoC9G70tIYBtgLBxPj8WI6snelIOZTR4V0';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const KEY='abasto_v2_';
+const SYNC_TABLES=['caja','clientes','conceptos','inventario_bicicletas','taller'];
 let state={
- movimientos:[], ventas:[], clientes:[], ots:[], stock:[], compras:[], proveedores:[], arqueos:[], recordatorios:[],
- conceptosEntrada:['Venta','Reparaciones','Seña taller','General','Otro'],
- conceptosSalida:['Compra a proveedores','Alquiler','Servicios','Sueldos','General','Otro']
+ movimientos:[], ventas:[], clientes:[], ots:[], stock:[], compras:[], proveedores:[], arqueos:[], recordatorios:[], conceptos:[]
 };
 let chartFin=null,chartConcept=null,chartDash=null, periodoActual='mes';
+let recargaTimer=null;
 
-function load(){
- for(const k in state){
-  try{
-   const val=JSON.parse(localStorage.getItem(KEY+k));
-   if(val!==null) state[k]=val;
-  }catch{}
+function loadLocal(){
+ for(const k of ['ventas','compras','proveedores','arqueos','recordatorios']){
+  try{const val=JSON.parse(localStorage.getItem(KEY+k)); if(val!==null) state[k]=val}catch{}
  }
 }
-function save(k){localStorage.setItem(KEY+k,JSON.stringify(state[k]))}
+function save(k){
+ // Las 5 tablas principales viven en Supabase. localStorage queda solo para módulos sin tabla propia.
+ if(['movimientos','clientes','ots','stock','conceptos'].includes(k))return;
+ localStorage.setItem(KEY+k,JSON.stringify(state[k]));
+}
 function id(){return Date.now()+Math.floor(Math.random()*999)}
 function money(n){return '$'+Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2})}
-function fecha(x){return new Date(x).toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'})}
+function fecha(x){return x?new Date(x).toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'}):'-'}
+function pad2(n){return String(n).padStart(2,'0')}
+function fechaLocalHoy(){const d=new Date();return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`}
+function fechaHoraLocal(fechaElegida){const n=new Date();const f=fechaElegida||fechaLocalHoy();return `${f}T${pad2(n.getHours())}:${pad2(n.getMinutes())}:${pad2(n.getSeconds())}`}
+function inicializarFechaIngreso(){const el=document.getElementById('otFechaIngreso');if(el&&!el.value)el.value=fechaLocalHoy()}
 function isoDate(x){return new Date(x).toISOString().slice(0,10)}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function tab(t){document.querySelectorAll('main>section').forEach(s=>s.classList.add('hidden'));document.getElementById(t).classList.remove('hidden');document.querySelectorAll('.tab').forEach(b=>b.classList.remove('tab-active'));document.getElementById('t-'+t).classList.add('tab-active');refresh()}
 function reloj(){document.getElementById('reloj').textContent=new Intl.DateTimeFormat('es-AR',{timeZone:'America/Argentina/Buenos_Aires',dateStyle:'short',timeStyle:'medium',hour12:false}).format(new Date())}
 setInterval(reloj,1000);
 
-async function syncLegacy(){
+function syncStatus(text,ok=null){
+ const el=document.getElementById('syncStatus'); if(!el)return;
+ el.textContent=text;
+ el.className='text-xs px-2 py-1 rounded '+(ok===true?'bg-emerald-600':ok===false?'bg-rose-600':'bg-amber-600');
+}
+async function qTabla(tabla,orderCol='id'){
+ const {data,error}=await sb.from(tabla).select('*').order(orderCol,{ascending:false}).limit(5000);
+ if(error)throw new Error(tabla+': '+error.message);
+ return data||[];
+}
+async function cargarSupabase(silencioso=false){
+ if(!silencioso)syncStatus('⏳ Sincronizando...');
  try{
-  const {data}=await sb.from('caja').select('*').order('id',{ascending:false}).limit(1000);
-  if(data?.length){const existing=new Set(state.movimientos.map(x=>String(x.legacy_id||'')));data.forEach(x=>{if(!existing.has(String(x.id)))state.movimientos.push({id:'legacy_'+x.id,legacy_id:x.id,fecha:x.fecha||new Date().toISOString(),tipo:x.tipo||'Entrada',concepto:x.concepto||x.categoria||'General',medio:x.medio_pago||'Efectivo',monto:Number(x.monto)||0,descripcion:x.descripcion||''})});save('movimientos')}
- }catch(e){}
- try{
-  const {data}=await sb.from('clientes').select('*').order('id',{ascending:false}).limit(1000);
-  if(data?.length){const tel=new Set(state.clientes.map(x=>x.telefono).filter(Boolean));data.forEach(x=>{if(x.telefono&&!tel.has(x.telefono))state.clientes.push({id:'legacy_'+x.id,nombre:x.nombre||'',telefono:x.telefono||'',email:x.email||'',direccion:x.direccion||'',segmento:'Nuevo',notas:'',fecha:x.created_at||new Date().toISOString()})});save('clientes')}
- }catch(e){}
- try{
-  const {data}=await sb.from('taller').select('*').order('id',{ascending:false}).limit(1000);
-  if(data?.length){const ids=new Set(state.ots.map(x=>String(x.legacy_id||'')));data.forEach(x=>{if(!ids.has(String(x.id)))state.ots.push({id:'legacy_'+x.id,legacy_id:x.id,fecha:x.created_at||new Date().toISOString(),cliente:x.cliente,telefono:x.telefono,bici:x.bicicleta,trabajo:x.trabajo,presupuesto:Number(x.presupuesto)||0,sena:Number(x.sena)||0,costo:Number(x.costo)||0,estado:x.estado||'En taller',promesa:''})});save('ots')}
- }catch(e){}
- try{
-  const {data}=await sb.from('inventario_bicicletas').select('*').order('id',{ascending:false}).limit(1000);
-  if(data?.length){const ids=new Set(state.stock.map(x=>String(x.legacy_id||'')));data.forEach(x=>{if(!ids.has(String(x.id)))state.stock.push({id:'legacy_'+x.id,legacy_id:x.id,marca:x.marca||'',modelo:x.modelo||'',variante:(x.color||'')+' / '+(x.talle||''),precio:Number(x.precio)||0,costo:0,cantidad:Number(x.stock)||0})});save('stock')}
- }catch(e){}
+  const [caja,clientes,conceptos,stock,taller]=await Promise.all([
+   qTabla('caja'),qTabla('clientes'),qTabla('conceptos'),qTabla('inventario_bicicletas'),qTabla('taller')
+  ]);
+  state.movimientos=caja.map(x=>({id:x.id,fecha:x.fecha||new Date().toISOString(),tipo:x.tipo||'Entrada',concepto:x.concepto||x.categoria||'General',medio:x.medio_pago||'Efectivo',monto:Number(x.monto)||0,descripcion:x.descripcion||''}));
+  state.clientes=clientes.map(x=>({id:x.id,nombre:x.nombre||'',telefono:x.telefono||'',email:x.email||'',direccion:x.direccion||'',segmento:x.segmento||'Nuevo',notas:x.notas||'',fecha:x.created_at||new Date().toISOString()}));
+  state.conceptos=conceptos.map(x=>({id:x.id,nombre:x.nombre||''})).filter(x=>x.nombre);
+  state.stock=stock.map(x=>({id:x.id,marca:x.marca||'',modelo:x.modelo||'',variante:[x.color,x.talle].filter(Boolean).join(' / '),precio:Number(x.precio)||0,costo:Number(x.costo)||0,cantidad:Number(x.stock)||0,estado:x.estado||'Disponible'}));
+  state.ots=taller.map(x=>({id:x.id,fecha:x.fecha_ingreso||new Date().toISOString(),cliente:x.cliente||'',telefono:x.telefono||'',bici:x.bicicleta||'',trabajo:x.trabajo||'',presupuesto:Number(x.presupuesto)||0,sena:Number(x.sena)||0,pagado:Number(x.precio_pagado)||0,costo:Number(x.costo)||0,estado:x.estado||'En taller',montoCobrar:Number(x.precio_cobrado)||0,promesa:x.fecha_promesa||''}));
+  syncStatus('☁️ Sincronizado',true); refresh();
+ }catch(e){
+  console.error(e); syncStatus('⚠️ Error de sincronización',false);
+  if(!silencioso)alert('No se pudo sincronizar con Supabase. Revisa conexión/RLS.\n\n'+e.message);
+ }
+}
+function programarRecarga(){clearTimeout(recargaTimer);recargaTimer=setTimeout(()=>cargarSupabase(true),250)}
+function activarRealtime(){
+ const canal=sb.channel('abasto-realtime');
+ SYNC_TABLES.forEach(tabla=>canal.on('postgres_changes',{event:'*',schema:'public',table:tabla},programarRecarga));
+ canal.subscribe(status=>{if(status==='SUBSCRIBED')syncStatus('☁️ Sincronizado',true)});
+}
+async function dbInsert(tabla,payload){const {data,error}=await sb.from(tabla).insert(payload).select().single();if(error)throw error;return data}
+async function dbUpdate(tabla,id,payload){
+ const {data,error}=await sb.from(tabla).update(payload).eq('id',id).select('id');
+ if(error)throw error;
+ if(!data||data.length===0)throw new Error('Supabase no permitió modificar el registro. Revisá la política UPDATE (RLS) de la tabla '+tabla+'.');
+ return data[0];
+}
+async function dbDelete(tabla,id){
+ const {data,error}=await sb.from(tabla).delete().eq('id',id).select('id');
+ if(error)throw error;
+ if(!data||data.length===0)throw new Error('Supabase no permitió eliminar el registro. Revisá la política DELETE (RLS) de la tabla '+tabla+'.');
+ return data[0];
 }
 
 function refresh(){
@@ -239,31 +294,42 @@ function abrirModal(title,body){document.getElementById('modalTitle').textConten
 function cerrarModal(){document.getElementById('modal').classList.add('hidden');document.getElementById('modal').classList.remove('flex')}
 
 /* --- TALLER --- */
-function guardarOT(){
- const o={id:id(),fecha:new Date().toISOString(),cliente:otCliente.value.trim(),telefono:otTelefono.value.trim(),bici:otBici.value.trim(),trabajo:otTrabajo.value.trim(),presupuesto:+otPresupuesto.value||0,sena:+otSena.value||0,costo:+otCosto.value||0,estado:otEstado.value,promesa:otFechaPromesa.value};
+async function guardarOT(){
+ const o={cliente:otCliente.value.trim(),telefono:otTelefono.value.trim(),bici:otBici.value.trim(),trabajo:otTrabajo.value.trim(),presupuesto:+otPresupuesto.value||0,sena:+otSena.value||0,costo:+otCosto.value||0,estado:otEstado.value,fechaIngreso:otFechaIngreso.value||fechaLocalHoy(),promesa:otFechaPromesa.value||null};
  if(!o.cliente||!o.bici||!o.trabajo)return alert('Completa cliente, bicicleta y trabajo.');
- state.ots.unshift(o);save('ots');
- if(o.sena>0) agregarMovInterno('Entrada','Seña taller','Efectivo',o.sena,'Seña OT #'+o.id);
- const c=state.clientes.find(x=>x.telefono&&x.telefono===o.telefono);if(!c)state.clientes.push({id:id(),nombre:o.cliente,telefono:o.telefono,email:'',direccion:'',segmento:'Nuevo',notas:'Cliente de taller',fecha:new Date().toISOString()});save('clientes');
- limpiarOT();refresh();alert('OT registrada.');
+ try{
+  const row=await dbInsert('taller',{cliente:o.cliente,telefono:o.telefono,bicicleta:o.bici,trabajo:o.trabajo,estado:o.estado,precio_pagado:0,fecha_ingreso:fechaHoraLocal(o.fechaIngreso),presupuesto:o.presupuesto,precio_cobrado:o.presupuesto,sena:o.sena,costo:o.costo,fecha_promesa:o.promesa});
+  if(o.sena>0)await agregarMovInterno('Entrada','Seña taller','Efectivo',o.sena,'Seña OT #'+row.id);
+  if(o.telefono&&!state.clientes.some(x=>x.telefono===o.telefono))await dbInsert('clientes',{nombre:o.cliente,telefono:o.telefono,email:null,direccion:null,segmento:'Nuevo',notas:'Cliente de taller'});
+  limpiarOT(); await cargarSupabase(true); alert('OT registrada y sincronizada.');
+ }catch(e){console.error(e);alert('No se pudo guardar la OT en Supabase: '+e.message)}
 }
-function limpiarOT(){['otCliente','otTelefono','otBici','otTrabajo','otPresupuesto','otSena','otCosto','otFechaPromesa'].forEach(x=>document.getElementById(x).value='');otEstado.value='En taller'}
+function limpiarOT(){['otCliente','otTelefono','otBici','otTrabajo','otPresupuesto','otSena','otCosto','otFechaPromesa'].forEach(x=>document.getElementById(x).value='');otEstado.value='En taller';otFechaIngreso.value=fechaLocalHoy()}
 function renderOT(){
  const q=(document.getElementById('buscarOT')?.value||'').toLowerCase();
  const rows=state.ots.filter(o=>(o.cliente+' '+o.bici+' '+o.trabajo).toLowerCase().includes(q));
  tablaOT.innerHTML=rows.map(o=>{
-  const saldo=Math.max(0,(o.presupuesto||0)-(o.sena||0));
+  const saldo=Math.max(0,(o.presupuesto||0)-(o.sena||0)-(o.pagado||0));
   const lista=(o.estado==='Lista'||o.estado==='Entregada');
   const montoCobrar=(o.montoCobrar!=null?o.montoCobrar:saldo);
   return `<tr class="border-b"><td class="p-2 font-semibold">#${String(o.id).slice(-6)}</td><td class="p-2">${esc(o.cliente)}<br><span class="small">${esc(o.telefono)}</span></td><td class="p-2">${esc(o.bici)}<br><span class="small">${esc(o.trabajo)}</span></td><td class="p-2">${money(o.presupuesto)}</td><td class="p-2">${money(o.sena)}</td><td class="p-2"><select onchange="cambiarOT('${o.id}',this.value)" class="border rounded p-1"><option ${o.estado==='En taller'?'selected':''}>En taller</option><option ${o.estado==='En proceso'?'selected':''}>En proceso</option><option ${o.estado==='Esperando repuestos'?'selected':''}>Esperando repuestos</option><option ${o.estado==='Lista'?'selected':''}>Lista</option><option ${o.estado==='Entregada'?'selected':''}>Entregada</option></select></td><td class="p-2 font-semibold">${money(saldo)}</td><td class="p-2"><input type="number" class="border rounded p-1 w-24 ${lista?'':'bg-slate-100 text-slate-400'}" ${lista?'':'disabled'} value="${montoCobrar}" title="${lista?'Monto a cobrar al entregar':'Se habilita cuando la bici está Lista'}" onchange="setMontoCobrar('${o.id}',this.value)"></td><td class="p-2 flex gap-1 flex-wrap"><button onclick="editarOT('${o.id}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs" title="Modificar datos">✏️</button><button onclick="otWhatsApp('${o.id}')" class="bg-green-600 text-white px-2 py-1 rounded text-xs" title="Enviar WhatsApp al cliente">💬</button><button onclick="reciboOT('${o.id}')" class="bg-purple-600 text-white px-2 py-1 rounded text-xs" title="Generar recibo y enviar WhatsApp">🧾</button><button onclick="cobrarOT('${o.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">Cobrar</button><button onclick="borrar('ots','${o.id}')" class="text-rose-600">🗑️</button></td></tr>`
  }).join('')||'<tr><td colspan="9" class="p-4 text-center text-slate-400">Sin órdenes.</td></tr>';
 }
-function setMontoCobrar(i,v){const o=state.ots.find(x=>String(x.id)===String(i));if(!o)return;o.montoCobrar=Math.max(0,+v||0);save('ots')}
-function cambiarOT(i,e){const o=state.ots.find(x=>String(x.id)===String(i));if(o){o.estado=e;if((e==='Lista'||e==='Entregada')&&o.montoCobrar==null){o.montoCobrar=Math.max(0,(o.presupuesto||0)-(o.sena||0))}save('ots');renderOT();dashboard()}}
+async function setMontoCobrar(i,v){
+ const o=state.ots.find(x=>String(x.id)===String(i));if(!o)return;
+ const valor=Math.max(0,+v||0);o.montoCobrar=valor;
+ try{await dbUpdate('taller',o.id,{precio_cobrado:valor})}catch(e){alert('No se pudo actualizar el importe: '+e.message);await cargarSupabase(true)}
+}
+async function cambiarOT(i,e){
+ const o=state.ots.find(x=>String(x.id)===String(i));if(!o)return;
+ const upd={estado:e};
+ if((e==='Lista'||e==='Entregada')&&(!o.montoCobrar||o.montoCobrar<=0))upd.precio_cobrado=Math.max(0,(o.presupuesto||0)-(o.sena||0)-(o.pagado||0));
+ try{await dbUpdate('taller',o.id,upd);await cargarSupabase(true)}catch(err){alert('No se pudo cambiar el estado: '+err.message)}
+}
 function otWhatsApp(i){
  const o=state.ots.find(x=>String(x.id)===String(i));if(!o)return;
  if(!o.telefono)return alert('Este cliente no tiene WhatsApp cargado.');
- const saldo=Math.max(0,(o.presupuesto||0)-(o.sena||0));
+ const saldo=Math.max(0,(o.presupuesto||0)-(o.sena||0)-(o.pagado||0));
  const montoCobrar=(o.montoCobrar!=null?o.montoCobrar:saldo);
  let msg;
  if(o.estado==='Lista'){
@@ -287,27 +353,32 @@ function editarOT(i){
    <div><label class="small text-slate-500">Presupuesto</label><input id="editOtPres" type="number" class="border p-2 rounded w-full" value="${o.presupuesto||0}"></div>
    <div><label class="small text-slate-500">Seña / Anticipo</label><input id="editOtSena" type="number" class="border p-2 rounded w-full" value="${o.sena||0}"></div>
   </div>
+  <div class="grid grid-cols-2 gap-2"><div><label class="small text-slate-500">Costo repuestos</label><input id="editOtCosto" type="number" class="border p-2 rounded w-full" value="${o.costo||0}"></div><div><label class="small text-slate-500">Fecha promesa</label><input id="editOtPromesa" type="date" class="border p-2 rounded w-full" value="${o.promesa||''}"></div></div>
   <div><label class="small text-slate-500">Estado</label><select id="editOtEstado" class="border p-2 rounded w-full"><option ${o.estado==='En taller'?'selected':''}>En taller</option><option ${o.estado==='En proceso'?'selected':''}>En proceso</option><option ${o.estado==='Esperando repuestos'?'selected':''}>Esperando repuestos</option><option ${o.estado==='Lista'?'selected':''}>Lista</option><option ${o.estado==='Entregada'?'selected':''}>Entregada</option></select></div>
   <button onclick="guardarEdicionOT('${o.id}')" class="bg-blue-600 text-white px-4 py-2 rounded w-full font-semibold">Guardar cambios</button>
  </div>`;
  abrirModal('Modificar Orden de Trabajo #' + String(o.id).slice(-6), body);
 }
-function guardarEdicionOT(i){
+async function guardarEdicionOT(i){
  const o=state.ots.find(x=>String(x.id)===String(i)); if(!o)return;
- o.cliente=document.getElementById('editOtCliente').value.trim();
- o.telefono=document.getElementById('editOtTel').value.trim();
- o.bici=document.getElementById('editOtBici').value.trim();
- o.trabajo=document.getElementById('editOtTrabajo').value.trim();
- o.presupuesto=+document.getElementById('editOtPres').value||0;
- o.sena=+document.getElementById('editOtSena').value||0;
- o.estado=document.getElementById('editOtEstado').value;
- save('ots'); cerrarModal(); refresh(); alert('Orden actualizada correctamente.');
+ const payload={
+  cliente:document.getElementById('editOtCliente').value.trim(),
+  telefono:document.getElementById('editOtTel').value.trim(),
+  bicicleta:document.getElementById('editOtBici').value.trim(),
+  trabajo:document.getElementById('editOtTrabajo').value.trim(),
+  presupuesto:+document.getElementById('editOtPres').value||0,
+  sena:+document.getElementById('editOtSena').value||0,
+  costo:+document.getElementById('editOtCosto').value||0,
+  fecha_promesa:document.getElementById('editOtPromesa').value||null,
+  estado:document.getElementById('editOtEstado').value
+ };
+ try{await dbUpdate('taller',o.id,payload);cerrarModal();await cargarSupabase(true);alert('Orden actualizada y sincronizada.')}catch(e){alert('No se pudo actualizar la orden: '+e.message)}
 }
 
 function reciboOT(i){
  const o=state.ots.find(x=>String(x.id)===String(i)); if(!o)return;
- const saldo=Math.max(0,(o.presupuesto||0)-(o.sena||0));
- const textoWP=`🚲 *BICICLETERÍA DEL ABASTO* \n*Comprobante de Taller / Orden #${String(o.id).slice(-6)}*\n\n📅 Fecha: ${fecha(o.fecha)}\n👤 Cliente: ${o.cliente}\n🚲 Bicicleta: ${o.bici}\n🔧 Trabajo: ${o.trabajo}\n💼 Estado: ${o.estado}\n\n💰 Presupuesto: ${money(o.presupuesto)}\n💵 Seña abonada: ${money(o.sena)}\n📌 *Saldo pendiente: ${money(saldo)}*\n\n¡Gracias por confiar en nosotros!`;
+ const saldo=Math.max(0,(o.presupuesto||0)-(o.sena||0)-(o.pagado||0));
+ const textoWP=`🚲 *BICICLETERÍA DEL ABASTO* \n*Comprobante de Taller / Orden #${String(o.id).slice(-6)}*\n\n📅 Fecha: ${fecha(o.fecha)}\n👤 Cliente: ${o.cliente}\n🚲 Bicicleta: ${o.bici}\n🔧 Trabajo: ${o.trabajo}\n💼 Estado: ${o.estado}\n\n💰 Presupuesto: ${money(o.presupuesto)}\n💵 Seña abonada: ${money(o.sena)}\n✅ Total cobrado: ${money((o.sena||0)+(o.pagado||0))}\n📌 *Saldo pendiente: ${money(saldo)}*\n\n¡Gracias por confiar en nosotros!`;
  
  const body=`<div class="space-y-4">
   <div class="p-4 bg-slate-50 border rounded-lg font-mono text-xs whitespace-pre-line leading-relaxed">${textoWP}</div>
@@ -319,80 +390,87 @@ function reciboOT(i){
  abrirModal('Comprobante de Orden #' + String(o.id).slice(-6), body);
 }
 
-function cobrarOT(i){
- const o=state.ots.find(x=>String(x.id)===String(i));if(!o)return;
- const saldo=Math.max(0,(o.presupuesto||0)-(o.sena||0));
+async function cobrarOT(i){
+ const o=state.ots.find(x=>String(x.id)===String(i));
+ if(!o)return alert('No se encontró la orden de trabajo. Recargá la página e intentá nuevamente.');
+ const saldo=Math.max(0,(Number(o.presupuesto)||0)-(Number(o.sena)||0)-(Number(o.pagado)||0));
  const lista=(o.estado==='Lista'||o.estado==='Entregada');
- const sugerido=lista&&o.montoCobrar!=null?o.montoCobrar:saldo;
- const m=+prompt('Monto a cobrar',sugerido)||0;if(m<=0)return;
- agregarMovInterno('Entrada','Reparaciones','Efectivo',m,'Cobro OT #'+String(i).slice(-6));
- o.sena=(o.sena||0)+m; o.estado='Entregada'; o.montoCobrar=0; save('ots'); refresh();
+ const sugerido=lista&&Number(o.montoCobrar)>0?Number(o.montoCobrar):saldo;
+ const entrada=prompt('Monto a cobrar',String(sugerido));
+ if(entrada===null)return;
+ const m=Number(String(entrada).replace(',','.'));
+ if(!Number.isFinite(m)||m<=0)return alert('Ingresá un monto válido mayor a 0.');
+ try{
+  const nuevoPagado=(Number(o.pagado)||0)+m;
+  const nuevoSaldo=Math.max(0,saldo-m);
+  // Primero comprobamos que Supabase permita actualizar la OT. Así evitamos crear un movimiento de Caja si UPDATE está bloqueado por RLS.
+  await dbUpdate('taller',o.id,{precio_pagado:nuevoPagado,estado:'Entregada',precio_cobrado:nuevoSaldo});
+  await agregarMovInterno('Entrada','Reparaciones','Efectivo',m,'Cobro OT #'+String(i).slice(-6)+' - Cliente: '+(o.cliente||'Sin nombre'));
+  await cargarSupabase(true);
+  alert('Cobro registrado correctamente.');
+ }catch(e){
+  console.error(e);
+  alert('No se pudo registrar el cobro.\n\n'+e.message);
+  await cargarSupabase(true);
+ }
 }
 
 /* --- CAJA & CONCEPTOS --- */
 function actualizarSelectConceptos(){
- const tipo=document.getElementById('mTipo')?.value || 'Entrada';
  const sel=document.getElementById('mConcepto'); if(!sel)return;
- const lista=(tipo==='Entrada'?state.conceptosEntrada:state.conceptosSalida);
- sel.innerHTML=lista.map(c=>`<option>${c}</option>`).join('');
+ const lista=state.conceptos.map(x=>x.nombre);
+ sel.innerHTML=(lista.length?lista:['General']).map(c=>`<option>${esc(c)}</option>`).join('');
 }
 function abrirGestionConceptos(){
- const body=`<div class="space-y-4">
-  <p class="text-sm text-slate-500">Agrega o elimina conceptos personalizados para ingresos y egresos.</p>
-  <div class="grid grid-cols-2 gap-4">
-   <div>
-    <h4 class="font-semibold text-sm mb-2 text-emerald-700">Conceptos de Entrada</h4>
-    <div id="listaCEnt" class="space-y-1 mb-2 max-h-40 overflow-auto"></div>
-    <div class="flex gap-1"><input id="nuevoCEnt" class="border p-1 rounded text-sm flex-1" placeholder="Nuevo..."><button onclick="addConcepto('Entrada')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">+</button></div>
-   </div>
-   <div>
-    <h4 class="font-semibold text-sm mb-2 text-rose-700">Conceptos de Salida</h4>
-    <div id="listaCSal" class="space-y-1 mb-2 max-h-40 overflow-auto"></div>
-    <div class="flex gap-1"><input id="nuevoCSal" class="border p-1 rounded text-sm flex-1" placeholder="Nuevo..."><button onclick="addConcepto('Salida')" class="bg-rose-600 text-white px-2 py-1 rounded text-xs">+</button></div>
-   </div>
-  </div>
-  <button onclick="cerrarModal(); refresh();" class="bg-slate-800 text-white px-4 py-2 rounded w-full">Listo</button>
- </div>`;
- abrirModal('⚙️ Gestionar Conceptos de Caja', body);
- renderListasConceptosModal();
+ const body=`<div class="space-y-4"><p class="text-sm text-slate-500">Los conceptos se guardan en Supabase y quedan disponibles tanto para entradas como para salidas.</p><div id="listaConceptos" class="space-y-1 mb-2 max-h-64 overflow-auto"></div><div class="flex gap-1"><input id="nuevoConcepto" class="border p-2 rounded text-sm flex-1" placeholder="Nuevo concepto..."><button onclick="addConcepto()" class="bg-emerald-600 text-white px-3 py-2 rounded">Agregar</button></div><button onclick="cerrarModal();refresh();" class="bg-slate-800 text-white px-4 py-2 rounded w-full">Listo</button></div>`;
+ abrirModal('⚙️ Gestionar Conceptos de Caja',body);renderListasConceptosModal();
 }
 function renderListasConceptosModal(){
- const le=document.getElementById('listaCEnt'), ls=document.getElementById('listaCSal');
- if(le) le.innerHTML=state.conceptosEntrada.map((c,idx)=>`<div class="flex justify-between items-center text-sm border-b py-1"><span>${c}</span>${idx>0?`<button onclick="delConcepto('Entrada',${idx})" class="text-rose-600 text-xs">✕</button>`:''}</div>`).join('');
- if(ls) ls.innerHTML=state.conceptosSalida.map((c,idx)=>`<div class="flex justify-between items-center text-sm border-b py-1"><span>${c}</span>${idx>0?`<button onclick="delConcepto('Salida',${idx})" class="text-rose-600 text-xs">✕</button>`:''}</div>`).join('');
+ const el=document.getElementById('listaConceptos');if(!el)return;
+ el.innerHTML=state.conceptos.map(c=>`<div class="flex justify-between items-center text-sm border-b py-2"><span>${esc(c.nombre)}</span><button onclick="delConcepto('${c.id}')" class="text-rose-600 text-xs">🗑️</button></div>`).join('')||'<p class="text-slate-400">Sin conceptos.</p>';
 }
-function addConcepto(tipo){
- const input=document.getElementById(tipo==='Entrada'?'nuevoCEnt':'nuevoCSal');
- const val=input?.value.trim(); if(!val)return;
- if(tipo==='Entrada') state.conceptosEntrada.push(val); else state.conceptosSalida.push(val);
- save(tipo==='Entrada'?'conceptosEntrada':'conceptosSalida');
- input.value=''; renderListasConceptosModal(); actualizarSelectConceptos();
+async function addConcepto(){
+ const input=document.getElementById('nuevoConcepto');const val=input?.value.trim();if(!val)return;
+ try{await dbInsert('conceptos',{nombre:val});input.value='';await cargarSupabase(true);renderListasConceptosModal()}catch(e){alert('No se pudo agregar el concepto: '+e.message)}
 }
-function delConcepto(tipo,idx){
- if(tipo==='Entrada') state.conceptosEntrada.splice(idx,1); else state.conceptosSalida.splice(idx,1);
- save(tipo==='Entrada'?'conceptosEntrada':'conceptosSalida');
- renderListasConceptosModal(); actualizarSelectConceptos();
+async function delConcepto(i){
+ if(!confirm('¿Eliminar este concepto?'))return;
+ try{await dbDelete('conceptos',i);await cargarSupabase(true);renderListasConceptosModal()}catch(e){alert('No se pudo eliminar: '+e.message)}
 }
 
-function agregarMovInterno(tipo,concepto,medio,monto,descripcion){state.movimientos.unshift({id:id(),fecha:new Date().toISOString(),tipo,concepto,medio,monto:Number(monto),descripcion});save('movimientos')}
-function guardarMovimiento(){const m=+mMonto.value;if(m<=0)return alert('Monto inválido.');agregarMovInterno(mTipo.value,mConcepto.value,mMedio.value,m,mDescripcion.value.trim());mMonto.value='';mDescripcion.value='';refresh()}
+async function agregarMovInterno(tipo,concepto,medio,monto,descripcion){
+ const payload={tipo, categoria:concepto, concepto, medio_pago:medio, monto:Number(monto), descripcion:descripcion||'', fecha:fechaHoraLocal()};
+ return dbInsert('caja',payload);
+}
+async function guardarMovimiento(){
+ const m=+mMonto.value;if(m<=0)return alert('Monto inválido.');
+ try{await agregarMovInterno(mTipo.value,mConcepto.value,mMedio.value,m,mDescripcion.value.trim());mMonto.value='';mDescripcion.value='';await cargarSupabase(true)}catch(e){alert('No se pudo guardar el movimiento: '+e.message)}
+}
 function abrirMovimiento(){tab('caja');setTimeout(()=>mMonto.focus(),100)}
 function editarMov(i){const m=state.movimientos.find(x=>String(x.id)===String(i));if(!m)return;const body=`<div class="space-y-3"><select id="emTipo" class="border p-2 rounded w-full"><option ${m.tipo==='Entrada'?'selected':''}>Entrada</option><option ${m.tipo==='Salida'?'selected':''}>Salida</option></select><input id="emConc" class="border p-2 rounded w-full" value="${esc(m.concepto)}"><select id="emMedio" class="border p-2 rounded w-full">${['Efectivo','Transferencia','Débito','Crédito','Mercado Pago','Otro'].map(x=>`<option ${x===m.medio?'selected':''}>${x}</option>`).join('')}</select><input id="emMonto" type="number" class="border p-2 rounded w-full" value="${m.monto}"><textarea id="emDesc" class="border p-2 rounded w-full">${esc(m.descripcion)}</textarea><button onclick="guardarEdMov('${m.id}')" class="bg-blue-600 text-white px-4 py-2 rounded">Guardar cambios</button></div>`;abrirModal('Modificar movimiento',body)}
-function guardarEdMov(i){const m=state.movimientos.find(x=>String(x.id)===String(i));if(!m)return;m.tipo=emTipo.value;m.concepto=emConc.value;m.medio=emMedio.value;m.monto=+emMonto.value;m.descripcion=emDesc.value;save('movimientos');cerrarModal();refresh()}
+async function guardarEdMov(i){
+ const m=state.movimientos.find(x=>String(x.id)===String(i));if(!m)return;
+ const payload={tipo:emTipo.value,categoria:emConc.value,concepto:emConc.value,medio_pago:emMedio.value,monto:+emMonto.value||0,descripcion:emDesc.value};
+ try{await dbUpdate('caja',m.id,payload);cerrarModal();await cargarSupabase(true)}catch(e){alert('No se pudo modificar el movimiento: '+e.message)}
+}
 function renderCaja(){const q=(document.getElementById('fCaja')?.value||'').toLowerCase(),t=document.getElementById('ftCaja')?.value||'Todos';let a=state.movimientos.filter(m=>(t==='Todos'||m.tipo===t)&&((m.concepto+' '+m.descripcion+' '+m.medio).toLowerCase().includes(q)));let en=0,sa=0,ef=0,tr=0;a.forEach(m=>{if(m.tipo==='Entrada')en+=m.monto;else sa+=m.monto;if(m.medio==='Efectivo')ef+=(m.tipo==='Entrada'?m.monto:-m.monto);if(m.medio==='Transferencia')tr+=(m.tipo==='Entrada'?m.monto:-m.monto)});cEntradas.textContent=money(en);cSalidas.textContent=money(sa);cNeto.textContent=money(en-sa);cEfectivo.textContent=money(ef);cTransfer.textContent=money(tr);tablaCaja.innerHTML=a.map(m=>`<tr class="border-b"><td class="p-2 small">${fecha(m.fecha)}</td><td class="p-2 ${m.tipo==='Entrada'?'text-emerald-600':'text-rose-600'} font-semibold">${m.tipo}</td><td class="p-2">${esc(m.concepto)}</td><td class="p-2">${esc(m.medio)}</td><td class="p-2">${esc(m.descripcion)}</td><td class="p-2 font-bold">${money(m.monto)}</td><td class="p-2"><button onclick="editarMov('${m.id}')" class="text-blue-600">✏️</button> <button onclick="borrar('movimientos','${m.id}')" class="text-rose-600">🗑️</button></td></tr>`).join('')||'<tr><td colspan="7" class="p-4 text-center">Sin movimientos.</td></tr>'}
 function abrirArqueo(){const efectivo=state.movimientos.reduce((s,m)=>s+(m.medio==='Efectivo'?(m.tipo==='Entrada'?m.monto:-m.monto):0),0);abrirModal('🧾 Arqueo de caja',`<div class="space-y-3"><p>Saldo teórico de efectivo: <b>${money(efectivo)}</b></p><input id="arqueoReal" type="number" class="border p-2 rounded w-full" placeholder="Efectivo contado"><input id="arqueoObs" class="border p-2 rounded w-full" placeholder="Observaciones"><button onclick="guardarArqueo(${efectivo})" class="bg-slate-800 text-white px-4 py-2 rounded">Cerrar arqueo</button></div>`)}
 function guardarArqueo(teorico){const real=+arqueoReal.value||0;state.arqueos.unshift({id:id(),fecha:new Date().toISOString(),teorico,real,diferencia:real-teorico,obs:arqueoObs.value});save('arqueos');cerrarModal();renderArqueos()}
 function renderArqueos(){listaArqueos.innerHTML=state.arqueos.slice(0,10).map(a=>`<div class="border-b py-2 flex justify-between"><span>${fecha(a.fecha)}<br><span class="small">${esc(a.obs||'')}</span></span><span>Teórico ${money(a.teorico)} · Real ${money(a.real)} · <b class="${a.diferencia===0?'text-emerald-600':'text-rose-600'}">${money(a.diferencia)}</b></span></div>`).join('')||'<p class="text-slate-400">Todavía no hay arqueos.</p>'}
 
 /* --- CRM & HISTORIAL --- */
-function guardarCliente(){const c={id:id(),nombre:cliNombre.value.trim(),telefono:cliTel.value.trim(),email:cliEmail.value.trim(),direccion:cliDireccion.value.trim(),segmento:cliSegmento.value,notas:cliNotas.value.trim(),fecha:new Date().toISOString()};if(!c.nombre)return alert('Nombre obligatorio.');state.clientes.unshift(c);save('clientes');['cliNombre','cliTel','cliEmail','cliDireccion','cliNotas'].forEach(x=>document.getElementById(x).value='');refresh()}
+async function guardarCliente(){
+ const c={nombre:cliNombre.value.trim(),telefono:cliTel.value.trim(),email:cliEmail.value.trim()||null,direccion:cliDireccion.value.trim()||null,segmento:cliSegmento.value||'Nuevo',notas:cliNotas.value.trim()};if(!c.nombre)return alert('Nombre obligatorio.');
+ try{await dbInsert('clientes',c);['cliNombre','cliTel','cliEmail','cliDireccion','cliNotas'].forEach(x=>document.getElementById(x).value='');await cargarSupabase(true)}catch(e){alert('No se pudo guardar el cliente: '+e.message)}
+}
+
 function renderCRM(){
  const q=(buscarCli?.value||'').toLowerCase();
  tablaCRM.innerHTML=state.clientes.filter(c=>(c.nombre+' '+c.telefono+' '+c.email).toLowerCase().includes(q)).map(c=>{
   const vs=state.ventas.filter(v=>(c.telefono&&v.telefono===c.telefono)||(v.cliente&&v.cliente.toLowerCase()===c.nombre.toLowerCase()));
   const ots=state.ots.filter(o=>(c.telefono&&o.telefono===c.telefono)||(o.cliente&&o.cliente.toLowerCase()===c.nombre.toLowerCase()));
   const gVentas=vs.reduce((s,v)=>s+v.total,0);
-  const gTaller=ots.reduce((s,o)=>s+(o.sena||0),0);
+  const gTaller=ots.reduce((s,o)=>s+(o.sena||0)+(o.pagado||0),0);
   const g=gVentas+gTaller;
   const cantidadOps=vs.length+ots.length;
   const last=[...vs,...ots].map(x=>x.fecha).sort().reverse()[0]||c.fecha;
@@ -404,7 +482,7 @@ function historialCliente(i){
  const vs=state.ventas.filter(v=>(c.telefono&&v.telefono===c.telefono)||(v.cliente&&v.cliente.toLowerCase()===c.nombre.toLowerCase()));
  const ots=state.ots.filter(o=>(c.telefono&&o.telefono===c.telefono)||(o.cliente&&o.cliente.toLowerCase()===c.nombre.toLowerCase()));
  const totalVentas=vs.reduce((s,v)=>s+v.total,0);
- const totalTaller=ots.reduce((s,o)=>s+(o.sena||0),0);
+ const totalTaller=ots.reduce((s,o)=>s+(o.sena||0)+(o.pagado||0),0);
  const totalGastado=totalVentas+totalTaller;
  
  let html=`<div class="space-y-4">
@@ -422,7 +500,7 @@ function historialCliente(i){
   <div>
    <h4 class="font-semibold text-sm mb-2">🛠️ Historial de Taller / Services (${ots.length})</h4>
    <div class="space-y-1 max-h-40 overflow-auto text-xs">
-    ${ots.map(o=>`<div class="border-b py-1 flex justify-between"><span>#${String(o.id).slice(-6)} - ${esc(o.bici)}: ${esc(o.trabajo)}</span><span class="font-semibold">${o.estado} (${money(o.presupuesto)})</span></div>`).join('')||'<p class="text-slate-400">Sin órdenes de taller registradas.</p>'}
+    ${ots.map(o=>{const cobrado=(o.sena||0)+(o.pagado||0);return `<div class="border-b py-1 flex justify-between gap-3"><span>${fecha(o.fecha)} · #${String(o.id).slice(-6)} - ${esc(o.bici)}: ${esc(o.trabajo)}</span><span class="font-semibold text-right">${o.estado}<br>Cobrado: ${money(cobrado)}</span></div>`}).join('')||'<p class="text-slate-400">Sin órdenes de taller registradas.</p>'}
    </div>
   </div>
  </div>`;
@@ -431,11 +509,33 @@ function historialCliente(i){
 function crmWP(i){const c=state.clientes.find(x=>String(x.id)===String(i));if(!c?.telefono)return;window.open('https://wa.me/549'+c.telefono.replace(/\D/g,'')+'?text='+encodeURIComponent(`Hola ${c.nombre}! Te escribimos de Bicicletería del Abasto. ¿Cómo estás? Si necesitás service o algún repuesto, estamos a disposición.`),'_blank')}
 
 /* --- STOCK --- */
-function guardarStock(){const x={id:id(),marca:sMarca.value.trim(),modelo:sModelo.value.trim(),variante:sColor.value.trim(),precio:+sPrecio.value||0,costo:+sCosto.value||0,cantidad:+sCantidad.value||0};if(!x.modelo)return alert('Producto obligatorio.');state.stock.unshift(x);save('stock');['sMarca','sModelo','sColor','sPrecio','sCosto'].forEach(y=>document.getElementById(y).value='');sCantidad.value=1;refresh()}
-function renderStock(){tablaStock.innerHTML=state.stock.map(x=>{const mg=x.precio?((x.precio-x.costo)/x.precio*100):0;return `<tr class="border-b"><td class="p-2 font-semibold">${esc(x.marca)} ${esc(x.modelo)}</td><td class="p-2">${esc(x.variante)}</td><td class="p-2">${x.cantidad}</td><td class="p-2">${money(x.costo)}</td><td class="p-2">${money(x.precio)}</td><td class="p-2">${mg.toFixed(1)}%</td><td class="p-2"><button onclick="venderStock('${x.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">Vender</button> <button onclick="borrar('stock','${x.id}')" class="text-rose-600">🗑️</button></td></tr>`}).join('')||'<tr><td colspan="7" class="p-4 text-center">Sin stock.</td></tr>'}
-function venderStock(i){const x=state.stock.find(s=>String(s.id)===String(i));if(!x||x.cantidad<=0)return;const c=prompt('Cliente (opcional)','');const medio=prompt('Medio de pago','Efectivo')||'Efectivo';const cant=+prompt('Cantidad',1)||1;if(cant>x.cantidad)return alert('Stock insuficiente.');x.cantidad-=cant;save('stock');const total=x.precio*cant,costo=x.costo*cant;state.ventas.unshift({id:id(),fecha:new Date().toISOString(),cliente:c||'Consumidor final',telefono:'',producto:x.marca+' '+x.modelo,total,costo,ganancia:total-costo,cantidad:cant,medio});save('ventas');agregarMovInterno('Entrada','Venta de productos',medio,total,'Venta '+x.modelo);refresh()}
+async function guardarStock(){
+ const x={marca:sMarca.value.trim(),modelo:sModelo.value.trim(),color:sColor.value.trim(),talle:'',precio:+sPrecio.value||0,costo:+sCosto.value||0,estado:'Disponible',stock:+sCantidad.value||0};if(!x.modelo)return alert('Producto obligatorio.');
+ try{await dbInsert('inventario_bicicletas',x);['sMarca','sModelo','sColor','sPrecio','sCosto'].forEach(y=>document.getElementById(y).value='');sCantidad.value=1;await cargarSupabase(true)}catch(e){alert('No se pudo guardar el stock: '+e.message)}
+}
 
-function guardarVenta(){const cantidad=+vCantidad.value||1,total=(+vPrecio.value||0)*cantidad,costo=(+vCosto.value||0)*cantidad;if(total<=0)return alert('Precio inválido.');const v={id:id(),fecha:new Date().toISOString(),cliente:vCliente.value.trim()||'Consumidor final',telefono:vTelefono.value.trim(),producto:vProducto.value.trim()||'Venta general',total,costo,ganancia:total-costo,cantidad,medio:vMedio.value,notas:vNotas.value.trim()};state.ventas.unshift(v);save('ventas');agregarMovInterno('Entrada','Venta',v.medio,total,v.producto+' - '+v.cliente);const c=state.clientes.find(x=>x.telefono&&x.telefono===v.telefono);if(v.telefono&&!c)state.clientes.unshift({id:id(),nombre:v.cliente,telefono:v.telefono,email:'',direccion:'',segmento:'Nuevo',notas:'',fecha:new Date().toISOString()});save('clientes');['vCliente','vTelefono','vProducto','vCosto','vPrecio','vNotas'].forEach(x=>document.getElementById(x).value='');vCantidad.value=1;refresh()}
+function renderStock(){tablaStock.innerHTML=state.stock.map(x=>{const mg=x.precio?((x.precio-x.costo)/x.precio*100):0;return `<tr class="border-b"><td class="p-2 font-semibold">${esc(x.marca)} ${esc(x.modelo)}</td><td class="p-2">${esc(x.variante)}</td><td class="p-2">${x.cantidad}</td><td class="p-2">${money(x.costo)}</td><td class="p-2">${money(x.precio)}</td><td class="p-2">${mg.toFixed(1)}%</td><td class="p-2"><button onclick="venderStock('${x.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">Vender</button> <button onclick="borrar('stock','${x.id}')" class="text-rose-600">🗑️</button></td></tr>`}).join('')||'<tr><td colspan="7" class="p-4 text-center">Sin stock.</td></tr>'}
+async function venderStock(i){
+ const x=state.stock.find(s=>String(s.id)===String(i));if(!x||x.cantidad<=0)return;
+ const c=prompt('Cliente (opcional)','');const medio=prompt('Medio de pago','Efectivo')||'Efectivo';const cant=+prompt('Cantidad',1)||1;if(cant>x.cantidad)return alert('Stock insuficiente.');
+ const total=x.precio*cant,costo=x.costo*cant;
+ try{
+  await dbUpdate('inventario_bicicletas',x.id,{stock:x.cantidad-cant});
+  state.ventas.unshift({id:id(),fecha:new Date().toISOString(),cliente:c||'Consumidor final',telefono:'',producto:x.marca+' '+x.modelo,total,costo,ganancia:total-costo,cantidad:cant,medio});save('ventas');
+  await agregarMovInterno('Entrada','Venta de productos',medio,total,'Venta '+x.modelo);await cargarSupabase(true);
+ }catch(e){alert('No se pudo registrar la venta de stock: '+e.message)}
+}
+
+async function guardarVenta(){
+ const cantidad=+vCantidad.value||1,total=(+vPrecio.value||0)*cantidad,costo=(+vCosto.value||0)*cantidad;if(total<=0)return alert('Precio inválido.');
+ const v={id:id(),fecha:new Date().toISOString(),cliente:vCliente.value.trim()||'Consumidor final',telefono:vTelefono.value.trim(),producto:vProducto.value.trim()||'Venta general',total,costo,ganancia:total-costo,cantidad,medio:vMedio.value,notas:vNotas.value.trim()};
+ state.ventas.unshift(v);save('ventas');
+ try{
+  await agregarMovInterno('Entrada','Venta',v.medio,total,v.producto+' - '+v.cliente);
+  if(v.telefono&&!state.clientes.some(x=>x.telefono===v.telefono))await dbInsert('clientes',{nombre:v.cliente,telefono:v.telefono,email:null,direccion:null});
+  ['vCliente','vTelefono','vProducto','vCosto','vPrecio','vNotas'].forEach(x=>document.getElementById(x).value='');vCantidad.value=1;await cargarSupabase(true);
+ }catch(e){alert('La venta quedó guardada localmente, pero falló la sincronización de caja/cliente: '+e.message);refresh()}
+}
 function renderVentas(){tablaVentas.innerHTML=state.ventas.map(v=>{const mg=v.total?((v.ganancia/v.total)*100):0;return `<tr class="border-b"><td class="p-2 small">${fecha(v.fecha)}</td><td class="p-2">${esc(v.cliente)}</td><td class="p-2">${esc(v.producto)}</td><td class="p-2">${v.cantidad}</td><td class="p-2">${money(v.total)}</td><td class="p-2">${money(v.costo)}</td><td class="p-2 text-emerald-600 font-semibold">${money(v.ganancia)}</td><td class="p-2">${mg.toFixed(1)}%</td><td class="p-2"><button onclick="borrar('ventas','${v.id}')" class="text-rose-600">🗑️</button></td></tr>`}).join('')||'<tr><td colspan="9" class="p-4 text-center">Sin ventas.</td></tr>'}
 
 /* --- COMPRAS & PROVEEDORES --- */
@@ -480,63 +580,93 @@ function borrarProveedor(i){
  save('proveedores'); renderListaProvModal(); actualizarSelectProveedores(); renderCompras();
 }
 
-function guardarCompra(){
+async function guardarCompra(){
  const provNombre=document.getElementById('pNombreSelect')?.value;
  const q=+pCantidad.value||1, c=+pCosto.value||0, total=q*c;
  if(!provNombre||total<=0)return alert('Selecciona proveedor, cantidad y costo válidos.');
  state.compras.unshift({id:id(),fecha:new Date().toISOString(),proveedor:provNombre,producto:pProducto.value.trim()||'Insumos / Repuestos',cantidad:q,costo:c,total,medio:pMedio.value});
  save('compras');
- agregarMovInterno('Salida','Compra a proveedores',pMedio.value,total,provNombre+' - '+(pProducto.value||'Insumos'));
- pProducto.value=''; pCantidad.value=''; pCosto.value=''; refresh();
+ await agregarMovInterno('Salida','Compra a proveedores',pMedio.value,total,provNombre+' - '+(pProducto.value||'Insumos'));
+ pProducto.value=''; pCantidad.value=''; pCosto.value=''; await cargarSupabase(true);
 }
 function renderCompras(){
  listaProveedores.innerHTML=state.proveedores.map(p=>`<div class="border-b py-2"><b>${esc(p.nombre)}</b><br><span class="small">${esc(p.contacto||'Sin contacto')}</span></div>`).join('')||'<p class="text-slate-400">Sin proveedores.</p>';
  listaCompras.innerHTML=state.compras.slice(0,20).map(c=>`<div class="border-b py-2 flex justify-between"><span><b>${esc(c.proveedor)}</b> · ${esc(c.producto)}<br><span class="small">${fecha(c.fecha)} · ${c.cantidad} un.</span></span><b class="money">${money(c.total)}</b></div>`).join('')||'<p class="text-slate-400">Sin compras.</p>';
 }
 
-function borrar(k,i){if(!confirm('¿Eliminar este registro?'))return;state[k]=state[k].filter(x=>String(x.id)!==String(i));save(k);refresh()}
+async function borrar(k,i){
+ if(!confirm('¿Eliminar este registro? Esta acción no se puede deshacer.'))return;
+ const tabla={movimientos:'caja',clientes:'clientes',ots:'taller',stock:'inventario_bicicletas'}[k];
+ if(tabla){
+  try{
+   await dbDelete(tabla,i);
+   await cargarSupabase(true);
+   alert('Registro eliminado correctamente.');
+  }catch(e){
+   console.error(e);
+   alert('No se pudo eliminar.\n\n'+e.message);
+   await cargarSupabase(true);
+  }
+  return;
+ }
+ state[k]=state[k].filter(x=>String(x.id)!==String(i));save(k);refresh();
+}
 function rango(){const now=new Date();let from=new Date(0),to=new Date();if(periodoActual==='hoy'){from=new Date();from.setHours(0,0,0,0)}if(periodoActual==='semana'){from=new Date();from.setDate(now.getDate()-6);from.setHours(0,0,0,0)}if(periodoActual==='mes'){from=new Date(now.getFullYear(),now.getMonth(),1)}if(periodoActual==='anio'){from=new Date(now.getFullYear(),0,1)}return [from,to]}
 function periodo(p){periodoActual=p;reportes()}
-function filtrarMov(){const [f,t]=rango();return state.movimientos.filter(m=>{const d=new Date(m.fecha);return d>=f&&d<=t})}
+function filtrarMovPeriodo(){const [f,t]=rango();return state.movimientos.filter(m=>{const d=new Date(m.fecha);return d>=f&&d<=t})}
+function filtrarMov(){const conc=document.getElementById('rConceptoFiltro')?.value||'Todos';const medio=document.getElementById('rMedioFiltro')?.value||'Todos';return filtrarMovPeriodo().filter(m=>(conc==='Todos'||m.concepto===conc)&&(medio==='Todos'||m.medio===medio))}
 function filtrarVentas(){const [f,t]=rango();return state.ventas.filter(v=>{const d=new Date(v.fecha);return d>=f&&d<=t})}
 function filtrarCompras(){const [f,t]=rango();return state.compras.filter(c=>{const d=new Date(c.fecha);return d>=f&&d<=t})}
-
-function reportes(){
- const vs=filtrarVentas(), ms=filtrarMov(), cs=filtrarCompras();
- const tallerIngresos=ms.filter(m=>m.tipo==='Entrada'&&(m.concepto==='Reparaciones'||m.concepto==='Seña taller')).reduce((s,m)=>s+m.monto,0);
- const fact=vs.reduce((s,v)=>s+v.total,0)+tallerIngresos, cost=vs.reduce((s,v)=>s+v.costo,0), gan=fact-cost; 
- const totalCompras=cs.reduce((s,c)=>s+c.total,0);
- const resultadoNeto=gan - totalCompras;
-
- rFact.textContent=money(fact); rCosto.textContent=money(cost); rGanancia.textContent=money(gan); rMargen.textContent=(fact?gan/fact*100:0).toFixed(2)+'%';
- rTotalCompras.textContent=money(totalCompras);
- rResultadoNeto.textContent=money(resultadoNeto);
- rResultadoNeto.className=resultadoNeto>=0?'text-xl font-bold text-emerald-800':'text-xl font-bold text-rose-800';
-
- let medios={}; ms.forEach(m=>{medios[m.medio]=(medios[m.medio]||0)+(m.tipo==='Entrada'?m.monto:-m.monto)});
- reporteMedios.innerHTML=Object.entries(medios).map(([k,v])=>`<div class="flex justify-between border-b py-2 text-sm"><span>${esc(k)}</span><b class="money">${money(v)}</b></div>`).join('')||'Sin datos';
-
- let provGastos={}; cs.forEach(c=>{provGastos[c.proveedor]=(provGastos[c.proveedor]||0)+c.total});
- reporteProveedores.innerHTML=Object.entries(provGastos).map(([k,v])=>`<div class="flex justify-between border-b py-2 text-sm"><span>${esc(k)}</span><b class="money text-rose-700">${money(v)}</b></div>`).join('')||'Sin compras a proveedores';
-
- let dias={}; ms.forEach(m=>{const d=isoDate(m.fecha);dias[d]??={e:0,s:0};if(m.tipo==='Entrada')dias[d].e+=m.monto;else dias[d].s+=m.monto});
- reporteDias.innerHTML=Object.entries(dias).sort((a,b)=>b[0].localeCompare(a[0])).map(([d,x])=>`<div class="flex justify-between border-b py-2 text-sm"><span>${d}</span><span><span class="text-emerald-700">+${money(x.e)}</span> / <span class="text-rose-700">-${money(x.s)}</span></span></div>`).join('')||'Sin datos';
- 
- renderCharts(ms,vs);
+function actualizarFiltrosReportes(){
+ const sel=document.getElementById('rConceptoFiltro');if(!sel)return;
+ const actual=sel.value||'Todos';const conceptos=[...new Set(state.movimientos.map(m=>m.concepto).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+ sel.innerHTML='<option value="Todos">Todos los conceptos</option>'+conceptos.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+ if(actual==='Todos'||conceptos.includes(actual))sel.value=actual;
 }
-function renderCharts(ms,vs){
- const byDay={}; ms.forEach(m=>{const d=isoDate(m.fecha);byDay[d]??={e:0,s:0};if(m.tipo==='Entrada')byDay[d].e+=m.monto;else byDay[d].s+=m.monto});
- const labels=Object.keys(byDay).sort();
- if(chartFin)chartFin.destroy();
- chartFin=new Chart(document.getElementById('chartFin'),{type:'bar',data:{labels,datasets:[{label:'Entradas',data:labels.map(d=>byDay[d].e)},{label:'Salidas',data:labels.map(d=>byDay[d].s)}]},options:{responsive:true,maintainAspectRatio:false}});
- 
- let cat={}; vs.forEach(v=>cat[v.producto]=(cat[v.producto]||0)+v.total);
- if(chartConcept)chartConcept.destroy();
- chartConcept=new Chart(document.getElementById('chartConcept'),{type:'doughnut',data:{labels:Object.keys(cat),datasets:[{data:Object.values(cat)}]},options:{responsive:true,maintainAspectRatio:false}});
+function clavePeriodo(fechaISO,agrupar){const d=new Date(fechaISO);if(agrupar==='anio')return String(d.getFullYear());if(agrupar==='mes')return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;return isoDate(d)}
+function reportes(){
+ actualizarFiltrosReportes();
+ const ms=filtrarMov(),vs=filtrarVentas();
+ const entradas=ms.filter(m=>m.tipo==='Entrada').reduce((s,m)=>s+m.monto,0);
+ const salidas=ms.filter(m=>m.tipo==='Salida').reduce((s,m)=>s+m.monto,0);
+ const movido=entradas+salidas,saldo=entradas-salidas;
+ rCajaEntradas.textContent=money(entradas);rCajaSalidas.textContent=money(salidas);rCajaMovimiento.textContent=money(movido);rCajaSaldo.textContent=money(saldo);
+ rCajaSaldo.className='text-xl font-bold '+(saldo>=0?'text-emerald-700':'text-rose-700');
+
+ // RENTABILIDAD COMERCIAL: deliberadamente NO suma Caja.
+ // Una venta o cobro puede existir también como movimiento de Caja; usar ambos aquí duplicaría ingresos.
+ const ventasProductos=vs.reduce((s,v)=>s+(Number(v.total)||0),0);
+ const costoVentas=vs.reduce((s,v)=>s+(Number(v.costo)||0),0);
+ const [f,t]=rango();
+ const otsPeriodo=state.ots.filter(o=>{const d=new Date(o.fecha);return d>=f&&d<=t});
+ // Taller usa importes efectivamente registrados en la OT: seña + precio_pagado.
+ // No usa conceptos de Caja, por lo que no duplica los cobros que Caja ya muestra en el flujo.
+ const ingresosTaller=otsPeriodo.reduce((s,o)=>s+(Number(o.sena)||0)+(Number(o.pagado)||0),0);
+ const costoTaller=otsPeriodo.reduce((s,o)=>s+(Number(o.costo)||0),0);
+ const fact=ventasProductos+ingresosTaller;
+ const cost=costoVentas+costoTaller;
+ const gan=fact-cost;
+ rVentasProductos.textContent=money(ventasProductos);
+ rIngresosTaller.textContent=money(ingresosTaller);
+ rFact.textContent=money(fact);rCosto.textContent=money(cost);rGanancia.textContent=money(gan);rMargen.textContent=(fact?gan/fact*100:0).toFixed(2)+'%';
+ rGanancia.className='text-xl font-bold '+(gan>=0?'text-emerald-600':'text-rose-600');
+
+ let conceptos={};ms.forEach(m=>{const k=m.concepto||'Sin concepto';conceptos[k]??={e:0,s:0};if(m.tipo==='Entrada')conceptos[k].e+=m.monto;else conceptos[k].s+=m.monto});
+ reporteConceptos.innerHTML=Object.entries(conceptos).sort((a,b)=>(b[1].e+b[1].s)-(a[1].e+a[1].s)).map(([k,x])=>`<div class="border-b py-2 text-sm"><div class="font-semibold">${esc(k)}</div><div class="flex justify-between gap-2 small"><span class="text-emerald-700">Entra ${money(x.e)}</span><span class="text-rose-700">Sale ${money(x.s)}</span><b>Queda ${money(x.e-x.s)}</b></div></div>`).join('')||'Sin datos';
+ let medios={};ms.forEach(m=>{medios[m.medio]=(medios[m.medio]||0)+(m.tipo==='Entrada'?m.monto:-m.monto)});reporteMedios.innerHTML=Object.entries(medios).map(([k,v])=>`<div class="flex justify-between border-b py-2 text-sm"><span>${esc(k)}</span><b class="money">${money(v)}</b></div>`).join('')||'Sin datos';
+ let dias={};ms.forEach(m=>{const d=isoDate(m.fecha);dias[d]??={e:0,s:0};if(m.tipo==='Entrada')dias[d].e+=m.monto;else dias[d].s+=m.monto});reporteDias.innerHTML=Object.entries(dias).sort((a,b)=>b[0].localeCompare(a[0])).map(([d,x])=>`<div class="flex justify-between border-b py-2 text-sm"><span>${d}</span><span><span class="text-emerald-700">+${money(x.e)}</span> / <span class="text-rose-700">-${money(x.s)}</span> / <b>${money(x.e-x.s)}</b></span></div>`).join('')||'Sin datos';
+
+ const agrupar=document.getElementById('rAgrupar')?.value||'dia';let flujo={};ms.forEach(m=>{const k=clavePeriodo(m.fecha,agrupar);flujo[k]??={e:0,s:0};if(m.tipo==='Entrada')flujo[k].e+=m.monto;else flujo[k].s+=m.monto});
+ reporteFlujo.innerHTML=Object.entries(flujo).sort((a,b)=>b[0].localeCompare(a[0])).map(([k,x])=>`<tr class="border-b"><td class="p-2">${k}</td><td class="p-2 text-right text-emerald-700">${money(x.e)}</td><td class="p-2 text-right text-rose-700">${money(x.s)}</td><td class="p-2 text-right">${money(x.e+x.s)}</td><td class="p-2 text-right font-bold">${money(x.e-x.s)}</td></tr>`).join('')||'<tr><td colspan="5" class="p-4 text-center text-slate-400">Sin movimientos.</td></tr>';
+ renderCharts(ms,flujo,conceptos);
+}
+function renderCharts(ms,flujo,conceptos){
+ const labels=Object.keys(flujo).sort();if(chartFin)chartFin.destroy();chartFin=new Chart(document.getElementById('chartFin'),{type:'bar',data:{labels,datasets:[{label:'Entradas',data:labels.map(d=>flujo[d].e)},{label:'Salidas',data:labels.map(d=>flujo[d].s)},{label:'Saldo',type:'line',data:labels.map(d=>flujo[d].e-flujo[d].s),tension:.25}]},options:{responsive:true,maintainAspectRatio:false}});
+ const cats=Object.keys(conceptos);if(chartConcept)chartConcept.destroy();chartConcept=new Chart(document.getElementById('chartConcept'),{type:'bar',data:{labels:cats,datasets:[{label:'Entradas',data:cats.map(k=>conceptos[k].e)},{label:'Salidas',data:cats.map(k=>conceptos[k].s)}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y'}});
 }
 
 function dashboard(){
- const vs=filtrarVentas(),ms=filtrarMov(),en=ms.filter(m=>m.tipo==='Entrada').reduce((s,m)=>s+m.monto,0),sa=ms.filter(m=>m.tipo==='Salida').reduce((s,m)=>s+m.monto,0);
+ const vs=filtrarVentas(),ms=filtrarMovPeriodo(),en=ms.filter(m=>m.tipo==='Entrada').reduce((s,m)=>s+m.monto,0),sa=ms.filter(m=>m.tipo==='Salida').reduce((s,m)=>s+m.monto,0);
  dVentas.textContent=money(vs.reduce((s,v)=>s+v.total,0));dCaja.textContent=money(en-sa);dTaller.textContent=state.ots.filter(o=>o.estado!=='Entregada').length;dClientes.textContent=state.clientes.length;
  const low=state.stock.filter(s=>s.cantidad<=2);
  alertas.innerHTML=(low.length?`<div class="bg-amber-50 p-2 rounded">📦 ${low.length} productos con stock bajo.</div>`:'')+(state.ots.filter(o=>o.estado==='Esperando repuestos').length?`<div class="bg-rose-50 p-2 rounded">🔧 Hay OT esperando repuestos.</div>`:'')+(state.arqueos.length&&Math.abs(state.arqueos[0].diferencia)>0?`<div class="bg-rose-50 p-2 rounded">💰 Último arqueo con diferencia.</div>`:'')||'<div class="text-slate-400">Sin alertas críticas.</div>';
@@ -548,10 +678,10 @@ function dashboard(){
  chartDash=new Chart(document.getElementById('chartDashboard'),{type:'line',data:{labels:Object.keys(days),datasets:[{label:'Caja neta',data:Object.values(days),tension:.25}]},options:{responsive:true,maintainAspectRatio:false}});
 }
 
-function exportExcel(){const data=filtrarMov().map(m=>({Fecha:fecha(m.fecha),Tipo:m.tipo,Concepto:m.concepto,Medio:m.medio,Detalle:m.descripcion,Monto:m.monto}));const ws=XLSX.utils.json_to_sheet(data);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Caja');XLSX.writeFile(wb,'Reporte_Bicicleteria_Abasto.xlsx')}
+function exportExcel(){const data=filtrarMov().map(m=>({Fecha:fecha(m.fecha),Tipo:m.tipo,Concepto:m.concepto,Medio:m.medio,Detalle:m.descripcion,Monto:m.monto,Impacto:m.tipo==='Entrada'?m.monto:-m.monto}));const ws=XLSX.utils.json_to_sheet(data);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Caja filtrada');XLSX.writeFile(wb,'Reporte_Caja_Bicicleteria_Abasto.xlsx')}
 function exportPDF(){html2pdf().from(document.getElementById('reportes')).set({margin:8,filename:'Reporte_Bicicleteria_Abasto.pdf',html2canvas:{scale:1.5},jsPDF:{format:'a4',orientation:'portrait'}}).save()}
 
-load(); reloj(); syncLegacy().then(refresh);
+loadLocal(); reloj(); inicializarFechaIngreso(); activarRealtime(); cargarSupabase();
 </script>
 </body>
 </html>
