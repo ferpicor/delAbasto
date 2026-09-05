@@ -133,9 +133,9 @@ input,select,textarea{min-width:0}
 
 <section id="stock" class="hidden space-y-5">
  <div class="card p-5"><h2 class="text-xl font-bold mb-4">📦 Stock</h2><div class="grid md:grid-cols-4 gap-3">
- <input id="sMarca" class="border p-2 rounded-lg" placeholder="Marca"><input id="sModelo" class="border p-2 rounded-lg" placeholder="Modelo / producto"><input id="sColor" class="border p-2 rounded-lg" placeholder="Color / talle"><input id="sPrecio" type="number" class="border p-2 rounded-lg" placeholder="Precio venta"><input id="sCosto" type="number" class="border p-2 rounded-lg" placeholder="Costo"><input id="sCantidad" type="number" value="1" class="border p-2 rounded-lg" placeholder="Unidades">
+ <input id="sMarca" class="border p-2 rounded-lg" placeholder="Marca"><input id="sModelo" class="border p-2 rounded-lg" placeholder="Modelo / producto"><input id="sColor" class="border p-2 rounded-lg" placeholder="Color / talle"><input id="sSerie" class="border p-2 rounded-lg" placeholder="Nro. de serie"><input id="sPrecio" type="number" class="border p-2 rounded-lg" placeholder="Precio venta"><input id="sCosto" type="number" class="border p-2 rounded-lg" placeholder="Costo"><input id="sCantidad" type="number" value="1" class="border p-2 rounded-lg" placeholder="Unidades">
  </div><button onclick="guardarStock()" class="mt-3 bg-emerald-600 text-white px-4 py-2 rounded-lg">➕ Agregar stock</button></div>
- <div class="card p-4 overflow-x-auto"><table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2">Producto</th><th class="p-2">Variante</th><th class="p-2">Stock</th><th class="p-2">Costo</th><th class="p-2">Precio</th><th class="p-2">Margen</th><th class="p-2">Acciones</th></tr></thead><tbody id="tablaStock"></tbody></table></div>
+ <div class="card p-4 overflow-x-auto"><table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2">Producto</th><th class="p-2">Variante</th><th class="p-2">Nro. de serie</th><th class="p-2">Stock</th><th class="p-2">Costo</th><th class="p-2">Precio</th><th class="p-2">Margen</th><th class="p-2">Acciones</th></tr></thead><tbody id="tablaStock"></tbody></table></div>
 </section>
 
 <section id="compras" class="hidden space-y-5">
@@ -240,27 +240,37 @@ async function qTabla(tabla,orderCol='id'){
 }
 async function cargarSupabase(silencioso=false){
  if(!silencioso)syncStatus('⏳ Sincronizando...');
+ const tablas=['caja','clientes','conceptos','inventario_bicicletas','taller','ventas','compras','proveedores','arqueos','recordatorios'];
  try{
-  const [caja,clientes,conceptos,stock,taller,ventas,compras,proveedores,arqueos,recordatorios]=await Promise.all([
-   qTabla('caja'),qTabla('clientes'),qTabla('conceptos'),qTabla('inventario_bicicletas'),qTabla('taller'),
-   qTabla('ventas'),qTabla('compras'),qTabla('proveedores'),qTabla('arqueos'),qTabla('recordatorios')
-  ]);
-  state.movimientos=caja.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),tipo:x.tipo||'Entrada',concepto:x.concepto||x.categoria||'General',medio:x.medio_pago||x.medio||'Efectivo',monto:Number(x.monto)||0,descripcion:x.descripcion||''}));
-  state.clientes=clientes.map(x=>({id:x.id,nombre:x.nombre||'',telefono:x.telefono||'',email:x.email||'',direccion:x.direccion||'',segmento:x.segmento||'Nuevo',notas:x.notas||'',fecha:x.created_at||new Date().toISOString()}));
-  state.conceptos=conceptos.map(x=>({id:x.id,nombre:x.nombre||''})).filter(x=>x.nombre);
-  state.stock=stock.map(x=>({id:x.id,marca:x.marca||'',modelo:x.modelo||'',variante:[x.color,x.talle].filter(Boolean).join(' / '),precio:Number(x.precio)||0,costo:Number(x.costo)||0,cantidad:Number(x.stock)||0,estado:x.estado||'Disponible'}));
-  state.ots=taller.map(x=>({id:x.id,fecha:x.fecha_ingreso||x.created_at||new Date().toISOString(),cliente:x.cliente||'',telefono:x.telefono||'',bici:x.bicicleta||'',trabajo:x.trabajo||'',presupuesto:Number(x.presupuesto)||0,sena:Number(x.sena)||0,pagado:Number(x.precio_pagado)||0,costo:Number(x.costo)||0,estado:x.estado||'En taller',montoCobrar:Number(x.precio_cobrado)||0,promesa:x.fecha_promesa||''}));
-  state.ventas=ventas.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),cliente:x.cliente||'Consumidor final',telefono:x.telefono||'',producto:x.producto||'Venta general',total:Number(x.total)||0,costo:Number(x.costo)||0,ganancia:Number(x.ganancia ?? ((Number(x.total)||0)-(Number(x.costo)||0))),cantidad:Number(x.cantidad)||1,medio:x.medio||x.medio_pago||'Efectivo',notas:x.notas||''}));
-  state.compras=compras.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),proveedor:x.proveedor||'',producto:x.producto||'',cantidad:Number(x.cantidad)||0,costo:Number(x.costo)||0,total:Number(x.total)||0,medio:x.medio||x.medio_pago||'Otro'}));
-  state.proveedores=proveedores.map(x=>({id:x.id,nombre:x.nombre||'',contacto:x.contacto||'',fecha:x.created_at||new Date().toISOString()}));
-  state.arqueos=arqueos.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),teorico:Number(x.teorico)||0,real:Number(x.real)||0,diferencia:Number(x.diferencia)||0,obs:x.obs||x.observaciones||''}));
-  state.recordatorios=recordatorios.map(x=>({id:x.id,fecha:x.fecha||'',cliente:x.cliente||'',texto:x.texto||'',created_at:x.created_at||new Date().toISOString()}));
-  syncStatus('☁️ Sincronizado',true); refresh();
+  const resultados=await Promise.allSettled(tablas.map(t=>qTabla(t)));
+  const fallos=resultados.map((r,i)=>r.status==='rejected'?`${tablas[i]}: ${r.reason?.message||r.reason}`:null).filter(Boolean);
+  const valor=i=>resultados[i].status==='fulfilled'?(resultados[i].value||[]):[];
+  const [caja,clientes,conceptos,stock,taller,ventas,compras,proveedores,arqueos,recordatorios]=tablas.map((_,i)=>valor(i));
+
+  // Cada tabla que sí respondió se actualiza aunque otra tenga un problema.
+  if(resultados[0].status==='fulfilled')state.movimientos=caja.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),tipo:x.tipo||'Entrada',concepto:x.concepto||x.categoria||'General',medio:x.medio_pago||x.medio||'Efectivo',monto:Number(x.monto)||0,descripcion:x.descripcion||''}));
+  if(resultados[1].status==='fulfilled')state.clientes=clientes.map(x=>({id:x.id,nombre:x.nombre||'',telefono:x.telefono||'',email:x.email||'',direccion:x.direccion||'',segmento:x.segmento||'Nuevo',notas:x.notas||'',documento:x.documento||'',condicionIva:x.condicion_iva||'',fecha:x.created_at||new Date().toISOString()}));
+  if(resultados[2].status==='fulfilled')state.conceptos=conceptos.map(x=>({id:x.id,nombre:x.nombre||''})).filter(x=>x.nombre);
+  if(resultados[3].status==='fulfilled')state.stock=stock.map(x=>({id:x.id,marca:x.marca||'',modelo:x.modelo||'',variante:[x.color,x.talle].filter(Boolean).join(' / '),nroSerie:x.nro_serie||'',precio:Number(x.precio)||0,costo:Number(x.costo)||0,cantidad:Number(x.stock)||0,estado:x.estado||'Disponible'}));
+  if(resultados[4].status==='fulfilled')state.ots=taller.map(x=>({id:x.id,fecha:x.fecha_ingreso||x.created_at||new Date().toISOString(),cliente:x.cliente||'',telefono:x.telefono||'',bici:x.bicicleta||'',trabajo:x.trabajo||'',presupuesto:Number(x.presupuesto)||0,sena:Number(x.sena)||0,pagado:Number(x.precio_pagado)||0,costo:Number(x.costo)||0,estado:x.estado||'En taller',montoCobrar:Number(x.precio_cobrado)||0,promesa:x.fecha_promesa||''}));
+  if(resultados[5].status==='fulfilled')state.ventas=ventas.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),cliente:x.cliente||'Consumidor final',telefono:x.telefono||'',producto:x.producto||'Venta general',total:Number(x.total)||0,costo:Number(x.costo)||0,ganancia:Number(x.ganancia ?? ((Number(x.total)||0)-(Number(x.costo)||0))),cantidad:Number(x.cantidad)||1,medio:x.medio||x.medio_pago||'Efectivo',notas:x.notas||'',clienteId:x.cliente_id||null,documento:x.cliente_documento||'',condicionIva:x.condicion_iva||'',direccion:x.cliente_direccion||'',email:x.cliente_email||'',nroSerie:x.nro_serie||'',facturaEstado:x.factura_estado||'',facturaTipo:x.factura_tipo||'',facturaNumero:x.factura_numero||'',facturaPuntoVenta:x.factura_punto_venta||'',cae:x.cae||'',caeVencimiento:x.cae_vencimiento||'',facturaFecha:x.factura_fecha||'',facturaCuenta:x.factura_cuenta||''}));
+  if(resultados[6].status==='fulfilled')state.compras=compras.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),proveedor:x.proveedor||'',producto:x.producto||'',cantidad:Number(x.cantidad)||0,costo:Number(x.costo)||0,total:Number(x.total)||0,medio:x.medio||x.medio_pago||'Otro'}));
+  if(resultados[7].status==='fulfilled')state.proveedores=proveedores.map(x=>({id:x.id,nombre:x.nombre||'',contacto:x.contacto||'',fecha:x.created_at||new Date().toISOString()}));
+  if(resultados[8].status==='fulfilled')state.arqueos=arqueos.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),teorico:Number(x.teorico)||0,real:Number(x.real)||0,diferencia:Number(x.diferencia)||0,obs:x.obs||x.observaciones||''}));
+  if(resultados[9].status==='fulfilled')state.recordatorios=recordatorios.map(x=>({id:x.id,fecha:x.fecha||'',cliente:x.cliente||'',texto:x.texto||'',created_at:x.created_at||new Date().toISOString()}));
+
+  refresh();
+  if(fallos.length){
+   console.error('Errores de sincronización:',fallos);
+   syncStatus(`⚠️ ${fallos.length} tabla(s) sin acceso`,false);
+   if(!silencioso)alert('Supabase respondió, pero algunas tablas no se pudieron leer:\n\n'+fallos.join('\n')+'\n\nSi el mensaje menciona RLS o permission denied, ejecutá el SQL de reparación de permisos incluido con esta versión.');
+  }else syncStatus('☁️ Sincronizado',true);
  }catch(e){
-  console.error(e); syncStatus('⚠️ Error de sincronización',false);
-  if(!silencioso)alert('No se pudo sincronizar con Supabase. Revisá que existan todas las tablas y sus políticas RLS.\n\n'+e.message);
+  console.error(e);syncStatus('⚠️ Error de sincronización',false);
+  if(!silencioso)alert('No se pudo sincronizar con Supabase.\n\n'+e.message);
  }
 }
+
 function programarRecarga(){clearTimeout(recargaTimer);recargaTimer=setTimeout(()=>cargarSupabase(true),250)}
 function activarRealtime(){
  const canal=sb.channel('abasto-realtime');
@@ -275,10 +285,10 @@ async function dbUpdate(tabla,id,payload){
  return data[0];
 }
 async function dbDelete(tabla,id){
- const {data,error}=await sb.from(tabla).delete().eq('id',id).select('id');
- if(error)throw error;
- if(!data||data.length===0)throw new Error('Supabase no permitió eliminar el registro. Revisá la política DELETE (RLS) de la tabla '+tabla+'.');
- return data[0];
+ const {data,error}=await sb.rpc('crm_delete_record_v5',{p_table:tabla,p_id:String(id)});
+ if(error)throw new Error(error.message||'Error RPC al eliminar');
+ if(!data || data.ok!==true)throw new Error((data&&data.error)||'Supabase no confirmó la eliminación.');
+ return data;
 }
 
 function refresh(){
@@ -311,7 +321,7 @@ function renderOT(){
   const saldo=Math.max(0,(o.presupuesto||0)-(o.sena||0)-(o.pagado||0));
   const lista=(o.estado==='Lista'||o.estado==='Entregada');
   const montoCobrar=(o.montoCobrar!=null?o.montoCobrar:saldo);
-  return `<tr class="border-b"><td class="p-2 font-semibold">#${String(o.id).slice(-6)}</td><td class="p-2">${esc(o.cliente)}<br><span class="small">${esc(o.telefono)}</span></td><td class="p-2">${esc(o.bici)}<br><span class="small">${esc(o.trabajo)}</span></td><td class="p-2">${money(o.presupuesto)}</td><td class="p-2">${money(o.sena)}</td><td class="p-2"><select onchange="cambiarOT('${o.id}',this.value)" class="border rounded p-1"><option ${o.estado==='En taller'?'selected':''}>En taller</option><option ${o.estado==='En proceso'?'selected':''}>En proceso</option><option ${o.estado==='Esperando repuestos'?'selected':''}>Esperando repuestos</option><option ${o.estado==='Lista'?'selected':''}>Lista</option><option ${o.estado==='Entregada'?'selected':''}>Entregada</option></select></td><td class="p-2 font-semibold">${money(saldo)}</td><td class="p-2"><input type="number" class="border rounded p-1 w-24 ${lista?'':'bg-slate-100 text-slate-400'}" ${lista?'':'disabled'} value="${montoCobrar}" title="${lista?'Monto a cobrar al entregar':'Se habilita cuando la bici está Lista'}" onchange="setMontoCobrar('${o.id}',this.value)"></td><td class="p-2 flex gap-1 flex-wrap"><button onclick="editarOT('${o.id}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs" title="Modificar datos">✏️</button><button onclick="otWhatsApp('${o.id}')" class="bg-green-600 text-white px-2 py-1 rounded text-xs" title="Enviar WhatsApp al cliente">💬</button><button onclick="reciboOT('${o.id}')" class="bg-purple-600 text-white px-2 py-1 rounded text-xs" title="Generar recibo y enviar WhatsApp">🧾</button><button onclick="cobrarOT('${o.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">Cobrar</button><button onclick="borrar('ots','${o.id}')" class="text-rose-600">🗑️</button></td></tr>`
+  return `<tr class="border-b"><td class="p-2 font-semibold">#${String(o.id).slice(-6)}</td><td class="p-2">${esc(o.cliente)}<br><span class="small">${esc(o.telefono)}</span></td><td class="p-2">${esc(o.bici)}<br><span class="small">${esc(o.trabajo)}</span></td><td class="p-2">${money(o.presupuesto)}</td><td class="p-2">${money(o.sena)}</td><td class="p-2"><select onchange="cambiarOT('${o.id}',this.value)" class="border rounded p-1"><option ${o.estado==='En taller'?'selected':''}>En taller</option><option ${o.estado==='En proceso'?'selected':''}>En proceso</option><option ${o.estado==='Esperando repuestos'?'selected':''}>Esperando repuestos</option><option ${o.estado==='Lista'?'selected':''}>Lista</option><option ${o.estado==='Entregada'?'selected':''}>Entregada</option></select></td><td class="p-2 font-semibold">${money(saldo)}</td><td class="p-2"><input type="number" class="border rounded p-1 w-24 ${lista?'':'bg-slate-100 text-slate-400'}" ${lista?'':'disabled'} value="${montoCobrar}" title="${lista?'Monto a cobrar al entregar':'Se habilita cuando la bici está Lista'}" onchange="setMontoCobrar('${o.id}',this.value)"></td><td class="p-2 flex gap-1 flex-wrap"><button onclick="editarOT('${o.id}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs" title="Modificar datos">✏️</button><button onclick="otWhatsApp('${o.id}')" class="bg-green-600 text-white px-2 py-1 rounded text-xs" title="Enviar WhatsApp al cliente">💬</button><button onclick="reciboOT('${o.id}')" class="bg-purple-600 text-white px-2 py-1 rounded text-xs" title="Generar recibo y enviar WhatsApp">🧾</button><button onclick="cobrarOT('${o.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">Cobrar</button><button type="button" data-delete-table="taller" data-delete-id="${o.id}" class="text-rose-600 delete-btn" title="Eliminar">🗑️</button></td></tr>`
  }).join('')||'<tr><td colspan="9" class="p-4 text-center text-slate-400">Sin órdenes.</td></tr>';
 }
 async function setMontoCobrar(i,v){
@@ -426,16 +436,13 @@ function abrirGestionConceptos(){
 }
 function renderListasConceptosModal(){
  const el=document.getElementById('listaConceptos');if(!el)return;
- el.innerHTML=state.conceptos.map(c=>`<div class="flex justify-between items-center text-sm border-b py-2"><span>${esc(c.nombre)}</span><button onclick="delConcepto('${c.id}')" class="text-rose-600 text-xs">🗑️</button></div>`).join('')||'<p class="text-slate-400">Sin conceptos.</p>';
+ el.innerHTML=state.conceptos.map(c=>`<div class="flex justify-between items-center text-sm border-b py-2"><span>${esc(c.nombre)}</span><button type="button" data-delete-table="conceptos" data-delete-id="${c.id}" class="text-rose-600 text-xs delete-btn" data-after-delete="conceptos" title="Eliminar concepto">🗑️</button></div>`).join('')||'<p class="text-slate-400">Sin conceptos.</p>';
 }
 async function addConcepto(){
  const input=document.getElementById('nuevoConcepto');const val=input?.value.trim();if(!val)return;
  try{await dbInsert('conceptos',{nombre:val});input.value='';await cargarSupabase(true);renderListasConceptosModal()}catch(e){alert('No se pudo agregar el concepto: '+e.message)}
 }
-async function delConcepto(i){
- if(!confirm('¿Eliminar este concepto?'))return;
- try{await dbDelete('conceptos',i);await cargarSupabase(true);renderListasConceptosModal()}catch(e){alert('No se pudo eliminar: '+e.message)}
-}
+async function delConcepto(i){return eliminarRegistro('conceptos',i,'conceptos')}
 
 async function agregarMovInterno(tipo,concepto,medio,monto,descripcion){
  const payload={tipo, categoria:concepto, concepto, medio_pago:medio, monto:Number(monto), descripcion:descripcion||'', fecha:fechaHoraLocal()};
@@ -452,7 +459,7 @@ async function guardarEdMov(i){
  const payload={tipo:emTipo.value,categoria:emConc.value,concepto:emConc.value,medio_pago:emMedio.value,monto:+emMonto.value||0,descripcion:emDesc.value};
  try{await dbUpdate('caja',m.id,payload);cerrarModal();await cargarSupabase(true)}catch(e){alert('No se pudo modificar el movimiento: '+e.message)}
 }
-function renderCaja(){const q=(document.getElementById('fCaja')?.value||'').toLowerCase(),t=document.getElementById('ftCaja')?.value||'Todos';let a=state.movimientos.filter(m=>(t==='Todos'||m.tipo===t)&&((m.concepto+' '+m.descripcion+' '+m.medio).toLowerCase().includes(q)));let en=0,sa=0,ef=0,tr=0;a.forEach(m=>{if(m.tipo==='Entrada')en+=m.monto;else sa+=m.monto;if(m.medio==='Efectivo')ef+=(m.tipo==='Entrada'?m.monto:-m.monto);if(m.medio==='Transferencia')tr+=(m.tipo==='Entrada'?m.monto:-m.monto)});cEntradas.textContent=money(en);cSalidas.textContent=money(sa);cNeto.textContent=money(en-sa);cEfectivo.textContent=money(ef);cTransfer.textContent=money(tr);tablaCaja.innerHTML=a.map(m=>`<tr class="border-b"><td class="p-2 small">${fecha(m.fecha)}</td><td class="p-2 ${m.tipo==='Entrada'?'text-emerald-600':'text-rose-600'} font-semibold">${m.tipo}</td><td class="p-2">${esc(m.concepto)}</td><td class="p-2">${esc(m.medio)}</td><td class="p-2">${esc(m.descripcion)}</td><td class="p-2 font-bold">${money(m.monto)}</td><td class="p-2"><button onclick="editarMov('${m.id}')" class="text-blue-600">✏️</button> <button onclick="borrar('movimientos','${m.id}')" class="text-rose-600">🗑️</button></td></tr>`).join('')||'<tr><td colspan="7" class="p-4 text-center">Sin movimientos.</td></tr>'}
+function renderCaja(){const q=(document.getElementById('fCaja')?.value||'').toLowerCase(),t=document.getElementById('ftCaja')?.value||'Todos';let a=state.movimientos.filter(m=>(t==='Todos'||m.tipo===t)&&((m.concepto+' '+m.descripcion+' '+m.medio).toLowerCase().includes(q)));let en=0,sa=0,ef=0,tr=0;a.forEach(m=>{if(m.tipo==='Entrada')en+=m.monto;else sa+=m.monto;if(m.medio==='Efectivo')ef+=(m.tipo==='Entrada'?m.monto:-m.monto);if(m.medio==='Transferencia')tr+=(m.tipo==='Entrada'?m.monto:-m.monto)});cEntradas.textContent=money(en);cSalidas.textContent=money(sa);cNeto.textContent=money(en-sa);cEfectivo.textContent=money(ef);cTransfer.textContent=money(tr);tablaCaja.innerHTML=a.map(m=>`<tr class="border-b"><td class="p-2 small">${fecha(m.fecha)}</td><td class="p-2 ${m.tipo==='Entrada'?'text-emerald-600':'text-rose-600'} font-semibold">${m.tipo}</td><td class="p-2">${esc(m.concepto)}</td><td class="p-2">${esc(m.medio)}</td><td class="p-2">${esc(m.descripcion)}</td><td class="p-2 font-bold">${money(m.monto)}</td><td class="p-2"><button onclick="editarMov('${m.id}')" class="text-blue-600">✏️</button> <button type="button" data-delete-table="caja" data-delete-id="${m.id}" class="text-rose-600 delete-btn" title="Eliminar">🗑️</button></td></tr>`).join('')||'<tr><td colspan="7" class="p-4 text-center">Sin movimientos.</td></tr>'}
 function abrirArqueo(){const efectivo=state.movimientos.reduce((s,m)=>s+(m.medio==='Efectivo'?(m.tipo==='Entrada'?m.monto:-m.monto):0),0);abrirModal('🧾 Arqueo de caja',`<div class="space-y-3"><p>Saldo teórico de efectivo: <b>${money(efectivo)}</b></p><input id="arqueoReal" type="number" class="border p-2 rounded w-full" placeholder="Efectivo contado"><input id="arqueoObs" class="border p-2 rounded w-full" placeholder="Observaciones"><button onclick="guardarArqueo(${efectivo})" class="bg-slate-800 text-white px-4 py-2 rounded">Cerrar arqueo</button></div>`)}
 async function guardarArqueo(teorico){
  const real=+arqueoReal.value||0;const obs=arqueoObs.value.trim();
@@ -476,7 +483,7 @@ function renderCRM(){
   const g=gVentas+gTaller;
   const cantidadOps=vs.length+ots.length;
   const last=[...vs,...ots].map(x=>x.fecha).sort().reverse()[0]||c.fecha;
-  return `<tr class="border-b"><td class="p-2 font-semibold">${esc(c.nombre)}<br><span class="small">${esc(c.email)}</span></td><td class="p-2"><a class="text-blue-600" target="_blank" href="https://wa.me/549${(c.telefono||'').replace(/\D/g,'')}">${esc(c.telefono||'-')}</a></td><td class="p-2">${esc(c.segmento)}</td><td class="p-2">${cantidadOps}</td><td class="p-2 font-semibold">${money(g)}</td><td class="p-2 small">${fecha(last)}</td><td class="p-2 flex gap-1"><button onclick="historialCliente('${c.id}')" class="bg-indigo-600 text-white px-2 py-1 rounded text-xs" title="Historial compras y service">📜</button><button onclick="crmWP('${c.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs" title="Recordar">💬</button><button onclick="borrar('clientes','${c.id}')" class="text-rose-600">🗑️</button></td></tr>`
+  return `<tr class="border-b"><td class="p-2 font-semibold">${esc(c.nombre)}<br><span class="small">${esc(c.email)}</span></td><td class="p-2"><a class="text-blue-600" target="_blank" href="https://wa.me/549${(c.telefono||'').replace(/\D/g,'')}">${esc(c.telefono||'-')}</a></td><td class="p-2">${esc(c.segmento)}</td><td class="p-2">${cantidadOps}</td><td class="p-2 font-semibold">${money(g)}</td><td class="p-2 small">${fecha(last)}</td><td class="p-2 flex gap-1"><button onclick="historialCliente('${c.id}')" class="bg-indigo-600 text-white px-2 py-1 rounded text-xs" title="Historial compras y service">📜</button><button onclick="crmWP('${c.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs" title="Recordar">💬</button><button type="button" data-delete-table="clientes" data-delete-id="${c.id}" class="text-rose-600 delete-btn" title="Eliminar">🗑️</button></td></tr>`
  }).join('')||'<tr><td colspan="7" class="p-4 text-center">Sin clientes.</td></tr>';
 }
 function historialCliente(i){
@@ -491,6 +498,9 @@ function historialCliente(i){
   <div class="bg-slate-50 p-3 rounded-lg text-sm">
    <p><b>Teléfono:</b> ${esc(c.telefono||'No especificado')}</p>
    <p><b>Email:</b> ${esc(c.email||'No especificado')}</p>
+   <p><b>DNI / CUIT:</b> ${esc(c.documento||'No especificado')}</p>
+   <p><b>Condición IVA:</b> ${esc(c.condicionIva||'No especificada')}</p>
+   <p><b>Dirección:</b> ${esc(c.direccion||'No especificada')}</p>
    <p><b>Total gastado (ventas + taller):</b> <span class="text-emerald-700 font-bold">${money(totalGastado)}</span></p>
   </div>
   <div>
@@ -526,27 +536,80 @@ async function guardarRecordatorio(){
 
 /* --- STOCK --- */
 async function guardarStock(){
- const x={marca:sMarca.value.trim(),modelo:sModelo.value.trim(),color:sColor.value.trim(),talle:'',precio:+sPrecio.value||0,costo:+sCosto.value||0,estado:'Disponible',stock:+sCantidad.value||0};if(!x.modelo)return alert('Producto obligatorio.');
- try{await dbInsert('inventario_bicicletas',x);['sMarca','sModelo','sColor','sPrecio','sCosto'].forEach(y=>document.getElementById(y).value='');sCantidad.value=1;await cargarSupabase(true)}catch(e){alert('No se pudo guardar el stock: '+e.message)}
+ const x={marca:sMarca.value.trim(),modelo:sModelo.value.trim(),color:sColor.value.trim(),talle:'',nro_serie:sSerie.value.trim(),precio:+sPrecio.value||0,costo:+sCosto.value||0,estado:'Disponible',stock:+sCantidad.value||0};
+ if(!x.modelo)return alert('Producto obligatorio.');
+ try{await dbInsert('inventario_bicicletas',x);['sMarca','sModelo','sColor','sSerie','sPrecio','sCosto'].forEach(y=>document.getElementById(y).value='');sCantidad.value=1;await cargarSupabase(true)}catch(e){alert('No se pudo guardar el stock: '+e.message+'\n\nSi el error menciona nro_serie, ejecutá la actualización SQL incluida con esta versión.')}
 }
 
-function renderStock(){tablaStock.innerHTML=state.stock.map(x=>{const mg=x.precio?((x.precio-x.costo)/x.precio*100):0;return `<tr class="border-b"><td class="p-2 font-semibold">${esc(x.marca)} ${esc(x.modelo)}</td><td class="p-2">${esc(x.variante)}</td><td class="p-2">${x.cantidad}</td><td class="p-2">${money(x.costo)}</td><td class="p-2">${money(x.precio)}</td><td class="p-2">${mg.toFixed(1)}%</td><td class="p-2"><button onclick="venderStock('${x.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">Vender</button> <button onclick="borrar('stock','${x.id}')" class="text-rose-600">🗑️</button></td></tr>`}).join('')||'<tr><td colspan="7" class="p-4 text-center">Sin stock.</td></tr>'}
-async function venderStock(i){
- const x=state.stock.find(s=>String(s.id)===String(i));if(!x||x.cantidad<=0)return;
- const c=prompt('Cliente (opcional)','');const medio=prompt('Medio de pago','Efectivo')||'Efectivo';const cant=+prompt('Cantidad',1)||1;if(cant>x.cantidad)return alert('Stock insuficiente.');
- const total=x.precio*cant,costo=x.costo*cant;
+function renderStock(){
+ tablaStock.innerHTML=state.stock.map(x=>{
+  const mg=x.precio?((x.precio-x.costo)/x.precio*100):0;
+  return `<tr class="border-b"><td class="p-2 font-semibold">${esc(x.marca)} ${esc(x.modelo)}</td><td class="p-2">${esc(x.variante)}</td><td class="p-2 font-mono small">${esc(x.nroSerie||'-')}</td><td class="p-2">${x.cantidad}</td><td class="p-2">${money(x.costo)}</td><td class="p-2">${money(x.precio)}</td><td class="p-2">${mg.toFixed(1)}%</td><td class="p-2 flex gap-1 flex-wrap"><button onclick="editarStock('${x.id}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs" title="Editar todas las columnas">✏️ Editar</button><button onclick="venderStock('${x.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">Vender</button> <button type="button" data-delete-table="inventario_bicicletas" data-delete-id="${x.id}" class="text-rose-600 delete-btn" title="Eliminar">🗑️</button></td></tr>`
+ }).join('')||'<tr><td colspan="8" class="p-4 text-center">Sin stock.</td></tr>'
+}
+
+function editarStock(i){
+ const x=state.stock.find(s=>String(s.id)===String(i));if(!x)return;
+ abrirModal('✏️ Editar producto de Stock',`<div class="space-y-3">
+  <div class="grid grid-cols-2 gap-2"><div><label class="small text-slate-500">Marca</label><input id="esMarca" class="border p-2 rounded w-full" value="${esc(x.marca)}"></div><div><label class="small text-slate-500">Producto / modelo</label><input id="esModelo" class="border p-2 rounded w-full" value="${esc(x.modelo)}"></div></div>
+  <div class="grid grid-cols-2 gap-2"><div><label class="small text-slate-500">Variante / color / talle</label><input id="esColor" class="border p-2 rounded w-full" value="${esc(x.color||x.variante)}"></div><div><label class="small text-slate-500">Nro. de serie</label><input id="esSerie" class="border p-2 rounded w-full" value="${esc(x.nroSerie||'')}"></div></div>
+  <div class="grid grid-cols-3 gap-2"><div><label class="small text-slate-500">Stock</label><input id="esStock" type="number" min="0" class="border p-2 rounded w-full" value="${x.cantidad}"></div><div><label class="small text-slate-500">Costo</label><input id="esCosto" type="number" min="0" class="border p-2 rounded w-full" value="${x.costo}"></div><div><label class="small text-slate-500">Precio</label><input id="esPrecio" type="number" min="0" class="border p-2 rounded w-full" value="${x.precio}"></div></div>
+  <button onclick="guardarEdicionStock('${x.id}')" class="bg-blue-600 text-white px-4 py-2 rounded w-full font-semibold">💾 Guardar cambios</button>
+ </div>`);
+}
+
+async function guardarEdicionStock(i){
+ const x=state.stock.find(s=>String(s.id)===String(i));if(!x)return;
+ const payload={marca:esMarca.value.trim(),modelo:esModelo.value.trim(),color:esColor.value.trim(),nro_serie:esSerie.value.trim(),stock:Math.max(0,+esStock.value||0),costo:Math.max(0,+esCosto.value||0),precio:Math.max(0,+esPrecio.value||0)};
+ if(!payload.modelo)return alert('Producto / modelo obligatorio.');
+ try{await dbUpdate('inventario_bicicletas',x.id,payload);cerrarModal();await cargarSupabase(true);alert('Stock actualizado y sincronizado.')}catch(e){alert('No se pudo modificar el stock: '+e.message)}
+}
+
+function venderStock(i){
+ const x=state.stock.find(s=>String(s.id)===String(i));if(!x||x.cantidad<=0)return alert('Este producto no tiene stock disponible.');
+ const producto=(x.marca+' '+x.modelo).trim();
+ abrirModal('💰 Vender desde Stock',`<div class="space-y-4">
+  <div class="bg-slate-50 border rounded-lg p-3 text-sm"><b>${esc(producto)}</b><br>Serie: <span class="font-mono">${esc(x.nroSerie||'-')}</span> · Disponible: ${x.cantidad} · Precio: <b>${money(x.precio)}</b></div>
+  <div><h4 class="font-semibold mb-2">Datos del comprador / futura factura ARCA</h4><div class="grid grid-cols-2 gap-2">
+   <input id="svNombre" class="border p-2 rounded" placeholder="Nombre y apellido / Razón social">
+   <input id="svDocumento" class="border p-2 rounded" placeholder="DNI / CUIT">
+   <input id="svTelefono" class="border p-2 rounded" placeholder="WhatsApp">
+   <input id="svEmail" class="border p-2 rounded" placeholder="Email">
+   <input id="svDireccion" class="border p-2 rounded col-span-2" placeholder="Dirección">
+   <select id="svCondIva" class="border p-2 rounded col-span-2"><option value="Consumidor Final">Consumidor Final</option><option value="Responsable Inscripto">Responsable Inscripto</option><option value="Monotributista">Monotributista</option><option value="Exento">Exento</option><option value="No Responsable">No Responsable</option></select>
+  </div></div>
+  <div class="grid grid-cols-3 gap-2"><div><label class="small text-slate-500">Cantidad</label><input id="svCantidad" type="number" min="1" max="${x.cantidad}" value="1" class="border p-2 rounded w-full"></div><div><label class="small text-slate-500">Precio unitario</label><input id="svPrecio" type="number" min="0" value="${x.precio}" class="border p-2 rounded w-full"></div><div><label class="small text-slate-500">Medio de pago</label><select id="svMedio" class="border p-2 rounded w-full"><option>Efectivo</option><option>Transferencia</option><option>Débito</option><option>Crédito</option><option>Mercado Pago</option><option>Otro</option></select></div></div>
+  <textarea id="svNotas" class="border p-2 rounded w-full" rows="2" placeholder="Notas de la venta / facturación"></textarea>
+  <button onclick="confirmarVentaStock('${x.id}')" class="bg-emerald-600 text-white px-4 py-2 rounded w-full font-semibold">✅ Confirmar venta</button>
+ </div>`);
+}
+
+async function confirmarVentaStock(i){
+ const x=state.stock.find(s=>String(s.id)===String(i));if(!x)return;
+ const nombre=svNombre.value.trim(),documento=svDocumento.value.trim(),telefono=svTelefono.value.trim(),email=svEmail.value.trim(),direccion=svDireccion.value.trim(),condicionIva=svCondIva.value;
+ const cant=Math.max(1,+svCantidad.value||1),precio=Math.max(0,+svPrecio.value||0),medio=svMedio.value,notas=svNotas.value.trim();
+ if(!nombre)return alert('Ingresá el nombre del comprador.');
+ if(cant>x.cantidad)return alert('Stock insuficiente.');
+ if(precio<=0)return alert('Ingresá un precio de venta válido.');
+ const total=precio*cant,costo=x.costo*cant,producto=(x.marca+' '+x.modelo).trim();
  try{
-  const venta=await dbInsert('ventas',{fecha:fechaHoraLocal(),cliente:c||'Consumidor final',telefono:'',producto:(x.marca+' '+x.modelo).trim(),total,costo,ganancia:total-costo,cantidad:cant,medio,notas:'Venta desde stock'});
+  let cliente=state.clientes.find(c=>(documento&&c.documento===documento)||(telefono&&c.telefono===telefono)||(c.nombre&&c.nombre.toLowerCase()===nombre.toLowerCase()));
+  if(cliente){
+   await dbUpdate('clientes',cliente.id,{nombre,telefono:telefono||cliente.telefono,email:email||null,direccion:direccion||null,documento:documento||null,condicion_iva:condicionIva,segmento:cliente.segmento||'Nuevo',notas:cliente.notas||'Cliente de venta desde stock'});
+  }else{
+   cliente=await dbInsert('clientes',{nombre,telefono,email:email||null,direccion:direccion||null,documento:documento||null,condicion_iva:condicionIva,segmento:'Nuevo',notas:'Cliente creado automáticamente desde venta de Stock'});
+  }
+  const venta=await dbInsert('ventas',{fecha:fechaHoraLocal(),cliente:nombre,telefono,cliente_id:cliente.id,cliente_documento:documento||null,producto,total,costo,ganancia:total-costo,cantidad:cant,medio,notas:('Venta desde stock'+(notas?' · '+notas:'')),nro_serie:x.nroSerie||null});
   try{
    await dbUpdate('inventario_bicicletas',x.id,{stock:x.cantidad-cant});
-   await agregarMovInterno('Entrada','Venta de productos',medio,total,'Venta #'+venta.id+' - '+x.modelo);
+   await agregarMovInterno('Entrada','Venta de productos',medio,total,'Venta #'+venta.id+' - '+producto+' - Cliente: '+nombre);
   }catch(err){
    await dbDelete('ventas',venta.id).catch(()=>{});
    await dbUpdate('inventario_bicicletas',x.id,{stock:x.cantidad}).catch(()=>{});
    throw new Error('La venta fue revertida porque no pudieron completarse Stock/Caja. '+err.message);
   }
-  await cargarSupabase(true);
- }catch(e){alert('No se pudo registrar la venta de stock: '+e.message)}
+  cerrarModal();await cargarSupabase(true);alert('Venta registrada. El comprador fue guardado/actualizado en CRM y quedó en su historial.');
+ }catch(e){console.error(e);alert('No se pudo registrar la venta desde Stock: '+e.message+'\n\nSi el error menciona documento, condicion_iva, cliente_id, cliente_documento o nro_serie, ejecutá la actualización SQL incluida con esta versión.');await cargarSupabase(true)}
 }
 
 async function guardarVenta(){
@@ -564,7 +627,75 @@ async function guardarVenta(){
   alert('Venta registrada y sincronizada.');
  }catch(e){console.error(e);alert('No se pudo registrar la venta en Supabase: '+e.message);await cargarSupabase(true)}
 }
-function renderVentas(){tablaVentas.innerHTML=state.ventas.map(v=>{const mg=v.total?((v.ganancia/v.total)*100):0;return `<tr class="border-b"><td class="p-2 small">${fecha(v.fecha)}</td><td class="p-2">${esc(v.cliente)}</td><td class="p-2">${esc(v.producto)}</td><td class="p-2">${v.cantidad}</td><td class="p-2">${money(v.total)}</td><td class="p-2">${money(v.costo)}</td><td class="p-2 text-emerald-600 font-semibold">${money(v.ganancia)}</td><td class="p-2">${mg.toFixed(1)}%</td><td class="p-2"><button onclick="borrar('ventas','${v.id}')" class="text-rose-600">🗑️</button></td></tr>`}).join('')||'<tr><td colspan="9" class="p-4 text-center">Sin ventas.</td></tr>'}
+function clienteDeVenta(v){
+ return state.clientes.find(c=>(v.clienteId&&String(c.id)===String(v.clienteId))||(v.telefono&&c.telefono===v.telefono)||(v.documento&&c.documento===v.documento)||(v.cliente&&c.nombre&&c.nombre.toLowerCase()===v.cliente.toLowerCase()));
+}
+function fichaClienteVenta(i){
+ const v=state.ventas.find(x=>String(x.id)===String(i));if(!v)return;
+ const c=clienteDeVenta(v);if(!c)return alert('No se encontró una ficha CRM vinculada a esta venta.');
+ historialCliente(c.id);
+}
+function whatsappVenta(i){
+ const v=state.ventas.find(x=>String(x.id)===String(i));if(!v)return;
+ const c=clienteDeVenta(v);const tel=(v.telefono||c?.telefono||'').replace(/\D/g,'');
+ if(!tel)return alert('El cliente no tiene WhatsApp cargado.');
+ const nombre=v.cliente||c?.nombre||'cliente';
+ const msg=`Hola ${nombre}! Gracias por tu compra en Bicicletería del Abasto 🚲\n\nProducto: ${v.producto}${v.nroSerie?'\nNro. de serie: '+v.nroSerie:''}\nImporte: ${money(v.total)}\n\n¡Muchas gracias por elegirnos!`;
+ abrirModal('💬 Mensaje de WhatsApp',`<div class="space-y-3"><p class="text-sm text-slate-500">Podés editar el mensaje antes de abrir WhatsApp.</p><textarea id="mensajeVentaWP" class="border p-3 rounded w-full" rows="9">${esc(msg)}</textarea><button onclick="abrirWhatsAppVenta('${tel}')" class="bg-emerald-600 text-white px-4 py-2 rounded w-full font-semibold">📲 Abrir WhatsApp</button></div>`);
+}
+function abrirWhatsAppVenta(tel){
+ const msg=document.getElementById('mensajeVentaWP')?.value||'';
+ window.open('https://wa.me/549'+tel+'?text='+encodeURIComponent(msg),'_blank');
+}
+function datosFacturaVenta(v){
+ const c=clienteDeVenta(v);
+ return {nombre:v.cliente||c?.nombre||'Consumidor final',documento:v.documento||c?.documento||'',condicionIva:c?.condicionIva||'Consumidor Final',direccion:c?.direccion||'',email:c?.email||'',telefono:v.telefono||c?.telefono||''};
+}
+function facturarYEnviar(i){
+ const v=state.ventas.find(x=>String(x.id)===String(i));if(!v)return;
+ const c=datosFacturaVenta(v);if(v.cae)return mostrarFacturaEmitida(i);
+ abrirModal('🧾 Facturar y enviar',`<div class="space-y-4">
+  <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-900"><b>Integración ARCA:</b> elegí qué cuenta emisora querés usar. Los CUIT, certificados y claves privadas de ambas cuentas se configuran únicamente en la función segura <code>arca-facturar</code>, nunca dentro de este HTML.</div>
+  <div class="bg-slate-50 border rounded-lg p-3 text-sm"><b>${esc(v.producto)}</b>${v.nroSerie?`<br>Nro. de serie: <span class="font-mono">${esc(v.nroSerie)}</span>`:''}<br>Total a facturar: <b>${money(v.total)}</b></div>
+  <div>
+   <label class="small text-slate-500">Cuenta emisora ARCA</label>
+   <select id="facCuenta" class="border p-2 rounded w-full font-semibold">
+    <option value="cuenta1">Cuenta ARCA 1</option>
+    <option value="cuenta2">Cuenta ARCA 2</option>
+   </select>
+   <p class="small text-slate-500 mt-1">Cada cuenta puede tener su propio CUIT, certificado y punto de venta.</p>
+  </div>
+  <div class="grid grid-cols-2 gap-2">
+   <div><label class="small text-slate-500">Comprobante</label><select id="facTipo" class="border p-2 rounded w-full"><option value="C">Factura C</option><option value="B">Factura B</option><option value="A">Factura A</option></select></div>
+   <div><label class="small text-slate-500">Punto de venta ARCA</label><input id="facPtoVta" type="number" min="1" class="border p-2 rounded w-full" placeholder="Ej. 3"></div>
+   <div><label class="small text-slate-500">Cliente</label><input id="facNombre" class="border p-2 rounded w-full" value="${esc(c.nombre)}"></div>
+   <div><label class="small text-slate-500">DNI / CUIT</label><input id="facDoc" class="border p-2 rounded w-full" value="${esc(c.documento)}"></div>
+   <div><label class="small text-slate-500">Condición IVA</label><input id="facIva" class="border p-2 rounded w-full" value="${esc(c.condicionIva)}"></div>
+   <div><label class="small text-slate-500">Email</label><input id="facEmail" class="border p-2 rounded w-full" value="${esc(c.email)}"></div>
+   <div class="col-span-2"><label class="small text-slate-500">Dirección</label><input id="facDireccion" class="border p-2 rounded w-full" value="${esc(c.direccion)}"></div>
+  </div>
+  <button id="btnEmitirARCA" onclick="emitirFacturaARCA('${v.id}')" class="bg-violet-700 text-white px-4 py-2 rounded w-full font-semibold">🔐 Emitir en ARCA</button>
+  <p class="small text-slate-500">La cuenta elegida quedará guardada junto a la venta para saber desde qué CUIT se emitió.</p>
+ </div>`);
+}
+async function emitirFacturaARCA(i){
+ const v=state.ventas.find(x=>String(x.id)===String(i));if(!v)return;const pto=Number(document.getElementById('facPtoVta')?.value||0);if(pto<=0)return alert('Ingresá el punto de venta habilitado para Web Services en ARCA.');
+ const btn=document.getElementById('btnEmitirARCA');if(btn){btn.disabled=true;btn.textContent='⏳ Solicitando CAE...'}
+ const cuenta=document.getElementById('facCuenta')?.value||'cuenta1';
+ const payload={venta_id:v.id,cuenta_arca:cuenta,comprobante_tipo:document.getElementById('facTipo')?.value||'C',punto_venta:pto,fecha:fechaLocalHoy(),cliente:{nombre:document.getElementById('facNombre')?.value.trim()||v.cliente,documento:document.getElementById('facDoc')?.value.trim()||'',condicion_iva:document.getElementById('facIva')?.value.trim()||'Consumidor Final',email:document.getElementById('facEmail')?.value.trim()||'',direccion:document.getElementById('facDireccion')?.value.trim()||''},items:[{descripcion:v.producto+(v.nroSerie?' - Serie '+v.nroSerie:''),cantidad:v.cantidad,importe_total:v.total}],total:v.total,medio_pago:v.medio};
+ try{const {data,error}=await sb.functions.invoke('arca-facturar',{body:payload});if(error)throw error;if(!data||data.ok!==true||!data.cae)throw new Error(data?.error||data?.message||'ARCA no devolvió una autorización válida.');await dbUpdate('ventas',v.id,{factura_estado:'Autorizada',factura_tipo:data.comprobante_tipo||payload.comprobante_tipo,factura_numero:String(data.comprobante_numero||''),factura_punto_venta:String(data.punto_venta||pto),cae:String(data.cae),cae_vencimiento:data.cae_vencimiento||null,factura_fecha:data.fecha||fechaHoraLocal(),factura_cuenta:data.cuenta_arca||cuenta});cerrarModal();await cargarSupabase(true);mostrarFacturaEmitida(v.id)}catch(e){console.error(e);alert('No se pudo emitir la factura.\n\n'+String(e?.message||e)+'\n\nSi aparece “Function not found” o un error 404, todavía falta instalar la función segura arca-facturar en Supabase. No pongas el certificado o la clave privada de ARCA dentro del index.html.')}finally{if(btn){btn.disabled=false;btn.textContent='🔐 Emitir en ARCA'}}
+}
+function facturaHtml(v){const c=datosFacturaVenta(v);const nro=[v.facturaPuntoVenta,v.facturaNumero].filter(Boolean).join('-')||'Pendiente';return `<div id="facturaPDF" style="font-family:Arial,sans-serif;padding:28px;color:#111"><div style="display:flex;justify-content:space-between;border-bottom:2px solid #111;padding-bottom:14px;margin-bottom:20px"><div><h1 style="margin:0;font-size:22px">BICICLETERÍA DEL ABASTO</h1><div style="font-size:12px;margin-top:5px">Comprobante electrónico autorizado por ARCA</div></div><div style="text-align:right"><div style="font-size:32px;font-weight:700">${esc(v.facturaTipo||'')}</div><div style="font-size:12px">N° ${esc(nro)}</div></div></div><table style="width:100%;font-size:12px;margin-bottom:18px"><tr><td><b>Fecha:</b> ${esc(v.facturaFecha?new Date(v.facturaFecha).toLocaleDateString('es-AR'):new Date().toLocaleDateString('es-AR'))}</td><td><b>Cliente:</b> ${esc(c.nombre)}</td></tr><tr><td><b>DNI/CUIT:</b> ${esc(c.documento||'-')}</td><td><b>Condición IVA:</b> ${esc(c.condicionIva||'-')}</td></tr><tr><td colspan="2"><b>Dirección:</b> ${esc(c.direccion||'-')}</td></tr></table><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th style="border:1px solid #bbb;padding:8px;text-align:left">Descripción</th><th style="border:1px solid #bbb;padding:8px">Cantidad</th><th style="border:1px solid #bbb;padding:8px;text-align:right">Total</th></tr></thead><tbody><tr><td style="border:1px solid #bbb;padding:8px">${esc(v.producto)}${v.nroSerie?' · Serie '+esc(v.nroSerie):''}</td><td style="border:1px solid #bbb;padding:8px;text-align:center">${v.cantidad}</td><td style="border:1px solid #bbb;padding:8px;text-align:right">${money(v.total)}</td></tr></tbody></table><div style="text-align:right;font-size:20px;font-weight:700;margin-top:18px">TOTAL: ${money(v.total)}</div><div style="border-top:1px solid #bbb;margin-top:26px;padding-top:12px;font-size:12px"><b>CAE:</b> ${esc(v.cae||'-')} &nbsp;&nbsp; <b>Vto. CAE:</b> ${esc(v.caeVencimiento||'-')}</div></div>`}
+function mostrarFacturaEmitida(i){const v=state.ventas.find(x=>String(x.id)===String(i));if(!v)return;if(!v.cae)return facturarYEnviar(i);abrirModal('✅ Factura autorizada',`<div class="space-y-3"><div class="bg-emerald-50 border border-emerald-200 rounded p-3 text-sm"><b>ARCA autorizó el comprobante.</b><br>Cuenta emisora: ${esc(v.facturaCuenta==='cuenta2'?'Cuenta ARCA 2':'Cuenta ARCA 1')}<br>CAE: <span class="font-mono">${esc(v.cae)}</span><br>Comprobante: ${esc(v.facturaTipo||'')} ${esc(v.facturaPuntoVenta||'')}-${esc(v.facturaNumero||'')}</div><button onclick="descargarFacturaPDF('${v.id}')" class="bg-rose-700 text-white px-4 py-2 rounded w-full font-semibold">📄 Descargar factura PDF</button><button onclick="enviarFacturaWhatsApp('${v.id}')" class="bg-emerald-600 text-white px-4 py-2 rounded w-full font-semibold">💬 Abrir WhatsApp para enviarla</button><p class="small text-slate-500">WhatsApp Web no permite adjuntar automáticamente un archivo mediante un enlace. El PDF se descarga y luego lo adjuntás en el chat que se abre.</p></div>`)}
+function descargarFacturaPDF(i){const v=state.ventas.find(x=>String(x.id)===String(i));if(!v||!v.cae)return alert('La venta todavía no tiene una factura autorizada.');const wrap=document.createElement('div');wrap.innerHTML=facturaHtml(v);document.body.appendChild(wrap);const nombre=`Factura_${v.facturaTipo||''}_${v.facturaPuntoVenta||''}-${v.facturaNumero||v.id}.pdf`.replace(/\s+/g,'_');html2pdf().set({margin:5,filename:nombre,image:{type:'jpeg',quality:.98},html2canvas:{scale:2},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(wrap.firstElementChild).save().then(()=>wrap.remove()).catch(()=>wrap.remove())}
+function enviarFacturaWhatsApp(i){const v=state.ventas.find(x=>String(x.id)===String(i));if(!v)return;const c=clienteDeVenta(v);const tel=(v.telefono||c?.telefono||'').replace(/\D/g,'');if(!tel)return alert('El cliente no tiene WhatsApp cargado.');const nro=[v.facturaPuntoVenta,v.facturaNumero].filter(Boolean).join('-');const msg=`Hola ${v.cliente||c?.nombre||''}! Te enviamos tu factura ${v.facturaTipo||''} ${nro} por ${money(v.total)}. CAE: ${v.cae}. Gracias por tu compra en Bicicletería del Abasto 🚲`;window.open('https://wa.me/549'+tel+'?text='+encodeURIComponent(msg),'_blank')}
+
+function renderVentas(){
+ tablaVentas.innerHTML=state.ventas.map(v=>{
+  const mg=v.total?((v.ganancia/v.total)*100):0;
+  return `<tr class="border-b"><td class="p-2 small">${fecha(v.fecha)}</td><td class="p-2">${esc(v.cliente)}</td><td class="p-2">${esc(v.producto)}${v.nroSerie?`<br><span class="small font-mono text-slate-500">Serie: ${esc(v.nroSerie)}</span>`:''}${v.cae?`<br><span class="small text-emerald-700 font-semibold">✓ Factura ${esc(v.facturaTipo||'')} ${esc(v.facturaPuntoVenta||'')}-${esc(v.facturaNumero||'')} · ${esc(v.facturaCuenta==='cuenta2'?'ARCA 2':'ARCA 1')}</span>`:''}</td><td class="p-2">${v.cantidad}</td><td class="p-2">${money(v.total)}</td><td class="p-2">${money(v.costo)}</td><td class="p-2 text-emerald-600 font-semibold">${money(v.ganancia)}</td><td class="p-2">${mg.toFixed(1)}%</td><td class="p-2 flex gap-1 flex-wrap"><button onclick="fichaClienteVenta('${v.id}')" class="bg-indigo-600 text-white px-2 py-1 rounded text-xs" title="Ficha / historial del cliente">👤 Ficha</button><button onclick="whatsappVenta('${v.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs" title="WhatsApp con mensaje editable">💬 WhatsApp</button><button onclick="facturarYEnviar('${v.id}')" class="${v.cae?'bg-slate-700':'bg-violet-700'} text-white px-2 py-1 rounded text-xs" title="Facturar en ARCA y enviar">${v.cae?'✅ Factura':'🧾 Facturar y enviar'}</button><button type="button" data-delete-table="ventas" data-delete-id="${v.id}" class="bg-rose-50 text-rose-700 px-2 py-1 rounded text-xs delete-btn" title="Eliminar venta">🗑️</button></td></tr>`
+ }).join('')||'<tr><td colspan="9" class="p-4 text-center">Sin ventas.</td></tr>'
+}
 
 /* --- COMPRAS & PROVEEDORES --- */
 function actualizarSelectProveedores(){
@@ -593,7 +724,7 @@ function abrirGestionProveedores(){
 }
 function renderListaProvModal(){
  const div=document.getElementById('listaProvModal'); if(!div)return;
- div.innerHTML=state.proveedores.map(p=>`<div class="border p-2 rounded flex justify-between items-center text-sm"><div><b>${esc(p.nombre)}</b><br><span class="small text-slate-500">${esc(p.contacto||'-')}</span></div><div class="flex gap-2"><button onclick="editarProveedor('${p.id}')" class="text-blue-600 text-xs">✏️</button><button onclick="borrarProveedor('${p.id}')" class="text-rose-600 text-xs">🗑️</button></div></div>`).join('')||'<p class="text-slate-400 text-sm">No hay proveedores cargados.</p>';
+ div.innerHTML=state.proveedores.map(p=>`<div class="border p-2 rounded flex justify-between items-center text-sm"><div><b>${esc(p.nombre)}</b><br><span class="small text-slate-500">${esc(p.contacto||'-')}</span></div><div class="flex gap-2"><button onclick="editarProveedor('${p.id}')" class="text-blue-600 text-xs">✏️</button><button type="button" data-delete-table="proveedores" data-delete-id="${p.id}" class="text-rose-600 text-xs delete-btn" data-after-delete="proveedores" title="Eliminar proveedor">🗑️</button></div></div>`).join('')||'<p class="text-slate-400 text-sm">No hay proveedores cargados.</p>';
 }
 async function agregarProveedorModal(){
  const nombre=document.getElementById('provNombre').value.trim();
@@ -614,11 +745,7 @@ async function guardarEdProveedor(i){
  if(!nombre)return alert('El nombre es obligatorio.');
  try{await dbUpdate('proveedores',i,{nombre,contacto});cerrarModal();await cargarSupabase(true);alert('Proveedor actualizado y sincronizado.')}catch(e){alert('No se pudo actualizar el proveedor: '+e.message)}
 }
-async function borrarProveedor(i){
- if(!confirm('¿Eliminar este proveedor?'))return;
- try{await dbDelete('proveedores',i);await cargarSupabase(true);renderListaProvModal();actualizarSelectProveedores();renderCompras()}
- catch(e){console.error(e);alert('No se pudo eliminar el proveedor: '+e.message)}
-}
+async function borrarProveedor(i){return eliminarRegistro('proveedores',i,'proveedores')}
 
 async function guardarCompra(){
  const provNombre=document.getElementById('pNombreSelect')?.value;
@@ -648,26 +775,40 @@ async function guardarEdCompra(i){
 }
 function renderCompras(){
  listaProveedores.innerHTML=state.proveedores.map(p=>`<div class="border-b py-2"><b>${esc(p.nombre)}</b><br><span class="small">${esc(p.contacto||'Sin contacto')}</span></div>`).join('')||'<p class="text-slate-400">Sin proveedores.</p>';
- listaCompras.innerHTML=state.compras.slice(0,20).map(c=>`<div class="border-b py-2 flex justify-between gap-3"><span><b>${esc(c.proveedor)}</b> · ${esc(c.producto)}<br><span class="small">${fecha(c.fecha)} · ${c.cantidad} un. · ${esc(c.medio)}</span></span><span class="text-right"><b class="money">${money(c.total)}</b><br><button onclick="editarCompra('${c.id}')" class="text-blue-600 text-xs">✏️</button> <button onclick="borrar('compras','${c.id}')" class="text-rose-600 text-xs">🗑️</button></span></div>`).join('')||'<p class="text-slate-400">Sin compras.</p>';
+ listaCompras.innerHTML=state.compras.slice(0,20).map(c=>`<div class="border-b py-2 flex justify-between gap-3"><span><b>${esc(c.proveedor)}</b> · ${esc(c.producto)}<br><span class="small">${fecha(c.fecha)} · ${c.cantidad} un. · ${esc(c.medio)}</span></span><span class="text-right"><b class="money">${money(c.total)}</b><br><button onclick="editarCompra('${c.id}')" class="text-blue-600 text-xs">✏️</button> <button type="button" data-delete-table="compras" data-delete-id="${c.id}" class="text-rose-600 text-xs delete-btn" title="Eliminar">🗑️</button></span></div>`).join('')||'<p class="text-slate-400">Sin compras.</p>';
 }
 
-async function borrar(k,i){
+async function eliminarRegistro(tabla,id,afterDelete=''){
+ if(!tabla||!id)return alert('No se pudo identificar el registro a eliminar.');
  if(!confirm('¿Eliminar este registro? Esta acción no se puede deshacer.'))return;
- const tabla={movimientos:'caja',clientes:'clientes',ots:'taller',stock:'inventario_bicicletas',ventas:'ventas',compras:'compras',proveedores:'proveedores',arqueos:'arqueos',recordatorios:'recordatorios'}[k];
- if(tabla){
-  try{
-   await dbDelete(tabla,i);
-   await cargarSupabase(true);
-   alert('Registro eliminado correctamente.');
-  }catch(e){
-   console.error(e);
-   alert('No se pudo eliminar.\n\n'+e.message);
-   await cargarSupabase(true);
-  }
-  return;
+ try{
+  syncStatus('⏳ Eliminando...');
+  const res=await dbDelete(tabla,id);
+  await cargarSupabase(true);
+  if(afterDelete==='conceptos')renderListasConceptosModal();
+  if(afterDelete==='proveedores'){renderListaProvModal();actualizarSelectProveedores();renderCompras();}
+  syncStatus('☁️ Sincronizado',true);
+  alert('Registro eliminado correctamente.');
+ }catch(e){
+  console.error('Error eliminando',tabla,id,e);
+  syncStatus('⚠️ Error al eliminar',false);
+  alert('No se pudo eliminar el registro de '+tabla+'.\n\n'+String(e?.message||e)+'\n\nEjecutá el SQL reparar_borrado_v5.sql en Supabase.');
+  await cargarSupabase(true);
  }
- alert('Este tipo de registro no tiene una tabla de Supabase asociada.');
 }
+
+// Un único manejador para TODOS los botones de borrar.
+// Funciona también con filas/tablas que se vuelven a renderizar dinámicamente.
+document.addEventListener('click',function(ev){
+ const btn=ev.target.closest('[data-delete-table][data-delete-id]');
+ if(!btn)return;
+ ev.preventDefault();
+ ev.stopPropagation();
+ const tabla=btn.dataset.deleteTable;
+ const id=btn.dataset.deleteId;
+ const afterDelete=btn.dataset.afterDelete||'';
+ eliminarRegistro(tabla,id,afterDelete);
+});
 function rango(){const now=new Date();let from=new Date(0),to=new Date();if(periodoActual==='hoy'){from=new Date();from.setHours(0,0,0,0)}if(periodoActual==='semana'){from=new Date();from.setDate(now.getDate()-6);from.setHours(0,0,0,0)}if(periodoActual==='mes'){from=new Date(now.getFullYear(),now.getMonth(),1)}if(periodoActual==='anio'){from=new Date(now.getFullYear(),0,1)}return [from,to]}
 function periodo(p){periodoActual=p;reportes()}
 function filtrarMovPeriodo(){const [f,t]=rango();return state.movimientos.filter(m=>{const d=new Date(m.fecha);return d>=f&&d<=t})}
@@ -727,7 +868,7 @@ function dashboard(){
  dVentas.textContent=money(vs.reduce((s,v)=>s+v.total,0));dCaja.textContent=money(en-sa);dTaller.textContent=state.ots.filter(o=>o.estado!=='Entregada').length;dClientes.textContent=state.clientes.length;
  const low=state.stock.filter(s=>s.cantidad<=2);
  alertas.innerHTML=(low.length?`<div class="bg-amber-50 p-2 rounded">📦 ${low.length} productos con stock bajo.</div>`:'')+(state.ots.filter(o=>o.estado==='Esperando repuestos').length?`<div class="bg-rose-50 p-2 rounded">🔧 Hay OT esperando repuestos.</div>`:'')+(state.arqueos.length&&Math.abs(state.arqueos[0].diferencia)>0?`<div class="bg-rose-50 p-2 rounded">💰 Último arqueo con diferencia.</div>`:'')||'<div class="text-slate-400">Sin alertas críticas.</div>';
- recordatoriosDash.innerHTML=state.recordatorios.slice().sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))).slice(0,6).map(r=>`<div class="border rounded p-3"><div class="flex justify-between gap-2"><b>${esc(r.cliente||'General')}</b><button onclick="borrar('recordatorios','${r.id}')" class="text-rose-600 text-xs" title="Eliminar recordatorio">🗑️</button></div><span class="small">${esc(r.texto)} · ${esc(r.fecha||'Sin fecha')}</span></div>`).join('')||'<div class="text-slate-400">No hay recordatorios.</div>';
+ recordatoriosDash.innerHTML=state.recordatorios.slice().sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))).slice(0,6).map(r=>`<div class="border rounded p-3"><div class="flex justify-between gap-2"><b>${esc(r.cliente||'General')}</b><button type="button" data-delete-table="recordatorios" data-delete-id="${r.id}" class="text-rose-600 text-xs delete-btn" title="Eliminar recordatorio">🗑️</button></div><span class="small">${esc(r.texto)} · ${esc(r.fecha||'Sin fecha')}</span></div>`).join('')||'<div class="text-slate-400">No hay recordatorios.</div>';
  
  let days={}; for(let i=13;i>=0;i--){let d=new Date();d.setDate(d.getDate()-i);days[isoDate(d)]=0}
  ms.forEach(m=>{const d=isoDate(m.fecha);if(days[d]!==undefined)days[d]+=m.tipo==='Entrada'?m.monto:-m.monto});
