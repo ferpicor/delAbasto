@@ -83,7 +83,7 @@ input,select,textarea{min-width:0}
   <div class="flex flex-wrap gap-2 mt-4"><button onclick="guardarOT()" class="bg-blue-600 text-white px-4 py-2 rounded-lg">💾 Guardar OT</button><button onclick="limpiarOT()" class="bg-slate-200 px-4 py-2 rounded-lg">Limpiar</button></div>
  </div>
  <div class="card p-4 overflow-x-auto"><div class="flex justify-between items-center mb-3"><h3 class="font-semibold">Órdenes de trabajo</h3><input id="buscarOT" oninput="renderOT()" class="border p-2 rounded-lg text-sm" placeholder="Buscar cliente/bici/trabajo"></div>
- <table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2">OT</th><th class="p-2">Cliente</th><th class="p-2">Bici / trabajo</th><th class="p-2">Presupuesto</th><th class="p-2">Seña</th><th class="p-2">Estado</th><th class="p-2">Saldo</th><th class="p-2">A cobrar</th><th class="p-2">Acciones</th></tr></thead><tbody id="tablaOT"></tbody></table></div>
+ <table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2">OT</th><th class="p-2">Fecha ingreso</th><th class="p-2">Cliente</th><th class="p-2">Bici / trabajo</th><th class="p-2">Presupuesto</th><th class="p-2">Seña</th><th class="p-2">Estado</th><th class="p-2">Saldo</th><th class="p-2">A cobrar</th><th class="p-2">Acciones</th></tr></thead><tbody id="tablaOT"></tbody></table></div>
 </section>
 
 <section id="ventas" class="hidden space-y-5">
@@ -389,8 +389,8 @@ function renderOT(){
   const saldo=Math.max(0,(o.presupuesto||0)-(o.sena||0)-(o.pagado||0));
   const lista=(o.estado==='Lista'||o.estado==='Entregada');
   const montoCobrar=(o.montoCobrar!=null?o.montoCobrar:saldo);
-  return `<tr class="border-b"><td class="p-2 font-semibold">#${String(o.id).slice(-6)}</td><td class="p-2">${esc(o.cliente)}<br><span class="small">${esc(o.telefono)}</span></td><td class="p-2">${esc(o.bici)}<br><span class="small">${esc(o.trabajo)}</span></td><td class="p-2">${money(o.presupuesto)}</td><td class="p-2">${money(o.sena)}</td><td class="p-2"><select onchange="cambiarOT('${o.id}',this.value)" class="border rounded p-1"><option ${o.estado==='En taller'?'selected':''}>En taller</option><option ${o.estado==='En proceso'?'selected':''}>En proceso</option><option ${o.estado==='Esperando repuestos'?'selected':''}>Esperando repuestos</option><option ${o.estado==='Lista'?'selected':''}>Lista</option><option ${o.estado==='Entregada'?'selected':''}>Entregada</option></select></td><td class="p-2 font-semibold">${money(saldo)}</td><td class="p-2"><input type="number" class="border rounded p-1 w-24 ${lista?'':'bg-slate-100 text-slate-400'}" ${lista?'':'disabled'} value="${montoCobrar}" title="${lista?'Monto a cobrar al entregar':'Se habilita cuando la bici está Lista'}" onchange="setMontoCobrar('${o.id}',this.value)"></td><td class="p-2 flex gap-1 flex-wrap"><button onclick="editarOT('${o.id}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs" title="Modificar datos">✏️</button><button onclick="otWhatsApp('${o.id}')" class="bg-green-600 text-white px-2 py-1 rounded text-xs" title="Enviar WhatsApp al cliente">💬</button><button onclick="reciboOT('${o.id}')" class="bg-purple-600 text-white px-2 py-1 rounded text-xs" title="Generar recibo y enviar WhatsApp">🧾</button><button onclick="cobrarOT('${o.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">Cobrar</button><button type="button" data-delete-table="taller" data-delete-id="${o.id}" class="text-rose-600 delete-btn" title="Eliminar">🗑️</button></td></tr>`
- }).join('')||'<tr><td colspan="9" class="p-4 text-center text-slate-400">Sin órdenes.</td></tr>';
+  return `<tr class="border-b"><td class="p-2 font-semibold">#${String(o.id).slice(-6)}</td><td class="p-2 small whitespace-nowrap">${fecha(o.fecha)}</td><td class="p-2">${esc(o.cliente)}<br><span class="small">${esc(o.telefono)}</span></td><td class="p-2">${esc(o.bici)}<br><span class="small">${esc(o.trabajo)}</span></td><td class="p-2">${money(o.presupuesto)}</td><td class="p-2">${money(o.sena)}</td><td class="p-2"><select onchange="cambiarOT('${o.id}',this.value)" class="border rounded p-1"><option ${o.estado==='En taller'?'selected':''}>En taller</option><option ${o.estado==='En proceso'?'selected':''}>En proceso</option><option ${o.estado==='Esperando repuestos'?'selected':''}>Esperando repuestos</option><option ${o.estado==='Lista'?'selected':''}>Lista</option><option ${o.estado==='Entregada'?'selected':''}>Entregada</option></select></td><td class="p-2 font-semibold">${money(saldo)}</td><td class="p-2"><input type="number" class="border rounded p-1 w-24 ${lista?'':'bg-slate-100 text-slate-400'}" ${lista?'':'disabled'} value="${montoCobrar}" title="${lista?'Monto a cobrar al entregar':'Se habilita cuando la bici está Lista'}" onchange="setMontoCobrar('${o.id}',this.value)"></td><td class="p-2 flex gap-1 flex-wrap"><button onclick="editarOT('${o.id}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs" title="Modificar datos">✏️</button><button onclick="otWhatsApp('${o.id}')" class="bg-green-600 text-white px-2 py-1 rounded text-xs" title="Enviar WhatsApp al cliente">💬</button><button onclick="reciboOT('${o.id}')" class="bg-purple-600 text-white px-2 py-1 rounded text-xs" title="Generar recibo y enviar WhatsApp">🧾</button><button onclick="cobrarOT('${o.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">Cobrar</button><button type="button" data-delete-table="taller" data-delete-id="${o.id}" class="text-rose-600 delete-btn" title="Eliminar">🗑️</button></td></tr>`
+ }).join('')||'<tr><td colspan="10" class="p-4 text-center text-slate-400">Sin órdenes.</td></tr>';
 }
 async function setMontoCobrar(i,v){
  const o=state.ots.find(x=>String(x.id)===String(i));if(!o)return;
@@ -521,7 +521,20 @@ async function guardarMovimiento(){
  try{await agregarMovInterno(mTipo.value,mConcepto.value,mMedio.value,m,mDescripcion.value.trim());mMonto.value='';mDescripcion.value='';await cargarSupabase(true)}catch(e){alert('No se pudo guardar el movimiento: '+e.message)}
 }
 function abrirMovimiento(){tab('caja');setTimeout(()=>mMonto.focus(),100)}
-function editarMov(i){const m=state.movimientos.find(x=>String(x.id)===String(i));if(!m)return;const body=`<div class="space-y-3"><select id="emTipo" class="border p-2 rounded w-full"><option ${m.tipo==='Entrada'?'selected':''}>Entrada</option><option ${m.tipo==='Salida'?'selected':''}>Salida</option></select><input id="emConc" class="border p-2 rounded w-full" value="${esc(m.concepto)}"><select id="emMedio" class="border p-2 rounded w-full">${['Efectivo','Transferencia','Débito','Crédito','Mercado Pago','Otro'].map(x=>`<option ${x===m.medio?'selected':''}>${x}</option>`).join('')}</select><input id="emMonto" type="number" class="border p-2 rounded w-full" value="${m.monto}"><textarea id="emDesc" class="border p-2 rounded w-full">${esc(m.descripcion)}</textarea><button onclick="guardarEdMov('${m.id}')" class="bg-blue-600 text-white px-4 py-2 rounded">Guardar cambios</button></div>`;abrirModal('Modificar movimiento',body)}
+function editarMov(i){
+ const m=state.movimientos.find(x=>String(x.id)===String(i));if(!m)return;
+ const conceptos=[...new Set([m.concepto,...state.conceptos.map(x=>x.nombre)].filter(Boolean))];
+ const opcionesConcepto=conceptos.map(x=>`<option value="${esc(x)}" ${x===m.concepto?'selected':''}>${esc(x)}</option>`).join('');
+ const body=`<div class="space-y-3">
+  <div><label class="small text-slate-500">Tipo</label><select id="emTipo" class="border p-2 rounded w-full"><option ${m.tipo==='Entrada'?'selected':''}>Entrada</option><option ${m.tipo==='Salida'?'selected':''}>Salida</option></select></div>
+  <div><label class="small text-slate-500">Concepto</label><select id="emConc" class="border p-2 rounded w-full">${opcionesConcepto}</select></div>
+  <div><label class="small text-slate-500">Medio de pago</label><select id="emMedio" class="border p-2 rounded w-full">${['Efectivo','Transferencia','Débito','Crédito','Mercado Pago','Otro'].map(x=>`<option ${x===m.medio?'selected':''}>${x}</option>`).join('')}</select></div>
+  <div><label class="small text-slate-500">Monto</label><input id="emMonto" type="number" class="border p-2 rounded w-full" value="${m.monto}"></div>
+  <div><label class="small text-slate-500">Detalle</label><textarea id="emDesc" class="border p-2 rounded w-full">${esc(m.descripcion)}</textarea></div>
+  <button onclick="guardarEdMov('${m.id}')" class="bg-blue-600 text-white px-4 py-2 rounded w-full font-semibold">💾 Guardar cambios</button>
+ </div>`;
+ abrirModal('Modificar movimiento',body);
+}
 async function guardarEdMov(i){
  const m=state.movimientos.find(x=>String(x.id)===String(i));if(!m)return;
  const payload={tipo:emTipo.value,categoria:emConc.value,concepto:emConc.value,medio_pago:emMedio.value,monto:+emMonto.value||0,descripcion:emDesc.value};
@@ -561,7 +574,7 @@ function historialCliente(i){
  const totalVentas=vs.reduce((s,v)=>s+v.total,0);
  const totalTaller=ots.reduce((s,o)=>s+(o.sena||0)+(o.pagado||0),0);
  const totalGastado=totalVentas+totalTaller;
- 
+
  let html=`<div class="space-y-4">
   <div class="bg-slate-50 p-3 rounded-lg text-sm">
    <p><b>Teléfono:</b> ${esc(c.telefono||'No especificado')}</p>
@@ -569,12 +582,17 @@ function historialCliente(i){
    <p><b>DNI / CUIT:</b> ${esc(c.documento||'No especificado')}</p>
    <p><b>Condición IVA:</b> ${esc(c.condicionIva||'No especificada')}</p>
    <p><b>Dirección:</b> ${esc(c.direccion||'No especificada')}</p>
+   <p><b>Notas del cliente:</b> ${esc(c.notas||'Sin notas')}</p>
    <p><b>Total gastado (ventas + taller):</b> <span class="text-emerald-700 font-bold">${money(totalGastado)}</span></p>
   </div>
   <div>
    <h4 class="font-semibold text-sm mb-2">🛒 Historial de Ventas / Compras (${vs.length})</h4>
-   <div class="space-y-1 max-h-40 overflow-auto text-xs">
-    ${vs.map(v=>`<div class="border-b py-1 flex justify-between"><span>${fecha(v.fecha)} - ${esc(v.producto)} (${v.cantidad} un.)</span><b class="money">${money(v.total)}</b></div>`).join('')||'<p class="text-slate-400">Sin compras registradas.</p>'}
+   <div class="space-y-2 max-h-56 overflow-auto text-xs">
+    ${vs.map(v=>`<div class="border rounded p-2">
+      <div class="flex justify-between gap-3"><span><b>${fecha(v.fecha)}</b> - ${esc(v.producto)} (${v.cantidad} un.)</span><b class="money">${money(v.total)}</b></div>
+      ${v.nroSerie?`<div class="mt-1"><b>Nro. de serie:</b> <span class="font-mono">${esc(v.nroSerie)}</span></div>`:''}
+      ${v.notas?`<div class="mt-1"><b>Notas:</b> ${esc(v.notas)}</div>`:''}
+     </div>`).join('')||'<p class="text-slate-400">Sin compras registradas.</p>'}
    </div>
   </div>
   <div>
@@ -583,8 +601,28 @@ function historialCliente(i){
     ${ots.map(o=>{const cobrado=(o.sena||0)+(o.pagado||0);return `<div class="border-b py-1 flex justify-between gap-3"><span>${fecha(o.fecha)} · #${String(o.id).slice(-6)} - ${esc(o.bici)}: ${esc(o.trabajo)}</span><span class="font-semibold text-right">${o.estado}<br>Cobrado: ${money(cobrado)}</span></div>`}).join('')||'<p class="text-slate-400">Sin órdenes de taller registradas.</p>'}
    </div>
   </div>
+  ${c.telefono?`<button onclick="whatsappFichaCliente('${c.id}')" class="bg-emerald-600 text-white px-4 py-2 rounded w-full font-semibold">📲 Enviar ficha completa por WhatsApp</button>`:'<p class="small text-amber-700">Agregá un número de WhatsApp al cliente para poder enviar la ficha.</p>'}
  </div>`;
  abrirModal('Historial de ' + c.nombre, html);
+}
+function whatsappFichaCliente(i){
+ const c=state.clientes.find(x=>String(x.id)===String(i));if(!c)return;
+ const tel=(c.telefono||'').replace(/\D/g,'');if(!tel)return alert('El cliente no tiene WhatsApp cargado.');
+ const vs=state.ventas.filter(v=>(c.telefono&&v.telefono===c.telefono)||(v.cliente&&v.cliente.toLowerCase()===c.nombre.toLowerCase()));
+ const ots=state.ots.filter(o=>(c.telefono&&o.telefono===c.telefono)||(o.cliente&&o.cliente.toLowerCase()===c.nombre.toLowerCase()));
+ const totalVentas=vs.reduce((a,v)=>a+(v.total||0),0);
+ const totalTaller=ots.reduce((a,o)=>a+(o.sena||0)+(o.pagado||0),0);
+ let msg=`🚲 *BICICLETÍA DEL ABASTO*\n*Ficha de cliente*\n\n👤 ${c.nombre}\n📱 ${c.telefono||'-'}\n📧 ${c.email||'-'}\n📍 ${c.direccion||'-'}${c.documento?`\n🪪 DNI / CUIT: ${c.documento}`:''}${c.notas?`\n📝 Notas: ${c.notas}`:''}`;
+ if(vs.length){
+  msg+=`\n\n🛒 *VENTAS / COMPRAS*`;
+  vs.forEach(v=>{msg+=`\n\n📅 ${fecha(v.fecha)}\n• ${v.producto} x${v.cantidad}\n• Importe: ${money(v.total)}${v.nroSerie?`\n• Nro. de serie: ${v.nroSerie}`:''}${v.notas?`\n• Notas: ${v.notas}`:''}`});
+ }
+ if(ots.length){
+  msg+=`\n\n🛠️ *TALLER / SERVICES*`;
+  ots.forEach(o=>{msg+=`\n\n📅 ${fecha(o.fecha)} · OT #${String(o.id).slice(-6)}\n• ${o.bici}\n• ${o.trabajo}\n• Estado: ${o.estado}\n• Cobrado: ${money((o.sena||0)+(o.pagado||0))}`});
+ }
+ msg+=`\n\n💰 *Total registrado: ${money(totalVentas+totalTaller)}*`;
+ window.open('https://wa.me/549'+tel+'?text='+encodeURIComponent(msg),'_blank');
 }
 function crmWP(i){const c=state.clientes.find(x=>String(x.id)===String(i));if(!c?.telefono)return;window.open('https://wa.me/549'+c.telefono.replace(/\D/g,'')+'?text='+encodeURIComponent(`Hola ${c.nombre}! Te escribimos de Bicicletería del Abasto. ¿Cómo estás? Si necesitás service o algún repuesto, estamos a disposición.`),'_blank')}
 
@@ -848,7 +886,7 @@ function whatsappVenta(i){
  const c=clienteDeVenta(v);const tel=(v.telefono||c?.telefono||'').replace(/\D/g,'');
  if(!tel)return alert('El cliente no tiene WhatsApp cargado.');
  const nombre=v.cliente||c?.nombre||'cliente';
- const msg=`Hola ${nombre}! Gracias por tu compra en Bicicletería del Abasto 🚲\n\nProducto: ${v.producto}${v.nroSerie?'\nNro. de serie: '+v.nroSerie:''}\nImporte: ${money(v.total)}\n\n¡Muchas gracias por elegirnos!`;
+ const msg=`🚲 *BICICLETÍA DEL ABASTO*\n*Comprobante / ficha de venta*\n\n📅 Fecha: ${fecha(v.fecha)}\n👤 Cliente: ${nombre}\n🛒 Producto: ${v.producto}\n🔢 Cantidad: ${v.cantidad}${v.nroSerie?'\n🔧 Nro. de serie: '+v.nroSerie:''}\n💳 Medio de pago: ${v.medio}\n💰 Importe: ${money(v.total)}${v.notas?'\n📝 Notas: '+v.notas:''}\n\n¡Muchas gracias por elegirnos!`;
  abrirModal('💬 Mensaje de WhatsApp',`<div class="space-y-3"><p class="text-sm text-slate-500">Podés editar el mensaje antes de abrir WhatsApp.</p><textarea id="mensajeVentaWP" class="border p-3 rounded w-full" rows="9">${esc(msg)}</textarea><button onclick="abrirWhatsAppVenta('${tel}')" class="bg-emerald-600 text-white px-4 py-2 rounded w-full font-semibold">📲 Abrir WhatsApp</button></div>`);
 }
 function abrirWhatsAppVenta(tel){
@@ -1092,4 +1130,3 @@ controlarAcceso();
 </script>
 </body>
 </html>
-
