@@ -1250,19 +1250,62 @@ async function descargarPDFFactura(facturaId){
    alert('No se pudo generar el PDF: '+(e?.message||String(e)));
  }
 }
+async function generarArchivoFacturaPDF(f){
+ if(!window.jspdf?.jsPDF)throw new Error('No se cargó jsPDF.');
+ const {jsPDF}=window.jspdf, doc=new jsPDF({unit:'mm',format:'a4',orientation:'portrait'});
+ const qr=await qrDataURLFactura(f);
+ const copias=['ORIGINAL','DUPLICADO','TRIPLICADO'];
+ const total=Number(f.importe||0), pto=String(f.ptoVta||4).padStart(5,'0'), nro=String(f.numero||0).padStart(8,'0');
+ const docRec=f.documento||'-', cond=nombreCondicionIVA(f.condicionIva), medio=medioPagoFactura(f), detalle=detalleFactura(f);
+ for(let k=0;k<copias.length;k++){
+  if(k)doc.addPage();
+  doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.text(copias[k],105,11,{align:'center'});
+  doc.rect(8,5,194,10); doc.rect(8,15,194,52); doc.line(103,15,103,67); doc.line(125,15,125,67);
+  try{doc.addImage(LOGO_FACTURA_DATA,'PNG',13,20,28,22)}catch(_){}
+  doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.text('Razón Social:',13,46);
+  doc.setFont('helvetica','normal'); doc.text(DATOS_EMISOR_ARCA.razonSocial,35,46);
+  doc.setFont('helvetica','bold'); doc.text('Domicilio Comercial:',13,52); doc.setFont('helvetica','normal'); pdfTexto(doc,DATOS_EMISOR_ARCA.domicilio,43,52,55);
+  doc.setFont('helvetica','bold'); doc.text('Condición frente al IVA:',13,62); doc.setFont('helvetica','normal'); doc.text(DATOS_EMISOR_ARCA.condicionIVA,48,62);
+  doc.setFont('helvetica','bold'); doc.setFontSize(24); doc.text('C',114,31,{align:'center'}); doc.setFontSize(8); doc.text('COD. 011',114,39,{align:'center'});
+  doc.setFontSize(18); doc.text('FACTURA',132,27); doc.setFontSize(8);
+  doc.text(`Punto de Venta: ${pto}    Comp. Nro: ${nro}`,132,36); doc.text(`Fecha de Emisión: ${fechaFacturaVisual(f.fecha)}`,132,43);
+  doc.text(`CUIT: ${DATOS_EMISOR_ARCA.cuit}`,132,50); doc.text(`Ingresos Brutos: ${DATOS_EMISOR_ARCA.ingresosBrutos}`,132,56); doc.text(`Fecha Inicio Actividades: ${DATOS_EMISOR_ARCA.inicioActividades}`,132,62);
+  doc.rect(8,67,194,31); doc.setFontSize(8); doc.setFont('helvetica','bold');
+  doc.text(`${nombreDocTipo(f.docTipo)}:`,13,75); doc.setFont('helvetica','normal'); doc.text(String(docRec),31,75);
+  doc.setFont('helvetica','bold'); doc.text('Apellido y Nombre / Razón Social:',85,75); doc.setFont('helvetica','normal'); pdfTexto(doc,f.cliente||'Consumidor final',137,75,60);
+  doc.setFont('helvetica','bold'); doc.text('Condición frente al IVA:',13,84); doc.setFont('helvetica','normal'); doc.text(cond,48,84);
+  doc.setFont('helvetica','bold'); doc.text('Domicilio:',85,84); doc.setFont('helvetica','normal'); pdfTexto(doc,f.direccion||'NR',102,84,95);
+  doc.setFont('helvetica','bold'); doc.text('Condición de venta:',13,93); doc.setFont('helvetica','normal'); doc.text(medio,43,93);
+  const xs=[8,28,83,103,126,150,169,187,202]; doc.setFillColor(225,225,225); doc.rect(8,102,194,8,'FD'); xs.slice(1,-1).forEach(x=>doc.line(x,102,x,110));
+  doc.setFont('helvetica','bold'); doc.setFontSize(6.5); ['Código','Producto / Servicio','Cantidad','U. Medida','Precio Unit.','% Bonif','Imp. Bonif.','Subtotal'].forEach((t,i)=>doc.text(t,(xs[i]+xs[i+1])/2,107,{align:'center'}));
+  doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.text('-',18,116,{align:'center'}); pdfTexto(doc,detalle,31,116,48); doc.text('1,00',93,116,{align:'center'}); doc.text('unidades',114.5,116,{align:'center'});
+  doc.text(total.toFixed(2),148,116,{align:'right'}); doc.text('0,00',166,116,{align:'right'}); doc.text('0,00',184,116,{align:'right'}); doc.text(total.toFixed(2),200,116,{align:'right'});
+  doc.rect(8,220,194,32); doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.text(`Subtotal: $ ${total.toFixed(2)}`,197,231,{align:'right'}); doc.text('Importe Otros Tributos: $ 0,00',197,239,{align:'right'}); doc.setFontSize(10); doc.text(`Importe Total: $ ${total.toFixed(2)}`,197,247,{align:'right'});
+  if(qr)doc.addImage(qr,'PNG',12,260,28,28); doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.text('ARCA',48,270); doc.setFontSize(8); doc.text('Comprobante Autorizado',48,277);
+  doc.setFont('helvetica','normal'); doc.setFontSize(6); doc.text('Código QR conforme especificaciones de factura electrónica de ARCA.',48,283);
+  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.text(`CAE N°: ${f.cae}`,198,270,{align:'right'}); doc.text(`Fecha de Vto. de CAE: ${fechaFacturaVisual(f.caeVencimiento)}`,198,278,{align:'right'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(6); doc.text(`${DATOS_EMISOR_ARCA.nombreFantasia} · Factura C ${pto}-${nro}`,105,291,{align:'center'});
+ }
+ const filename=`Factura_C_${pto}-${nro}.pdf`;
+ return {blob:doc.output('blob'),filename};
+}
 async function enviarFacturaWhatsApp(facturaId){
  const f=(state.facturas||[]).find(x=>String(x.id)===String(facturaId)); if(!f?.cae)return alert('Factura no autorizada.');
  const nro=`${String(f.ptoVta||4).padStart(5,'0')}-${String(f.numero||0).padStart(8,'0')}`;
  const texto=`Hola ${f.cliente||''}. Te envío la Factura C ${nro} por ${money(f.importe)}. CAE ${f.cae}.`;
  try{
-  const {blob,filename}=await blobPDFFactura(f); const file=new File([blob],filename,{type:'application/pdf'});
-  if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({title:'Factura '+nro,text:texto,files:[file]});return;}
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();
-  const tel=String(f.telefono||'').replace(/\D/g,''); window.open(`https://wa.me/${tel}?text=${encodeURIComponent(texto+'\\n\\nEl PDF se descargó para que puedas adjuntarlo.')}`,'_blank');
- }catch(e){alert('No se pudo preparar el envío: '+(e?.message||e));}
+  const {blob,filename}=await generarArchivoFacturaPDF(f);
+  const file=new File([blob],filename,{type:'application/pdf'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    await navigator.share({title:'Factura '+nro,text:texto,files:[file]}); return;
+  }
+  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
+  let tel=String(f.telefono||'').replace(/\D/g,'');
+  if(tel.startsWith('0'))tel=tel.replace(/^0/,'');
+  if(tel&&!tel.startsWith('54'))tel='54'+tel;
+  window.open(`https://wa.me/${tel}?text=${encodeURIComponent(texto+'\\n\\nTe descargué el PDF correcto para que lo adjuntes en este chat.')}`,'_blank');
+ }catch(e){console.error(e);alert('No se pudo preparar el envío: '+(e?.message||String(e)));}
 }
-
-
 function editarFacturaPendiente(facturaId){
  const f=(state.facturas||[]).find(x=>String(x.id)===String(facturaId));
  if(!f)return alert('No se encontró la factura.');
