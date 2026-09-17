@@ -1165,24 +1165,27 @@ async function blobPDFFactura(f){
 async function descargarPDFFactura(facturaId){
  const f=(state.facturas||[]).find(x=>String(x.id)===String(facturaId));
  if(!f?.cae)return alert('Factura no autorizada.');
- if(typeof html2pdf==='undefined')return alert('No se cargó el generador de PDF. Revisá la conexión a Internet y recargá la página.');
+ if(typeof html2pdf==='undefined')return alert('No se cargó el generador de PDF. Recargá la página con Internet.');
  const host=document.createElement('div');
- host.style.position='absolute'; host.style.left='0'; host.style.top='0'; host.style.zIndex='-9999';
- host.style.background='white'; host.style.width='200mm';
- host.innerHTML=['ORIGINAL','DUPLICADO','TRIPLICADO'].map((c,i)=>`<div ${i?'style="page-break-before:always"':''}>${facturaHojaHTML(f,c)}</div>`).join('');
+ host.style.cssText='position:fixed;left:0;top:0;width:794px;background:#fff;z-index:999999;opacity:1;pointer-events:none;';
+ host.innerHTML=['ORIGINAL','DUPLICADO','TRIPLICADO'].map((c,i)=>`<div class="pagina-pdf-factura" ${i?'style="page-break-before:always"':''}>${facturaHojaHTML(f,c)}</div>`).join('');
  document.body.appendChild(host);
  try{
    prepararQRs(host);
-   await new Promise(r=>setTimeout(r,300));
+   await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+   await new Promise(r=>setTimeout(r,250));
    const filename=`Factura_C_${String(f.ptoVta||4).padStart(5,'0')}-${String(f.numero||0).padStart(8,'0')}.pdf`;
-   const opt={margin:5,filename,image:{type:'jpeg',quality:.98},html2canvas:{scale:1.6,useCORS:true,logging:false,backgroundColor:'#ffffff'},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy']}};
-   await html2pdf().set(opt).from(host).save();
+   await html2pdf().set({
+     margin:[5,5,5,5],filename,
+     image:{type:'jpeg',quality:.98},
+     html2canvas:{scale:2,useCORS:true,logging:false,backgroundColor:'#ffffff',scrollX:0,scrollY:0},
+     jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+     pagebreak:{mode:['css','legacy'],before:'.pagina-pdf-factura + .pagina-pdf-factura'}
+   }).from(host).save();
  }catch(e){
    console.error('Error PDF factura',e);
    alert('No se pudo generar el PDF: '+(e?.message||String(e)));
- }finally{
-   host.remove();
- }
+ }finally{host.remove();}
 }
 async function enviarFacturaWhatsApp(facturaId){
  const f=(state.facturas||[]).find(x=>String(x.id)===String(facturaId)); if(!f?.cae)return alert('Factura no autorizada.');
