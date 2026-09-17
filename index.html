@@ -10,6 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 body{background:#f5f7fa}.card{background:white;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 2px 8px rgba(15,23,42,.05)}
 .tab-active{background:#2563eb!important}.modal{background:rgba(15,23,42,.55)}
@@ -1162,30 +1163,92 @@ async function blobPDFFactura(f){
  const worker=html2pdf().set(opt).from(host);
  const blob=await worker.outputPdf('blob'); host.remove(); return {blob,filename:opt.filename};
 }
+async function qrDataURLFactura(f){
+ const box=document.createElement('div');
+ box.style.cssText='position:fixed;left:0;top:0;width:140px;height:140px;background:#fff;z-index:-1;';
+ document.body.appendChild(box);
+ try{
+   new QRCode(box,{text:qrURLFactura(f),width:140,height:140,correctLevel:QRCode.CorrectLevel.M});
+   await new Promise(r=>setTimeout(r,80));
+   const canvas=box.querySelector('canvas');
+   if(canvas)return canvas.toDataURL('image/png');
+   const img=box.querySelector('img');
+   return img?.src||null;
+ }finally{box.remove();}
+}
+function pdfTexto(doc,text,x,y,maxWidth,opts={}){
+ const lines=doc.splitTextToSize(String(text??''),maxWidth);
+ doc.text(lines,x,y,opts); return y+(lines.length-1)*4;
+}
 async function descargarPDFFactura(facturaId){
  const f=(state.facturas||[]).find(x=>String(x.id)===String(facturaId));
  if(!f?.cae)return alert('Factura no autorizada.');
- if(typeof html2pdf==='undefined')return alert('No se cargó el generador de PDF. Recargá la página con Internet.');
- const host=document.createElement('div');
- host.style.cssText='position:fixed;left:0;top:0;width:794px;background:#fff;z-index:999999;opacity:1;pointer-events:none;';
- host.innerHTML=['ORIGINAL','DUPLICADO','TRIPLICADO'].map((c,i)=>`<div class="pagina-pdf-factura" ${i?'style="page-break-before:always"':''}>${facturaHojaHTML(f,c)}</div>`).join('');
- document.body.appendChild(host);
+ if(!window.jspdf?.jsPDF)return alert('No se cargó jsPDF. Recargá la página con Internet.');
  try{
-   prepararQRs(host);
-   await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-   await new Promise(r=>setTimeout(r,250));
-   const filename=`Factura_C_${String(f.ptoVta||4).padStart(5,'0')}-${String(f.numero||0).padStart(8,'0')}.pdf`;
-   await html2pdf().set({
-     margin:[5,5,5,5],filename,
-     image:{type:'jpeg',quality:.98},
-     html2canvas:{scale:2,useCORS:true,logging:false,backgroundColor:'#ffffff',scrollX:0,scrollY:0},
-     jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
-     pagebreak:{mode:['css','legacy'],before:'.pagina-pdf-factura + .pagina-pdf-factura'}
-   }).from(host).save();
+   const {jsPDF}=window.jspdf, doc=new jsPDF({unit:'mm',format:'a4',orientation:'portrait'});
+   const qr=await qrDataURLFactura(f);
+   const copias=['ORIGINAL','DUPLICADO','TRIPLICADO'];
+   const total=Number(f.importe||0), pto=String(f.ptoVta||4).padStart(5,'0'), nro=String(f.numero||0).padStart(8,'0');
+   const docRec=f.documento||'-', cond=nombreCondicionIVA(f.condicionIva), medio=medioPagoFactura(f), detalle=detalleFactura(f);
+   for(let k=0;k<copias.length;k++){
+     if(k)doc.addPage();
+     doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.text(copias[k],105,11,{align:'center'});
+     doc.rect(8,5,194,10); doc.rect(8,15,194,52); doc.line(103,15,103,67); doc.line(125,15,125,67);
+     if(LOGO_FACTURA_DATA) try{doc.addImage(LOGO_FACTURA_DATA,'PNG',13,20,28,22)}catch(_){}
+     doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.text('Razón Social:',13,46);
+     doc.setFont('helvetica','normal'); doc.text(DATOS_EMISOR_ARCA.razonSocial,35,46);
+     doc.setFont('helvetica','bold'); doc.text('Domicilio Comercial:',13,52);
+     doc.setFont('helvetica','normal'); pdfTexto(doc,DATOS_EMISOR_ARCA.domicilio,43,52,55);
+     doc.setFont('helvetica','bold'); doc.text('Condición frente al IVA:',13,62);
+     doc.setFont('helvetica','normal'); doc.text(DATOS_EMISOR_ARCA.condicionIVA,48,62);
+
+     doc.setFont('helvetica','bold'); doc.setFontSize(24); doc.text('C',114,31,{align:'center'});
+     doc.setFontSize(8); doc.text('COD. 011',114,39,{align:'center'});
+     doc.setFontSize(18); doc.text('FACTURA',132,27);
+     doc.setFontSize(8);
+     doc.text(`Punto de Venta: ${pto}    Comp. Nro: ${nro}`,132,36);
+     doc.text(`Fecha de Emisión: ${fechaFacturaVisual(f.fecha)}`,132,43);
+     doc.text(`CUIT: ${DATOS_EMISOR_ARCA.cuit}`,132,50);
+     doc.text(`Ingresos Brutos: ${DATOS_EMISOR_ARCA.ingresosBrutos}`,132,56);
+     doc.text(`Fecha Inicio Actividades: ${DATOS_EMISOR_ARCA.inicioActividades}`,132,62);
+
+     doc.rect(8,67,194,31);
+     doc.setFontSize(8); doc.setFont('helvetica','bold');
+     doc.text(`${nombreDocTipo(f.docTipo)}:`,13,75); doc.setFont('helvetica','normal'); doc.text(String(docRec),31,75);
+     doc.setFont('helvetica','bold'); doc.text('Apellido y Nombre / Razón Social:',85,75);
+     doc.setFont('helvetica','normal'); pdfTexto(doc,f.cliente||'Consumidor final',137,75,60);
+     doc.setFont('helvetica','bold'); doc.text('Condición frente al IVA:',13,84); doc.setFont('helvetica','normal'); doc.text(cond,48,84);
+     doc.setFont('helvetica','bold'); doc.text('Domicilio:',85,84); doc.setFont('helvetica','normal'); pdfTexto(doc,f.direccion||'NR',102,84,95);
+     doc.setFont('helvetica','bold'); doc.text('Condición de venta:',13,93); doc.setFont('helvetica','normal'); doc.text(medio,43,93);
+
+     const xs=[8,28,83,103,126,150,169,187,202];
+     doc.setFillColor(225,225,225); doc.rect(8,102,194,8,'FD');
+     xs.slice(1,-1).forEach(x=>doc.line(x,102,x,110));
+     doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
+     ['Código','Producto / Servicio','Cantidad','U. Medida','Precio Unit.','% Bonif','Imp. Bonif.','Subtotal'].forEach((t,i)=>doc.text(t,(xs[i]+xs[i+1])/2,107,{align:'center'}));
+     doc.setFont('helvetica','normal'); doc.setFontSize(7);
+     doc.text('-',18,116,{align:'center'}); pdfTexto(doc,detalle,31,116,48);
+     doc.text('1,00',93,116,{align:'center'}); doc.text('unidades',114.5,116,{align:'center'});
+     doc.text(total.toFixed(2),148,116,{align:'right'}); doc.text('0,00',166,116,{align:'right'}); doc.text('0,00',184,116,{align:'right'}); doc.text(total.toFixed(2),200,116,{align:'right'});
+
+     doc.rect(8,220,194,32); doc.setFont('helvetica','bold'); doc.setFontSize(8);
+     doc.text(`Subtotal: $ ${total.toFixed(2)}`,197,231,{align:'right'});
+     doc.text('Importe Otros Tributos: $ 0,00',197,239,{align:'right'});
+     doc.setFontSize(10); doc.text(`Importe Total: $ ${total.toFixed(2)}`,197,247,{align:'right'});
+
+     if(qr)doc.addImage(qr,'PNG',12,260,28,28);
+     doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.text('ARCA',48,270);
+     doc.setFontSize(8); doc.text('Comprobante Autorizado',48,277);
+     doc.setFont('helvetica','normal'); doc.setFontSize(6); doc.text('Código QR conforme especificaciones de factura electrónica de ARCA.',48,283);
+     doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.text(`CAE N°: ${f.cae}`,198,270,{align:'right'});
+     doc.text(`Fecha de Vto. de CAE: ${fechaFacturaVisual(f.caeVencimiento)}`,198,278,{align:'right'});
+     doc.setFont('helvetica','normal'); doc.setFontSize(6); doc.text(`${DATOS_EMISOR_ARCA.nombreFantasia} · Factura C ${pto}-${nro}`,105,291,{align:'center'});
+   }
+   doc.save(`Factura_C_${pto}-${nro}.pdf`);
  }catch(e){
-   console.error('Error PDF factura',e);
+   console.error('Error PDF jsPDF',e);
    alert('No se pudo generar el PDF: '+(e?.message||String(e)));
- }finally{host.remove();}
+ }
 }
 async function enviarFacturaWhatsApp(facturaId){
  const f=(state.facturas||[]).find(x=>String(x.id)===String(facturaId)); if(!f?.cae)return alert('Factura no autorizada.');
