@@ -1262,7 +1262,55 @@ async function enviarFacturaWhatsApp(facturaId){
  }catch(e){alert('No se pudo preparar el envío: '+(e?.message||e));}
 }
 
-function mostrarFacturaGenerica(f){abrirModal(f.cae?'✅ Factura autorizada':'🧾 Factura pendiente',`<div class="space-y-3"><div class="${f.cae?'bg-emerald-50 border-emerald-200':'bg-amber-50 border-amber-200'} border rounded p-3 text-sm"><b>Estado:</b> ${esc(f.estado)}<br><b>Factura C:</b> ${f.cae?esc(String(f.ptoVta).padStart(4,'0')+'-'+String(f.numero).padStart(8,'0')):'Pendiente de emisión'}<br><b>Cliente:</b> ${esc(f.cliente)}<br><b>${esc(nombreDocTipo(f.docTipo))}:</b> ${esc(f.documento||'-')}<br><b>Condición IVA:</b> ${esc(nombreCondicionIVA(f.condicionIva))}<br><b>Total:</b> ${money(f.importe)}${f.cae?`<br><b>CAE:</b> <span class="font-mono">${esc(f.cae)}</span>`:''}</div>${f.cae&&f.estado==='autorizada'?`<div class="grid grid-cols-1 sm:grid-cols-3 gap-2"><button onclick="verComprobanteFactura('${esc(String(f.id))}')" class="bg-blue-700 text-white px-3 py-2 rounded font-semibold">📄 Ver comprobante</button><button onclick="descargarPDFFactura('${esc(String(f.id))}')" class="bg-indigo-700 text-white px-3 py-2 rounded font-semibold">⬇️ PDF</button><button onclick="enviarFacturaWhatsApp('${esc(String(f.id))}')" class="bg-emerald-700 text-white px-3 py-2 rounded font-semibold">📱 WhatsApp</button></div><button onclick="consultarFacturaEnARCA('${esc(String(f.id))}')" class="bg-cyan-700 text-white px-4 py-2 rounded w-full font-semibold">🔎 Consultar esta factura en ARCA</button>`:''}${!f.cae&&f.estado==='pendiente'?`<button onclick="emitirFacturaPendienteARCA('${esc(String(f.id))}')" class="bg-red-700 text-white px-4 py-2 rounded w-full font-semibold">🔐 Emitir Factura C REAL</button>`:''}<button onclick="cerrarModal()" class="bg-slate-800 text-white px-4 py-2 rounded w-full">Cerrar</button></div>`)}
+
+function editarFacturaPendiente(facturaId){
+ const f=(state.facturas||[]).find(x=>String(x.id)===String(facturaId));
+ if(!f)return alert('No se encontró la factura.');
+ if(f.cae||f.estado==='autorizada')return alert('Una factura ya autorizada no se puede editar desde esta pantalla.');
+ abrirModal('✏️ Editar factura pendiente',`<div class="space-y-4">
+  <div class="bg-amber-50 border border-amber-200 rounded p-3 text-sm"><b>Todavía no se emitió en ARCA.</b> Podés corregir estos datos antes de solicitar el CAE.</div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+   <div><label class="small text-slate-500">Cliente / Razón social</label><input id="editFacNombre" class="border p-2 rounded w-full" value="${esc(f.cliente||'')}"></div>
+   <div><label class="small text-slate-500">WhatsApp</label><input id="editFacTel" class="border p-2 rounded w-full" placeholder="Ej. 3416123456" value="${esc(f.telefono||'')}"></div>
+   <div><label class="small text-slate-500">Email</label><input id="editFacEmail" class="border p-2 rounded w-full" value="${esc(f.email||'')}"></div>
+   <div><label class="small text-slate-500">Domicilio</label><input id="editFacDireccion" class="border p-2 rounded w-full" value="${esc(f.direccion||'')}"></div>
+   <div><label class="small text-slate-500">Tipo documento</label><select id="editFacDocTipo" class="border p-2 rounded w-full">${opcionesDocTipo(Number(f.docTipo)||0)}</select></div>
+   <div><label class="small text-slate-500">DNI / CUIT</label><input id="editFacDoc" class="border p-2 rounded w-full" value="${esc(f.documento||'')}"></div>
+   <div class="sm:col-span-2"><label class="small text-slate-500">Condición IVA receptor</label><select id="editFacIva" class="border p-2 rounded w-full">${opcionesIVA(Number(f.condicionIva)||5)}</select></div>
+   <div class="sm:col-span-2"><label class="small text-slate-500">Detalle de factura</label><textarea id="editFacDesc" rows="3" class="border p-2 rounded w-full">${esc(f.descripcion||'')}</textarea></div>
+  </div>
+  <div class="grid grid-cols-2 gap-2">
+   <button onclick="mostrarFacturaGenerica((state.facturas||[]).find(x=>String(x.id)==='${esc(String(f.id))}'))" class="bg-slate-200 px-4 py-2 rounded font-semibold">Cancelar</button>
+   <button id="btnGuardarEdicionFactura" onclick="guardarEdicionFacturaPendiente('${esc(String(f.id))}')" class="bg-violet-700 text-white px-4 py-2 rounded font-semibold">💾 Guardar cambios</button>
+  </div>
+ </div>`);
+}
+async function guardarEdicionFacturaPendiente(facturaId){
+ const f=(state.facturas||[]).find(x=>String(x.id)===String(facturaId));
+ if(!f||f.cae||f.estado==='autorizada')return alert('La factura ya no está disponible para editar.');
+ const payload={
+  cliente_nombre:editFacNombre.value.trim()||'Consumidor final',
+  cliente_telefono:editFacTel.value.trim(),
+  cliente_email:editFacEmail.value.trim()||null,
+  cliente_direccion:editFacDireccion.value.trim()||null,
+  doc_tipo:Number(editFacDocTipo.value),
+  doc_nro:editFacDoc.value.trim(),
+  condicion_iva_receptor:Number(editFacIva.value),
+  descripcion:editFacDesc.value.trim()
+ };
+ if(!payload.doc_nro)return alert('Ingresá DNI o CUIT.');
+ if(!payload.descripcion)return alert('Ingresá el detalle de la factura.');
+ const btn=document.getElementById('btnGuardarEdicionFactura');
+ try{
+  if(btn){btn.disabled=true;btn.textContent='⏳ Guardando...'}
+  await dbUpdate('facturas',facturaId,payload);
+  await cargarSupabase(true);
+  const actual=(state.facturas||[]).find(x=>String(x.id)===String(facturaId));
+  if(actual)mostrarFacturaGenerica(actual);
+ }catch(e){alert('No se pudieron guardar los cambios: '+(e?.message||e));if(btn){btn.disabled=false;btn.textContent='💾 Guardar cambios'}}
+}
+
+function mostrarFacturaGenerica(f){abrirModal(f.cae?'✅ Factura autorizada':'🧾 Factura pendiente',`<div class="space-y-3"><div class="${f.cae?'bg-emerald-50 border-emerald-200':'bg-amber-50 border-amber-200'} border rounded p-3 text-sm"><b>Estado:</b> ${esc(f.estado)}<br><b>Factura C:</b> ${f.cae?esc(String(f.ptoVta).padStart(4,'0')+'-'+String(f.numero).padStart(8,'0')):'Pendiente de emisión'}<br><b>Cliente:</b> ${esc(f.cliente)}<br><b>WhatsApp:</b> ${esc(f.telefono||'No cargado')}<br><b>${esc(nombreDocTipo(f.docTipo))}:</b> ${esc(f.documento||'-')}<br><b>Condición IVA:</b> ${esc(nombreCondicionIVA(f.condicionIva))}<br><b>Total:</b> ${money(f.importe)}${f.cae?`<br><b>CAE:</b> <span class="font-mono">${esc(f.cae)}</span>`:''}</div>${f.cae&&f.estado==='autorizada'?`<div class="grid grid-cols-1 sm:grid-cols-3 gap-2"><button onclick="verComprobanteFactura('${esc(String(f.id))}')" class="bg-blue-700 text-white px-3 py-2 rounded font-semibold">📄 Ver comprobante</button><button onclick="descargarPDFFactura('${esc(String(f.id))}')" class="bg-indigo-700 text-white px-3 py-2 rounded font-semibold">⬇️ PDF</button><button onclick="enviarFacturaWhatsApp('${esc(String(f.id))}')" class="bg-emerald-700 text-white px-3 py-2 rounded font-semibold">📱 WhatsApp</button></div><button onclick="consultarFacturaEnARCA('${esc(String(f.id))}')" class="bg-cyan-700 text-white px-4 py-2 rounded w-full font-semibold">🔎 Consultar esta factura en ARCA</button>`:''}${!f.cae&&f.estado==='pendiente'?`<div class="grid grid-cols-2 gap-2"><button onclick="editarFacturaPendiente('${esc(String(f.id))}')" class="bg-amber-600 text-white px-4 py-2 rounded w-full font-semibold">✏️ Modificar datos</button><button onclick="emitirFacturaPendienteARCA('${esc(String(f.id))}')" class="bg-red-700 text-white px-4 py-2 rounded w-full font-semibold">🔐 Emitir Factura C REAL</button></div>`:''}<button onclick="cerrarModal()" class="bg-slate-800 text-white px-4 py-2 rounded w-full">Cerrar</button></div>`)}
 function mostrarFacturaCaja(i){const f=facturaRelacionadaCaja(state.movimientos.find(x=>String(x.id)===String(i))||{});if(f)mostrarFacturaGenerica(f)}
 
 function datosFacturaVenta(v){
