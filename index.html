@@ -4,7 +4,38 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bicicletería del Abasto - Gestión Integral V2</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.tailwindcss.com">
+/* Ordenamiento universal de tablas: clic en cualquier encabezado */
+(function(){
+ function normalizarValor(txt){
+  const t=(txt||'').trim();
+  const dm=t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if(dm){let y=+dm[3];if(y<100)y+=2000;return {tipo:'n',v:new Date(y,+dm[2]-1,+dm[1]).getTime()}}
+  const limpio=t.replace(/\$/g,'').replace(/\s/g,'');
+  if(/^[-+]?\d{1,3}(?:\.\d{3})*(?:,\d+)?%?$/.test(limpio)){
+    return {tipo:'n',v:parseFloat(limpio.replace(/\./g,'').replace(',','.').replace('%',''))}
+  }
+  return {tipo:'s',v:t.toLocaleLowerCase('es')};
+ }
+ document.addEventListener('click',e=>{
+  const th=e.target.closest('table thead th'); if(!th)return;
+  const table=th.closest('table'), tbody=table?.tBodies?.[0]; if(!tbody)return;
+  const headers=[...th.parentElement.children], col=headers.indexOf(th);
+  const asc=th.dataset.orden!=='asc';
+  headers.forEach(h=>{delete h.dataset.orden;h.querySelector('.sortMark')?.remove()});
+  th.dataset.orden=asc?'asc':'desc';
+  const mark=document.createElement('span');mark.className='sortMark ml-1 text-slate-400';mark.textContent=asc?'▲':'▼';th.appendChild(mark);
+  [...tbody.rows].sort((a,b)=>{
+    const A=normalizarValor(a.cells[col]?.innerText),B=normalizarValor(b.cells[col]?.innerText);
+    let r=A.tipo==='n'&&B.tipo==='n'?A.v-B.v:String(A.v).localeCompare(String(B.v),'es',{numeric:true,sensitivity:'base'});
+    return asc?r:-r;
+  }).forEach(r=>tbody.appendChild(r));
+ });
+ function marcar(){document.querySelectorAll('table thead th').forEach(th=>{th.style.cursor='pointer';th.title='Clic para ordenar';th.classList.add('select-none')})}
+ document.addEventListener('DOMContentLoaded',marcar); setTimeout(marcar,1000);
+})();
+
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -17,6 +48,31 @@ body{background:#f5f7fa}.card{background:white;border:1px solid #e5e7eb;border-r
 input,select,textarea{min-width:0}
 .kpi{border-left:4px solid #2563eb}.small{font-size:.78rem}.money{font-variant-numeric:tabular-nums}
 </style>
+
+<style id="mejoras-tablas-20260918">
+  /* Taller: colores algo más claros y separación visible entre bicicletas */
+  #tbodyTaller tr, #tallerBody tr, table tbody tr.fila-taller { border-bottom: 5px solid #ffffff !important; }
+  .fila-taller-proceso { background-color:#fee2e2 !important; }
+  .fila-taller-entregada { background-color:#dcfce7 !important; }
+
+  /* Todas las tablas: encabezados claramente ordenables */
+  table thead th[data-sortable="1"]{
+    cursor:pointer !important;
+    user-select:none;
+    position:relative;
+    padding-right:22px !important;
+  }
+  table thead th[data-sortable="1"]::after{
+    content:"↕";
+    position:absolute;
+    right:6px;
+    opacity:.45;
+    font-size:12px;
+  }
+  table thead th[data-sort-dir="asc"]::after{content:"▲";opacity:.85}
+  table thead th[data-sort-dir="desc"]::after{content:"▼";opacity:.85}
+</style>
+
 </head>
 <body class="font-sans text-slate-800">
 <section id="loginScreen" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-blue-950">
@@ -124,18 +180,19 @@ input,select,textarea{min-width:0}
    <div class="flex flex-wrap gap-2"><button onclick="abrirGestionConceptos()" class="bg-slate-700 text-white px-3 py-2 rounded-lg text-sm">⚙️ Conceptos</button><button onclick="abrirArqueo()" class="bg-slate-800 text-white px-4 py-2 rounded-lg">🧾 Arqueo de caja</button></div>
   </div>
   <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-4">
-   <div class="bg-emerald-50 p-3 rounded-lg"><span class="small">Entradas</span><div id="cEntradas" class="font-bold text-emerald-700">$0</div></div>
-   <div class="bg-rose-50 p-3 rounded-lg"><span class="small">Salidas</span><div id="cSalidas" class="font-bold text-rose-700">$0</div></div>
+   <div class="bg-green-200 p-3 rounded-lg"><span class="small">Entradas</span><div id="cEntradas" class="font-bold text-emerald-700">$0</div></div>
+   <div class="bg-red-200 p-3 rounded-lg"><span class="small">Salidas</span><div id="cSalidas" class="font-bold text-rose-700">$0</div></div>
    <div class="bg-blue-50 p-3 rounded-lg"><span class="small">Neto</span><div id="cNeto" class="font-bold text-blue-700">$0</div></div>
    <div class="bg-amber-50 p-3 rounded-lg"><span class="small">Efectivo</span><div id="cEfectivo" class="font-bold">$0</div></div>
    <div class="bg-violet-50 p-3 rounded-lg"><span class="small">Transferencias</span><div id="cTransfer" class="font-bold">$0</div></div>
   </div>
-  <div class="grid md:grid-cols-5 gap-2 mt-4">
+  <div class="grid md:grid-cols-3 lg:grid-cols-6 gap-2 mt-4">
    <select id="mTipo" onchange="actualizarSelectConceptos()" class="border p-2 rounded-lg"><option>Entrada</option><option>Salida</option></select>
    <select id="mConcepto" class="border p-2 rounded-lg"></select>
    <select id="mMedio" class="border p-2 rounded-lg"><option>Efectivo</option><option>Transferencia</option><option>Débito</option><option>Crédito</option><option>Mercado Pago</option><option>Otro</option></select>
    <input id="mMonto" type="number" class="border p-2 rounded-lg" placeholder="Monto">
    <input id="mDescripcion" class="border p-2 rounded-lg" placeholder="Detalle">
+   <input id="mCuit" inputmode="numeric" maxlength="11" class="border p-2 rounded-lg" placeholder="CUIT (opcional)">
   </div>
   <button onclick="guardarMovimiento()" class="mt-3 bg-emerald-600 text-white px-4 py-2 rounded-lg">➕ Agregar movimiento</button>
  </div>
@@ -319,7 +376,7 @@ async function cargarSupabase(silencioso=false){
   const [caja,clientes,conceptos,stock,taller,ventas,compras,proveedores,arqueos,recordatorios,productosServicios,facturas]=tablas.map((_,i)=>valor(i));
 
   // Cada tabla que sí respondió se actualiza aunque otra tenga un problema.
-  if(resultados[0].status==='fulfilled')state.movimientos=caja.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),tipo:x.tipo||'Entrada',concepto:x.concepto||x.categoria||'General',medio:x.medio_pago||x.medio||'Efectivo',monto:Number(x.monto)||0,descripcion:x.descripcion||''}));
+  if(resultados[0].status==='fulfilled')state.movimientos=caja.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),tipo:x.tipo||'Entrada',concepto:x.concepto||x.categoria||'General',medio:x.medio_pago||x.medio||'Efectivo',monto:Number(x.monto)||0,descripcion:x.descripcion||'',cuit:x.cuit||''}));
   if(resultados[1].status==='fulfilled')state.clientes=clientes.map(x=>({id:x.id,nombre:x.nombre||'',telefono:x.telefono||'',email:x.email||'',direccion:x.direccion||'',segmento:x.segmento||'Nuevo',notas:x.notas||'',documento:x.documento||'',condicionIva:x.condicion_iva||'',fecha:x.created_at||new Date().toISOString()}));
   if(resultados[2].status==='fulfilled')state.conceptos=conceptos.map(x=>({id:x.id,nombre:x.nombre||''})).filter(x=>x.nombre);
   if(resultados[3].status==='fulfilled')state.stock=stock.map(x=>({id:x.id,marca:x.marca||'',modelo:x.modelo||'',variante:[x.color,x.talle].filter(Boolean).join(' / '),nroSerie:x.nro_serie||'',precio:Number(x.precio)||0,costo:Number(x.costo)||0,cantidad:Number(x.stock)||0,estado:x.estado||'Disponible'}));
@@ -395,7 +452,7 @@ function renderOT(){
   const saldo=Math.max(0,(o.presupuesto||0)-(o.sena||0)-(o.pagado||0));
   const lista=(o.estado==='Lista'||o.estado==='Entregada');
   const montoCobrar=(o.montoCobrar!=null?o.montoCobrar:saldo);
-  const colorFila=o.estado==='Entregada'?'bg-emerald-50/70':'bg-rose-50/60';
+  const colorFila=o.estado==='Entregada'?'bg-green-200':'bg-red-200';
    const prioridadBadge=(o.prioridad&&o.prioridad!=='Normal')?`<div class="mt-1"><span class="px-2 py-0.5 rounded-full text-xs font-semibold ${o.prioridad==='Urgente'?'bg-rose-200 text-rose-800':'bg-amber-200 text-amber-800'}">⚡ ${esc(o.prioridad)}${o.fechaPrioridad?' · '+esc(o.fechaPrioridad):''}</span></div>`:'';
    return `<tr class="border-b ${colorFila}"><td class="p-2 font-semibold">#${String(o.id).slice(-6)}${prioridadBadge}</td><td class="p-2 small whitespace-nowrap">${fecha(o.fecha)}</td><td class="p-2">${esc(o.cliente)}<br><span class="small">${esc(o.telefono)}</span></td><td class="p-2">${esc(o.bici)}<br><span class="small">${esc(o.trabajo)}</span></td><td class="p-2">${money(o.presupuesto)}</td><td class="p-2">${money(o.sena)}</td><td class="p-2"><select onchange="cambiarOT('${o.id}',this.value)" class="border rounded p-1"><option ${o.estado==='En taller'?'selected':''}>En taller</option><option ${o.estado==='En proceso'?'selected':''}>En proceso</option><option ${o.estado==='Esperando repuestos'?'selected':''}>Esperando repuestos</option><option ${o.estado==='Lista'?'selected':''}>Lista</option><option ${o.estado==='Entregada'?'selected':''}>Entregada</option></select></td><td class="p-2 font-semibold">${money(saldo)}</td><td class="p-2"><input type="number" class="border rounded p-1 w-24 ${lista?'':'bg-slate-100 text-slate-400'}" ${lista?'':'disabled'} value="${montoCobrar}" title="${lista?'Monto a cobrar al entregar':'Se habilita cuando la bici está Lista'}" onchange="setMontoCobrar('${o.id}',this.value)"></td><td class="p-2 flex gap-1 flex-wrap"><button onclick="editarOT('${o.id}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs" title="Modificar datos">✏️</button><button onclick="otWhatsApp('${o.id}')" class="bg-green-600 text-white px-2 py-1 rounded text-xs" title="Enviar WhatsApp al cliente">💬</button><button onclick="reciboOT('${o.id}')" class="bg-purple-600 text-white px-2 py-1 rounded text-xs" title="Generar recibo y enviar WhatsApp">🧾</button><button onclick="cobrarOT('${o.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">Cobrar</button><button type="button" data-delete-table="taller" data-delete-id="${o.id}" class="text-rose-600 delete-btn" title="Eliminar">🗑️</button></td></tr>`
  }).join('')||'<tr><td colspan="10" class="p-4 text-center text-slate-400">Sin órdenes.</td></tr>';
@@ -526,7 +583,10 @@ async function agregarMovInterno(tipo,concepto,medio,monto,descripcion){
 }
 async function guardarMovimiento(){
  const m=+mMonto.value;if(m<=0)return alert('Monto inválido.');
- try{await agregarMovInterno(mTipo.value,mConcepto.value,mMedio.value,m,mDescripcion.value.trim());mMonto.value='';mDescripcion.value='';await cargarSupabase(true)}catch(e){alert('No se pudo guardar el movimiento: '+e.message)}
+ const cuit=(document.getElementById('mCuit')?.value||'').replace(/\D/g,'');
+ if(cuit && cuit.length!==11)return alert('El CUIT debe tener 11 dígitos.');
+ const payload={tipo:mTipo.value,categoria:mConcepto.value,concepto:mConcepto.value,medio_pago:mMedio.value,monto:m,descripcion:mDescripcion.value.trim(),fecha:fechaHoraLocal(),cuit:cuit||null};
+ try{await dbInsert('caja',payload);mMonto.value='';mDescripcion.value='';if(document.getElementById('mCuit'))mCuit.value='';await cargarSupabase(true)}catch(e){alert('No se pudo guardar el movimiento: '+e.message)}
 }
 function abrirMovimiento(){tab('caja');setTimeout(()=>mMonto.focus(),100)}
 function editarMov(i){
@@ -539,22 +599,24 @@ function editarMov(i){
   <div><label class="small text-slate-500">Medio de pago</label><select id="emMedio" class="border p-2 rounded w-full">${['Efectivo','Transferencia','Débito','Crédito','Mercado Pago','Otro'].map(x=>`<option ${x===m.medio?'selected':''}>${x}</option>`).join('')}</select></div>
   <div><label class="small text-slate-500">Monto</label><input id="emMonto" type="number" class="border p-2 rounded w-full" value="${m.monto}"></div>
   <div><label class="small text-slate-500">Detalle</label><textarea id="emDesc" class="border p-2 rounded w-full">${esc(m.descripcion)}</textarea></div>
+  <div><label class="small text-slate-500">CUIT para facturación (opcional)</label><input id="emCuit" inputmode="numeric" maxlength="11" class="border p-2 rounded w-full" value="${esc(m.cuit||'')}" placeholder="11 dígitos"></div>
   <button onclick="guardarEdMov('${m.id}')" class="bg-blue-600 text-white px-4 py-2 rounded w-full font-semibold">💾 Guardar cambios</button>
  </div>`;
  abrirModal('Modificar movimiento',body);
 }
 async function guardarEdMov(i){
  const m=state.movimientos.find(x=>String(x.id)===String(i));if(!m)return;
- const payload={tipo:emTipo.value,categoria:emConc.value,concepto:emConc.value,medio_pago:emMedio.value,monto:+emMonto.value||0,descripcion:emDesc.value};
+ const cuit=(emCuit.value||'').replace(/\D/g,'');if(cuit&&cuit.length!==11)return alert('El CUIT debe tener 11 dígitos.');
+ const payload={tipo:emTipo.value,categoria:emConc.value,concepto:emConc.value,medio_pago:emMedio.value,monto:+emMonto.value||0,descripcion:emDesc.value,cuit:cuit||null};
  try{await dbUpdate('caja',m.id,payload);cerrarModal();await cargarSupabase(true)}catch(e){alert('No se pudo modificar el movimiento: '+e.message)}
 }
 function facturaDeCaja(id){return (state.facturas||[]).find(f=>f.origenTipo==='caja'&&String(f.origenId)===String(id))}
 function renderCaja(){
  const q=(document.getElementById('fCaja')?.value||'').toLowerCase(),t=document.getElementById('ftCaja')?.value||'Todos';
- let a=state.movimientos.filter(m=>(t==='Todos'||m.tipo===t)&&((m.concepto+' '+m.descripcion+' '+m.medio).toLowerCase().includes(q)));
+ let a=state.movimientos.filter(m=>(t==='Todos'||m.tipo===t)&&((m.concepto+' '+m.descripcion+' '+m.medio+' '+(m.cuit||'')).toLowerCase().includes(q)));
  let en=0,sa=0,ef=0,tr=0;a.forEach(m=>{if(m.tipo==='Entrada')en+=m.monto;else sa+=m.monto;if(m.medio==='Efectivo')ef+=(m.tipo==='Entrada'?m.monto:-m.monto);if(m.medio==='Transferencia')tr+=(m.tipo==='Entrada'?m.monto:-m.monto)});
  cEntradas.textContent=money(en);cSalidas.textContent=money(sa);cNeto.textContent=money(en-sa);cEfectivo.textContent=money(ef);cTransfer.textContent=money(tr);
- tablaCaja.innerHTML=a.map(m=>{const f=facturaRelacionadaCaja(m);const estado=f?.cae?`<span class="text-emerald-700 font-semibold">✓ Factura C ${String(f.ptoVta||4).padStart(4,'0')}-${String(f.numero||'').padStart(8,'0')}</span>`:f?'<span class="text-amber-700 font-semibold">Pendiente</span>':(m.tipo==='Entrada'?'<span class="text-slate-400">Sin facturar</span>':'<span class="text-slate-300">—</span>');return `<tr class="border-b"><td class="p-2 small">${fecha(m.fecha)}</td><td class="p-2 ${m.tipo==='Entrada'?'text-emerald-600':'text-rose-600'} font-semibold">${m.tipo}</td><td class="p-2">${esc(m.concepto)}</td><td class="p-2">${esc(m.medio)}</td><td class="p-2">${esc(m.descripcion)}</td><td class="p-2 font-bold">${money(m.monto)}</td><td class="p-2 small">${estado}</td><td class="p-2 flex gap-1 flex-wrap"><button onclick="editarMov('${m.id}')" class="text-blue-600">✏️</button>${m.tipo==='Entrada'?` <button onclick="facturarMovimientoCaja('${m.id}')" class="${f?'bg-slate-700':'bg-violet-700'} text-white px-2 py-1 rounded text-xs">${f?.cae?'✅ Factura':f?'🕓 Pendiente':'🧾 Facturar'}</button>`:''} <button type="button" data-delete-table="caja" data-delete-id="${m.id}" class="text-rose-600 delete-btn" title="Eliminar">🗑️</button></td></tr>`}).join('')||'<tr><td colspan="8" class="p-4 text-center">Sin movimientos.</td></tr>'
+ tablaCaja.innerHTML=a.map(m=>{const f=facturaRelacionadaCaja(m);const estado=f?.cae?`<span class="text-emerald-700 font-semibold">✓ Factura C ${String(f.ptoVta||4).padStart(4,'0')}-${String(f.numero||'').padStart(8,'0')}</span>`:f?'<span class="text-amber-700 font-semibold">Pendiente</span>':(m.tipo==='Entrada'?'<span class="text-slate-400">Sin facturar</span>':'<span class="text-slate-300">—</span>');return `<tr class="border-b"><td class="p-2 small">${fecha(m.fecha)}</td><td class="p-2 ${m.tipo==='Entrada'?'text-emerald-600':'text-rose-600'} font-semibold">${m.tipo}</td><td class="p-2">${esc(m.concepto)}</td><td class="p-2">${esc(m.medio)}</td><td class="p-2">${esc(m.descripcion)}${m.cuit?`<br><span class="small font-mono text-slate-500">CUIT: ${esc(m.cuit)}</span>`:""}</td><td class="p-2 font-bold">${money(m.monto)}</td><td class="p-2 small">${estado}</td><td class="p-2 flex gap-1 flex-wrap"><button onclick="editarMov('${m.id}')" class="text-blue-600">✏️</button>${m.tipo==='Entrada'?` <button onclick="facturarMovimientoCaja('${m.id}')" class="${f?'bg-slate-700':'bg-violet-700'} text-white px-2 py-1 rounded text-xs">${f?.cae?'✅ Factura':f?'🕓 Pendiente':'🧾 Facturar'}</button>`:''} <button type="button" data-delete-table="caja" data-delete-id="${m.id}" class="text-rose-600 delete-btn" title="Eliminar">🗑️</button></td></tr>`}).join('')||'<tr><td colspan="8" class="p-4 text-center">Sin movimientos.</td></tr>'
 }
 function abrirArqueo(){const efectivo=state.movimientos.reduce((s,m)=>s+(m.medio==='Efectivo'?(m.tipo==='Entrada'?m.monto:-m.monto):0),0);abrirModal('🧾 Arqueo de caja',`<div class="space-y-3"><p>Saldo teórico de efectivo: <b>${money(efectivo)}</b></p><input id="arqueoReal" type="number" class="border p-2 rounded w-full" placeholder="Efectivo contado"><input id="arqueoObs" class="border p-2 rounded w-full" placeholder="Observaciones"><button onclick="guardarArqueo(${efectivo})" class="bg-slate-800 text-white px-4 py-2 rounded">Cerrar arqueo</button></div>`)}
 async function guardarArqueo(teorico){
@@ -930,8 +992,8 @@ function facturarMovimientoCaja(i){
  const venta=ventaDeMovimientoCaja(m);if(venta)return facturarYEnviar(venta.id);
  const c=clientePorTexto(m.descripcion)||{};
  const desc=[m.concepto,m.descripcion].filter(Boolean).join(' - ');
- const iva=normalizarCondicionIVA(c.condicionIva), docTipo=docTipoSugerido(c.documento);
- abrirModal('🧾 Preparar factura desde Caja',`<div class="space-y-4"><div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm"><b>Origen:</b> Caja · ${esc(m.concepto)}<br><b>Detalle:</b> ${esc(m.descripcion||'-')}<br><b>Total:</b> ${money(m.monto)}</div><div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm"><b>Validación previa.</b> Primero verificaremos los datos contra <code>arca-facturar</code>. Esta acción NO solicita CAE ni emite la factura.</div><div class="grid grid-cols-2 gap-2"><div><label class="small text-slate-500">Cuenta emisora</label><input class="border p-2 rounded w-full bg-slate-100" value="Bicicletería del Abasto" readonly></div><div><label class="small text-slate-500">Comprobante</label><input class="border p-2 rounded w-full bg-slate-100" value="Factura C · Pto. Vta. 4" readonly></div><div><label class="small text-slate-500">Cliente</label><input id="facCajaNombre" class="border p-2 rounded w-full" value="${esc(c.nombre||'Consumidor final')}"></div><div><label class="small text-slate-500">WhatsApp</label><input id="facCajaTel" class="border p-2 rounded w-full" value="${esc(c.telefono||'')}"></div><div><label class="small text-slate-500">Tipo documento</label><select id="facCajaDocTipo" class="border p-2 rounded w-full">${opcionesDocTipo(docTipo)}</select></div><div><label class="small text-slate-500">Número documento</label><div class="grid grid-cols-1 gap-2"><input id="facCajaDoc" oninput="autoDetectarCUIT('caja')" class="border p-2 rounded w-full min-w-0" value="${esc(c.documento||'')}"><button type="button" id="btnPadronCaja" onclick="buscarPadronARCA('caja')" class="bg-cyan-700 text-white px-3 py-2 rounded w-full whitespace-normal">🔎 Buscar en ARCA</button></div></div><div id="padronCajaResultado" class="col-span-2 hidden rounded-lg border p-3 text-sm"></div><div class="col-span-2"><label class="small text-slate-500">Condición IVA receptor</label><select id="facCajaIva" class="border p-2 rounded w-full">${opcionesIVA(iva)}</select></div><div class="col-span-2"><label class="small text-slate-500">Concepto ARCA</label><select id="facCajaConcepto" onchange="actualizarFechasServicioCaja()" class="border p-2 rounded w-full"><option value="1">1 · Productos</option><option value="2">2 · Servicios</option><option value="3">3 · Productos y Servicios</option></select></div><div id="facCajaFechasServicio" class="col-span-2 hidden grid grid-cols-1 sm:grid-cols-3 gap-2"><div><label class="small text-slate-500">Servicio desde</label><input id="facCajaServDesde" type="date" class="border p-2 rounded w-full"></div><div><label class="small text-slate-500">Servicio hasta</label><input id="facCajaServHasta" type="date" class="border p-2 rounded w-full"></div><div><label class="small text-slate-500">Vencimiento pago</label><input id="facCajaVtoPago" type="date" class="border p-2 rounded w-full"></div></div><div class="col-span-2"><label class="small text-slate-500">Detalle de factura</label><textarea id="facCajaDesc" class="border p-2 rounded w-full" rows="3">${esc(desc)}</textarea></div></div><div id="facCajaValidacionResultado" class="hidden rounded-lg border p-3 text-sm"></div><div class="grid grid-cols-2 gap-2"><button id="btnValidarArcaCaja" onclick="validarFacturaCajaARCA('${m.id}')" class="bg-blue-700 text-white px-4 py-2 rounded w-full font-semibold">🔎 Validar con ARCA</button><button id="btnGuardarFacturaCaja" onclick="prepararFacturaCaja('${m.id}')" disabled class="bg-slate-300 text-slate-500 px-4 py-2 rounded w-full font-semibold cursor-not-allowed">💾 Guardar factura pendiente</button></div></div>`);
+ const docCaja=c.documento||m.cuit||''; const iva=normalizarCondicionIVA(c.condicionIva), docTipo=docTipoSugerido(docCaja);
+ abrirModal('🧾 Preparar factura desde Caja',`<div class="space-y-4"><div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm"><b>Origen:</b> Caja · ${esc(m.concepto)}<br><b>Detalle:</b> ${esc(m.descripcion||'-')}<br><b>Total:</b> ${money(m.monto)}</div><div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm"><b>Validación previa.</b> Primero verificaremos los datos contra <code>arca-facturar</code>. Esta acción NO solicita CAE ni emite la factura.</div><div class="grid grid-cols-2 gap-2"><div><label class="small text-slate-500">Cuenta emisora</label><input class="border p-2 rounded w-full bg-slate-100" value="Bicicletería del Abasto" readonly></div><div><label class="small text-slate-500">Comprobante</label><input class="border p-2 rounded w-full bg-slate-100" value="Factura C · Pto. Vta. 4" readonly></div><div><label class="small text-slate-500">Cliente</label><input id="facCajaNombre" class="border p-2 rounded w-full" value="${esc(c.nombre||'Consumidor final')}"></div><div><label class="small text-slate-500">WhatsApp</label><input id="facCajaTel" class="border p-2 rounded w-full" value="${esc(c.telefono||'')}"></div><div><label class="small text-slate-500">Tipo documento</label><select id="facCajaDocTipo" class="border p-2 rounded w-full">${opcionesDocTipo(docTipo)}</select></div><div><label class="small text-slate-500">Número documento</label><div class="grid grid-cols-1 gap-2"><input id="facCajaDoc" oninput="autoDetectarCUIT('caja')" class="border p-2 rounded w-full min-w-0" value="${esc(docCaja)}"><button type="button" id="btnPadronCaja" onclick="buscarPadronARCA('caja')" class="bg-cyan-700 text-white px-3 py-2 rounded w-full whitespace-normal">🔎 Buscar en ARCA</button></div></div><div id="padronCajaResultado" class="col-span-2 hidden rounded-lg border p-3 text-sm"></div><div class="col-span-2"><label class="small text-slate-500">Condición IVA receptor</label><select id="facCajaIva" class="border p-2 rounded w-full">${opcionesIVA(iva)}</select></div><div class="col-span-2"><label class="small text-slate-500">Concepto ARCA</label><select id="facCajaConcepto" onchange="actualizarFechasServicioCaja()" class="border p-2 rounded w-full"><option value="1">1 · Productos</option><option value="2">2 · Servicios</option><option value="3">3 · Productos y Servicios</option></select></div><div id="facCajaFechasServicio" class="col-span-2 hidden grid grid-cols-1 sm:grid-cols-3 gap-2"><div><label class="small text-slate-500">Servicio desde</label><input id="facCajaServDesde" type="date" class="border p-2 rounded w-full"></div><div><label class="small text-slate-500">Servicio hasta</label><input id="facCajaServHasta" type="date" class="border p-2 rounded w-full"></div><div><label class="small text-slate-500">Vencimiento pago</label><input id="facCajaVtoPago" type="date" class="border p-2 rounded w-full"></div></div><div class="col-span-2"><label class="small text-slate-500">Detalle de factura</label><textarea id="facCajaDesc" class="border p-2 rounded w-full" rows="3">${esc(desc)}</textarea></div></div><div id="facCajaValidacionResultado" class="hidden rounded-lg border p-3 text-sm"></div><div class="grid grid-cols-2 gap-2"><button id="btnValidarArcaCaja" onclick="validarFacturaCajaARCA('${m.id}')" class="bg-blue-700 text-white px-4 py-2 rounded w-full font-semibold">🔎 Validar con ARCA</button><button id="btnGuardarFacturaCaja" onclick="prepararFacturaCaja('${m.id}')" disabled class="bg-slate-300 text-slate-500 px-4 py-2 rounded w-full font-semibold cursor-not-allowed">💾 Guardar factura pendiente</button></div></div>`);
 }
 function fechaInputHoy(){
  const d=new Date(),off=d.getTimezoneOffset();
@@ -1671,5 +1733,62 @@ function exportPDF(){html2pdf().from(document.getElementById('reportes')).set({m
 
 controlarAcceso();
 </script>
+
+<script id="ordenamiento-universal-20260918">
+(()=>{
+ const coll=new Intl.Collator('es',{numeric:true,sensitivity:'base'});
+ function parseFecha(t){
+   let m=t.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:[,\s]+(\d{1,2}):(\d{2}))?/);
+   if(m){let y=+m[3];if(y<100)y+=2000;return new Date(y,+m[2]-1,+m[1],+(m[4]||0),+(m[5]||0)).getTime();}
+   m=t.match(/\b(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2}))?/);
+   if(m)return new Date(+m[1],+m[2]-1,+m[3],+(m[4]||0),+(m[5]||0)).getTime();
+   return null;
+ }
+ function valor(txt){
+   const t=(txt||'').replace(/\s+/g,' ').trim();
+   const f=parseFecha(t); if(f!==null)return {k:0,v:f};
+   const n=t.replace(/\$/g,'').replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,'');
+   if(n && /^-?\d+(?:\.\d+)?$/.test(n))return {k:1,v:Number(n)};
+   return {k:2,v:t};
+ }
+ function comparar(a,b){
+   if(a.k===b.k){
+     if(a.k<2)return a.v-b.v;
+     return coll.compare(a.v,b.v);
+   }
+   return coll.compare(String(a.v),String(b.v));
+ }
+ function prepararTabla(table){
+   if(!table || table.dataset.sortReady==='1')return;
+   const head=table.tHead; if(!head || !head.rows.length || !table.tBodies.length)return;
+   table.dataset.sortReady='1';
+   [...head.rows[head.rows.length-1].cells].forEach((th,col)=>{
+     const texto=th.innerText.trim().toLowerCase();
+     // Sólo excluimos columnas puramente operativas.
+     if(/^(acción|acciones|opciones)$/.test(texto))return;
+     th.dataset.sortable='1';
+     th.title='Ordenar por '+(th.innerText.trim()||'esta columna');
+     th.addEventListener('click',()=>{
+       const tbody=table.tBodies[0];
+       const dir=th.dataset.sortDir==='asc'?'desc':'asc';
+       [...head.querySelectorAll('th')].forEach(x=>{delete x.dataset.sortDir});
+       th.dataset.sortDir=dir;
+       const rows=[...tbody.rows];
+       rows.sort((ra,rb)=>{
+         const A=valor(ra.cells[col]?.innerText||''),B=valor(rb.cells[col]?.innerText||'');
+         const r=comparar(A,B);
+         return dir==='asc'?r:-r;
+       });
+       rows.forEach(r=>tbody.appendChild(r));
+     });
+   });
+ }
+ function prepararTodo(){document.querySelectorAll('table').forEach(prepararTabla)}
+ document.addEventListener('DOMContentLoaded',prepararTodo);
+ new MutationObserver(prepararTodo).observe(document.documentElement,{childList:true,subtree:true});
+ setTimeout(prepararTodo,0);
+})();
+</script>
+
 </body>
 </html>
