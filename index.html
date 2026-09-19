@@ -1415,7 +1415,9 @@ function editarFacturaPendiente(facturaId){
    <div><label class="small text-slate-500">Domicilio</label><input id="editFacDireccion" class="border p-2 rounded w-full" value="${esc(f.direccion||'')}"></div>
    <div><label class="small text-slate-500">Tipo documento</label><select id="editFacDocTipo" class="border p-2 rounded w-full">${opcionesDocTipo(Number(f.docTipo)||0)}</select></div>
    <div><label class="small text-slate-500">DNI / CUIT</label><input id="editFacDoc" class="border p-2 rounded w-full" value="${esc(f.documento||'')}"></div>
-   <div class="sm:col-span-2"><label class="small text-slate-500">Condición IVA receptor</label><select id="editFacIva" class="border p-2 rounded w-full">${opcionesIVA(Number(f.condicionIva)||5)}</select></div>
+   <div><label class="small text-slate-500">Cuenta emisora</label><select id="editFacCuenta" onchange="actualizarEdicionFacturaPendiente()" class="border p-2 rounded w-full">${opcionesCuentaARCA(String(f.cuenta||f.cuenta_arca||'').toLowerCase()==='abasto2'?2:1)}</select></div>
+   <div><label class="small text-slate-500">Comprobante</label><input id="editFacComprobante" class="border p-2 rounded w-full bg-slate-100" readonly></div>
+   <div class="sm:col-span-2"><label class="small text-slate-500">Condición IVA receptor</label><select id="editFacIva" onchange="actualizarEdicionFacturaPendiente()" class="border p-2 rounded w-full">${opcionesIVA(Number(f.condicionIva)||5)}</select></div>
    <div class="sm:col-span-2"><label class="small text-slate-500">Detalle de factura</label><textarea id="editFacDesc" rows="3" class="border p-2 rounded w-full">${esc(f.descripcion||'')}</textarea></div>
   </div>
   <div class="grid grid-cols-2 gap-2">
@@ -1423,11 +1425,24 @@ function editarFacturaPendiente(facturaId){
    <button id="btnGuardarEdicionFactura" onclick="guardarEdicionFacturaPendiente('${esc(String(f.id))}')" class="bg-violet-700 text-white px-4 py-2 rounded font-semibold">💾 Guardar cambios</button>
   </div>
  </div>`);
+ setTimeout(actualizarEdicionFacturaPendiente,0);
+}
+function actualizarEdicionFacturaPendiente(){
+ const cuenta=cuentaArcaSeleccionada('editFacCuenta');
+ const iva=Number(document.getElementById('editFacIva')?.value||5);
+ const tipo=tipoCbteEsperado(cuenta.id,iva);
+ const out=document.getElementById('editFacComprobante');
+ if(out)out.value=`${nombreCbte(tipo)} · Pto. Vta. ${cuenta.ptoVta}`;
 }
 async function guardarEdicionFacturaPendiente(facturaId){
  const f=(state.facturas||[]).find(x=>String(x.id)===String(facturaId));
  if(!f||f.cae||f.estado==='autorizada')return alert('La factura ya no está disponible para editar.');
+ const cuenta=cuentaArcaSeleccionada('editFacCuenta');
+ const tipoCbte=tipoCbteEsperado(cuenta.id,Number(editFacIva.value));
  const payload={
+  cuenta_arca:cuenta.clave,
+  pto_vta:cuenta.ptoVta,
+  cbte_tipo:tipoCbte,
   cliente_nombre:editFacNombre.value.trim()||'Consumidor final',
   cliente_telefono:editFacTel.value.trim(),
   cliente_email:editFacEmail.value.trim()||null,
