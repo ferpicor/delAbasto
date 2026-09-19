@@ -1102,8 +1102,10 @@ async function confirmarEmisionReal(facturaId){
  const btn=document.getElementById('btnConfirmarEmisionReal');
  if(btn){btn.disabled=true;btn.textContent='⏳ Solicitando CAE...'}
  try{
-   const cuentaId=String(f.cuenta||f.cuenta_arca||'').toLowerCase()==='abasto2'?2:1;
-    const {data,error}=await sb.functions.invoke('arca-facturar',{body:{accion:'emitir',cuenta:cuentaId,factura_id:String(facturaId)}});
+   const factura=(state.facturas||[]).find(x=>String(x.id)===String(facturaId));
+   if(!factura)throw new Error('No se encontró la factura pendiente. Recargá los datos.');
+   const cuentaId=String(factura.cuenta||factura.cuenta_arca||'').toLowerCase()==='abasto2'?2:1;
+   const {data,error}=await sb.functions.invoke('arca-facturar',{body:{accion:'emitir',cuenta:cuentaId,factura_id:String(facturaId)}});
    if(error)throw error;
    if(!data?.ok||!data?.cae)throw new Error(data?.error||'ARCA no devolvió un CAE válido.');
    await cargarSupabase(true);
