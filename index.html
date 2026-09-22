@@ -296,8 +296,8 @@ input,select,textarea{min-width:0}
    <input id="vTelefono" class="border p-2 rounded-lg" placeholder="WhatsApp">
    <input id="vDocumento" class="border p-2 rounded-lg" placeholder="CUIT / CUIL / DNI (opcional)">
    <input id="vNroSerie" class="border p-2 rounded-lg" placeholder="Número de serie (opcional)">
-   <div><label class="small text-slate-500 block mb-1">Marca de bicicleta</label><input id="vMarca" list="listaMarcasVenta" class="border p-2 rounded-lg w-full" placeholder="Elegir o escribir marca"><datalist id="listaMarcasVenta"></datalist></div>
-   <div><label class="small text-slate-500 block mb-1">Modelo de bicicleta</label><input id="vModelo" list="listaModelosVenta" class="border p-2 rounded-lg w-full" placeholder="Elegir o escribir modelo"><datalist id="listaModelosVenta"></datalist></div>
+   <div><label class="small text-slate-500 block mb-1">Marca de bicicleta</label><div class="flex gap-1"><select id="vMarca" onchange="cambiarMarcaVenta()" class="border p-2 rounded-lg flex-1"><option value="">— Elegir marca —</option></select><button type="button" onclick="abrirGestionMarcasModelos()" title="Gestionar marcas y modelos" class="bg-slate-700 text-white px-3 rounded-lg">⚙️</button></div><input id="vMarcaManual" class="hidden border p-2 rounded-lg w-full mt-1" placeholder="Escribir marca manualmente"></div>
+   <div><label class="small text-slate-500 block mb-1">Modelo de bicicleta</label><select id="vModelo" onchange="cambiarModeloVenta()" class="border p-2 rounded-lg w-full"><option value="">— Elegir modelo —</option></select><input id="vModeloManual" class="hidden border p-2 rounded-lg w-full mt-1" placeholder="Escribir modelo manualmente"></div>
    <select id="vMedio" class="border p-2 rounded-lg"><option>Efectivo</option><option>Transferencia</option><option>Débito</option><option>Crédito</option><option>Mercado Pago</option><option>Otro</option></select>
    <div class="md:col-span-2"><label class="small text-slate-500 block mb-1">Producto / servicio</label>
     <div class="flex gap-1">
@@ -366,7 +366,7 @@ input,select,textarea{min-width:0}
 
 <section id="stock" class="hidden space-y-5">
  <div class="card p-5"><h2 class="text-xl font-bold mb-4">📦 Stock</h2><div class="grid md:grid-cols-4 gap-3">
- <input id="sMarca" class="border p-2 rounded-lg" placeholder="Marca"><input id="sModelo" class="border p-2 rounded-lg" placeholder="Modelo / producto"><input id="sColor" class="border p-2 rounded-lg" placeholder="Color / talle"><input id="sSerie" class="border p-2 rounded-lg" placeholder="Nro. de serie"><input id="sPrecio" type="number" class="border p-2 rounded-lg" placeholder="Precio venta"><input id="sCosto" type="number" class="border p-2 rounded-lg" placeholder="Costo"><input id="sCantidad" type="number" value="1" class="border p-2 rounded-lg" placeholder="Unidades">
+ <div><div class="flex gap-1"><select id="sMarca" onchange="cambiarMarcaStock()" class="border p-2 rounded-lg flex-1"><option value="">— Marca —</option></select><button type="button" onclick="abrirGestionMarcasModelos()" class="bg-slate-700 text-white px-3 rounded-lg" title="Gestionar marcas y modelos">⚙️</button></div><input id="sMarcaManual" class="hidden border p-2 rounded-lg w-full mt-1" placeholder="Escribir marca"></div><div><select id="sModelo" onchange="cambiarModeloStock()" class="border p-2 rounded-lg w-full"><option value="">— Modelo —</option></select><input id="sModeloManual" class="hidden border p-2 rounded-lg w-full mt-1" placeholder="Escribir modelo"></div><input id="sColor" class="border p-2 rounded-lg" placeholder="Color / talle"><input id="sSerie" class="border p-2 rounded-lg" placeholder="Nro. de serie"><input id="sPrecio" type="number" class="border p-2 rounded-lg" placeholder="Precio venta"><input id="sCosto" type="number" class="border p-2 rounded-lg" placeholder="Costo"><input id="sCantidad" type="number" value="1" class="border p-2 rounded-lg" placeholder="Unidades">
  </div><button onclick="guardarStock()" class="mt-3 bg-emerald-600 text-white px-4 py-2 rounded-lg">➕ Agregar stock</button></div>
  <div class="card p-4 overflow-x-auto"><table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2">Producto</th><th class="p-2">Variante</th><th class="p-2">Nro. de serie</th><th class="p-2">Stock</th><th class="p-2">Costo</th><th class="p-2">Precio</th><th class="p-2">Margen</th><th class="p-2">Acciones</th></tr></thead><tbody id="tablaStock"></tbody></table></div>
 </section>
@@ -396,7 +396,22 @@ input,select,textarea{min-width:0}
  <div class="card p-5">
   <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
    <div><h2 class="text-xl font-bold">📊 Reportes y análisis</h2><p class="text-sm text-slate-500">Todo el flujo financiero toma los movimientos reales registrados en Caja.</p></div>
-   <div class="flex flex-wrap gap-2"><button onclick="periodo('hoy')" class="bg-slate-200 px-3 py-2 rounded">Hoy</button><button onclick="periodo('semana')" class="bg-slate-200 px-3 py-2 rounded">Semana</button><button onclick="periodo('mes')" class="bg-slate-200 px-3 py-2 rounded">Mes</button><button onclick="periodo('anio')" class="bg-slate-200 px-3 py-2 rounded">Año</button><button onclick="periodo('todo')" class="bg-slate-200 px-3 py-2 rounded">Todo</button></div>
+   <div class="flex flex-wrap gap-2">
+    <button onclick="periodo('hoy')" class="bg-slate-200 px-3 py-2 rounded">Hoy</button>
+    <button onclick="periodo('semana')" class="bg-slate-200 px-3 py-2 rounded">Últimos 7 días</button>
+    <button onclick="periodo('30dias')" class="bg-slate-200 px-3 py-2 rounded">Últimos 30 días</button>
+    <button onclick="periodo('mes')" class="bg-slate-200 px-3 py-2 rounded">Este mes</button>
+    <button onclick="periodo('anio')" class="bg-slate-200 px-3 py-2 rounded">Este año</button>
+    <button onclick="periodo('todo')" class="bg-slate-200 px-3 py-2 rounded">Todo</button>
+   </div>
+  </div>
+  <div class="mt-4 p-3 rounded-lg border bg-slate-50">
+   <div class="flex flex-col lg:flex-row lg:items-end gap-3">
+    <div class="flex-1"><label class="small text-slate-500 block mb-1">Desde</label><input id="rFechaDesde" type="date" class="border p-2 rounded-lg w-full"></div>
+    <div class="flex-1"><label class="small text-slate-500 block mb-1">Hasta</label><input id="rFechaHasta" type="date" class="border p-2 rounded-lg w-full"></div>
+    <button type="button" onclick="aplicarPeriodoPersonalizado()" class="bg-slate-800 text-white px-4 py-2 rounded-lg font-semibold">📅 Aplicar período</button>
+   </div>
+   <div id="rPeriodoActivo" class="small text-slate-600 mt-2">Período activo: Este mes</div>
   </div>
   <div class="grid md:grid-cols-3 gap-3 mt-4">
    <div><label class="small text-slate-500">Concepto de Caja</label><select id="rConceptoFiltro" onchange="reportes()" class="border p-2 rounded-lg w-full"><option value="Todos">Todos los conceptos</option></select></div>
@@ -425,6 +440,11 @@ input,select,textarea{min-width:0}
   <div class="card p-3"><span class="small">Costos directos</span><div id="rCosto" class="text-xl font-bold">$0</div></div>
   <div class="card p-3"><span class="small">Ganancia bruta</span><div id="rGanancia" class="text-xl font-bold text-emerald-600">$0</div></div>
   <div class="card p-3"><span class="small">Margen bruto</span><div id="rMargen" class="text-xl font-bold text-blue-600">0%</div></div>
+ </div>
+ <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+  <div class="card p-3 border-l-4 border-l-blue-500"><span class="small">🚲 Venta · Bicicletas</span><div id="rResumenBicis" class="text-xl font-bold">0 ops · $0</div><div id="rResumenBicisUnidades" class="small text-slate-500">0 bicicletas</div></div>
+  <div class="card p-3 border-l-4 border-l-emerald-500"><span class="small">🛍️ Ventas Mostrador</span><div id="rResumenMostrador" class="text-xl font-bold">0 ops · $0</div><div class="small text-slate-500">Productos, accesorios y ventas no bicicleta</div></div>
+  <div class="card p-3 border-l-4 border-l-violet-500"><span class="small">🔧 Reparaciones</span><div id="rResumenReparaciones" class="text-xl font-bold">0 OT · $0</div><div class="small text-slate-500">Ingresos registrados en órdenes de taller</div></div>
  </div>
  <div class="card p-3 bg-slate-50"><div class="flex justify-between gap-3"><span class="text-sm font-semibold">Facturación comercial total</span><div id="rFact" class="text-lg font-bold">$0</div></div><p class="small text-slate-500 mt-1">Este total no suma movimientos de Caja: Caja se analiza arriba como flujo de dinero.</p></div>
  <div class="grid lg:grid-cols-2 gap-4"><div class="card p-4"><h3 class="font-semibold mb-3">Entradas, salidas y saldo de Caja</h3><div class="h-72"><canvas id="chartFin"></canvas></div></div><div class="card p-4"><h3 class="font-semibold mb-3">Movimiento por concepto</h3><div class="h-72"><canvas id="chartConcept"></canvas></div></div></div>
@@ -455,9 +475,9 @@ const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 let appIniciada=false;
 let realtimeIniciado=false;
-const SYNC_TABLES=['caja','clientes','conceptos','inventario_bicicletas','taller','ventas','compras','proveedores','arqueos','recordatorios','productos_servicios','facturas'];
+const SYNC_TABLES=['caja','clientes','conceptos','inventario_bicicletas','taller','ventas','compras','proveedores','arqueos','recordatorios','productos_servicios','facturas','marcas_modelos'];
 let state={
- movimientos:[], ventas:[], clientes:[], ots:[], stock:[], compras:[], proveedores:[], arqueos:[], recordatorios:[], conceptos:[], productos:[], facturas:[]
+ movimientos:[], ventas:[], clientes:[], ots:[], stock:[], compras:[], proveedores:[], arqueos:[], recordatorios:[], conceptos:[], productos:[], facturas:[], marcasModelos:[]
 };
 let chartFin=null,chartConcept=null,chartTortaConceptos=null,chartDash=null, periodoActual='mes';
 let recargaTimer=null;
@@ -527,12 +547,12 @@ async function qTabla(tabla,orderCol='id'){
 }
 async function cargarSupabase(silencioso=false){
  if(!silencioso)syncStatus('⏳ Sincronizando...');
- const tablas=['caja','clientes','conceptos','inventario_bicicletas','taller','ventas','compras','proveedores','arqueos','recordatorios','productos_servicios','facturas'];
+ const tablas=['caja','clientes','conceptos','inventario_bicicletas','taller','ventas','compras','proveedores','arqueos','recordatorios','productos_servicios','facturas','marcas_modelos'];
  try{
   const resultados=await Promise.allSettled(tablas.map(t=>qTabla(t)));
   const fallos=resultados.map((r,i)=>r.status==='rejected'?`${tablas[i]}: ${r.reason?.message||r.reason}`:null).filter(Boolean);
   const valor=i=>resultados[i].status==='fulfilled'?(resultados[i].value||[]):[];
-  const [caja,clientes,conceptos,stock,taller,ventas,compras,proveedores,arqueos,recordatorios,productosServicios,facturas]=tablas.map((_,i)=>valor(i));
+  const [caja,clientes,conceptos,stock,taller,ventas,compras,proveedores,arqueos,recordatorios,productosServicios,facturas,marcasModelos]=tablas.map((_,i)=>valor(i));
 
   // Cada tabla que sí respondió se actualiza aunque otra tenga un problema.
   if(resultados[0].status==='fulfilled')state.movimientos=caja.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),tipo:x.tipo||'Entrada',concepto:x.concepto||x.categoria||'General',medio:x.medio_pago||x.medio||'Efectivo',monto:Number(x.monto)||0,descripcion:x.descripcion||'',cuit:x.cuit||''}));
@@ -545,8 +565,9 @@ async function cargarSupabase(silencioso=false){
   if(resultados[7].status==='fulfilled')state.proveedores=proveedores.map(x=>({id:x.id,nombre:x.nombre||'',contacto:x.contacto||'',fecha:x.created_at||new Date().toISOString()}));
   if(resultados[8].status==='fulfilled')state.arqueos=arqueos.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),teorico:Number(x.teorico)||0,real:Number(x.real)||0,diferencia:Number(x.diferencia)||0,obs:x.obs||x.observaciones||''}));
   if(resultados[9].status==='fulfilled')state.recordatorios=recordatorios.map(x=>({id:x.id,fecha:x.fecha||'',cliente:x.cliente||'',texto:x.texto||'',created_at:x.created_at||new Date().toISOString()}));
-  if(resultados[10].status==='fulfilled')state.productos=productosServicios.map(x=>({id:x.id,nombre:x.nombre||'',precio:Number(x.precio)||0,costo:Number(x.costo)||0}));
+  if(resultados[10].status==='fulfilled')state.productos=productosServicios.map(x=>({id:x.id,nombre:x.nombre||'',precio:Number(x.precio)||0,costo:Number(x.costo)||0,tipo:x.tipo||'Producto/Accesorio'}));
    if(resultados[11]?.status==='fulfilled')state.facturas=facturas.map(x=>({id:x.id,origenTipo:x.origen_tipo||'',origenId:x.origen_id||'',clienteId:x.cliente_id||null,cliente:x.cliente_nombre||'Consumidor final',telefono:x.cliente_telefono||'',email:x.cliente_email||'',direccion:x.cliente_direccion||'',docTipo:Number(x.doc_tipo)||0,documento:x.doc_nro||'',condicionIva:Number(x.condicion_iva_receptor)||5,concepto:Number(x.concepto)||1,servicioDesde:x.servicio_desde||'',servicioHasta:x.servicio_hasta||'',vencimientoPago:x.vencimiento_pago||'',descripcion:x.descripcion||'',importe:Number(x.importe)||0,cuenta:x.cuenta_arca||'abasto',ptoVta:Number(x.pto_vta)||4,tipo:Number(x.cbte_tipo)||11,numero:x.cbte_nro||'',cae:x.cae||'',caeVencimiento:x.cae_vencimiento||'',fecha:x.factura_fecha||x.created_at||'',estado:x.estado||'pendiente'}));
+  if(resultados[12]?.status==='fulfilled')state.marcasModelos=marcasModelos.map(x=>({id:x.id,marca:x.marca||'',modelo:x.modelo||''}));
 
   refresh();
   if(fallos.length){
@@ -581,7 +602,7 @@ async function dbDelete(tabla,id){
 }
 
 function refresh(){
- renderOT(); renderCaja(); renderCRM(); renderStock(); renderCompras(); renderVentas(); renderArqueos(); dashboard(); reportes(); actualizarSelectConceptos(); actualizarSelectProveedores(); actualizarSelectProductos();
+ renderOT(); renderCaja(); renderCRM(); renderStock(); renderCompras(); renderVentas(); renderArqueos(); dashboard(); reportes(); actualizarSelectConceptos(); actualizarSelectProveedores(); actualizarSelectProductos(); actualizarCatalogosMarcaModelo();
 }
 
 function abrirModal(title,body){document.getElementById('modalTitle').textContent=title;document.getElementById('modalBody').innerHTML=body;document.getElementById('modal').classList.remove('hidden');document.getElementById('modal').classList.add('flex')}
@@ -595,7 +616,7 @@ async function guardarOT(){
   const row=await dbInsert('taller',{cliente:o.cliente,telefono:o.telefono,bicicleta:o.bici,trabajo:o.trabajo,estado:o.estado,precio_pagado:0,fecha_ingreso:fechaHoraLocal(o.fechaIngreso),presupuesto:o.presupuesto,precio_cobrado:o.presupuesto,sena:o.sena,costo:o.costo,fecha_promesa:o.promesa});
    if(o.prioridad!=='Normal'||o.fechaPrioridad){try{await dbUpdate('taller',row.id,{prioridad:o.prioridad,fecha_prioridad:o.fechaPrioridad})}catch(err){console.warn('Para guardar prioridades, agregá las columnas prioridad y fecha_prioridad en Supabase:',err.message)}}
   try{
-   if(o.sena>0)await agregarMovInterno('Entrada','Seña taller','Efectivo',o.sena,'Seña OT #'+row.id);
+   if(o.sena>0)await agregarMovInterno('Entrada','Reparaciones','Efectivo',o.sena,'Seña OT #'+row.id);
   }catch(err){await dbDelete('taller',row.id).catch(()=>{});throw new Error('No se pudo registrar la seña en Caja; la OT fue revertida. '+err.message)}
   if(o.telefono&&!state.clientes.some(x=>x.telefono===o.telefono)){
    try{await dbInsert('clientes',{nombre:o.cliente,telefono:o.telefono,email:null,direccion:null,segmento:'Nuevo',notas:'Cliente de taller'})}catch(err){console.warn('La OT se guardó, pero no se pudo crear automáticamente el cliente:',err)}
@@ -805,6 +826,31 @@ function facturasClienteCRM(c){
       ;
   });
 }
+function descripcionVenta(v){
+ const mm=[v?.marca,v?.modelo].map(x=>String(x||'').trim()).filter(Boolean).join(' ');
+ return mm || String(v?.producto||'Venta general');
+}
+function detalleVentaCaja(v){
+ const d=descripcionVenta(v);
+ return `${d}${v?.nroSerie?' · Serie '+v.nroSerie:''}`;
+}
+function abrirVentaDesdeCliente(id){
+ cerrarModal();tab('ventas');
+ setTimeout(()=>{const sec=document.getElementById('ventas');if(sec)sec.scrollIntoView({behavior:'smooth',block:'start'});},100);
+}
+function nuevaOTDesdeBicicleta(clienteId,ventaId){
+ const c=state.clientes.find(x=>String(x.id)===String(clienteId));
+ const v=state.ventas.find(x=>String(x.id)===String(ventaId));
+ if(!c||!v)return;
+ cerrarModal();tab('taller');
+ setTimeout(()=>{
+  otCliente.value=c.nombre||v.cliente||'';
+  otTelefono.value=c.telefono||v.telefono||'';
+  otBici.value=descripcionVenta(v)+(v.nroSerie?` · Serie ${v.nroSerie}`:'');
+  otTrabajo.focus();
+  document.getElementById('taller')?.scrollIntoView({behavior:'smooth',block:'start'});
+ },100);
+}
 function facturaNumeroCRM(f){
   const p=Number(f.ptoVta||f.pto_vta||0);
   const n=Number(f.numero||f.cbte_nro||0);
@@ -821,9 +867,9 @@ function renderCRM(){
   const gVentas=vs.reduce((sum,v)=>sum+v.total,0);
   const gTaller=ots.reduce((sum,o)=>sum+(o.sena||0)+(o.pagado||0),0);
   const facturasCaja=fs.filter(f=>String(f.origenTipo||f.origen_tipo||'').toLowerCase()==='caja');
-  const gFacturasCaja=facturasCaja.reduce((sum,f)=>sum+(Number(f.importe)||0),0);
-  const g=gVentas+gTaller+gFacturasCaja;
-  const cantidadOps=vs.length+ots.length+facturasCaja.length;
+  // Las facturas ARCA documentan operaciones ya cobradas; no vuelven a sumar gasto ni operaciones.
+  const g=gVentas+gTaller;
+  const cantidadOps=vs.length+ots.length;
   const last=[...vs,...ots,...fs].map(x=>x.fecha).filter(Boolean).sort().reverse()[0]||c.fecha;
   return `<tr class="border-b"><td class="p-2 font-semibold">${esc(c.nombre)}<br><span class="small">${esc(c.email)}</span></td><td class="p-2"><a class="text-blue-600" target="_blank" href="https://wa.me/549${(c.telefono||'').replace(/\D/g,'')}">${esc(c.telefono||'-')}</a></td><td class="p-2">${esc(c.segmento)}</td><td class="p-2">${cantidadOps}</td><td class="p-2 font-semibold">${money(g)}</td><td class="p-2 small">${fecha(last)}</td><td class="p-2 flex gap-1 flex-wrap"><button onclick="editarCliente('${c.id}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs" title="Editar / modificar contacto">✏️</button><button onclick="historialCliente('${c.id}')" class="bg-indigo-600 text-white px-2 py-1 rounded text-xs" title="Historial compras, facturas y service">📜</button><button onclick="crmWP('${c.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs" title="Recordar">💬</button><button type="button" data-delete-table="clientes" data-delete-id="${c.id}" class="text-rose-600 delete-btn" title="Eliminar">🗑️</button></td></tr>`
  }).join('')||'<tr><td colspan="7" class="p-4 text-center">Sin clientes.</td></tr>';
@@ -836,8 +882,11 @@ function historialCliente(i){
  const facturasCaja=fs.filter(f=>String(f.origenTipo||f.origen_tipo||'').toLowerCase()==='caja');
  const totalVentas=vs.reduce((sum,v)=>sum+v.total,0);
  const totalTaller=ots.reduce((sum,o)=>sum+(o.sena||0)+(o.pagado||0),0);
- const totalCaja=facturasCaja.reduce((sum,f)=>sum+(Number(f.importe)||0),0);
- const totalGastado=totalVentas+totalTaller+totalCaja;
+ // Una factura de Caja no es una nueva operación económica: evita duplicar Venta/OT + Factura.
+ const totalGastado=totalVentas+totalTaller;
+ const bicicletas=vs.filter(v=>v.marca||v.modelo||v.nroSerie);
+ const saldoPendiente=vs.reduce((sum,v)=>{const sena=Number(v.sena)||0,pagado=Number(v.pagado)||0;const historica=(sena===0&&pagado===0&&v.montoCobrar==null);return sum+(historica?0:Math.max(0,(Number(v.total)||0)-sena-pagado));},0);
+ const totalFacturado=fs.reduce((sum,f)=>sum+(Number(f.importe)||0),0);
 
  let html=`<div class="space-y-4">
   <div class="bg-slate-50 p-3 rounded-lg text-sm">
@@ -847,7 +896,13 @@ function historialCliente(i){
    <p><b>Condición IVA:</b> ${esc(c.condicionIva||'No especificada')}</p>
    <p><b>Dirección:</b> ${esc(c.direccion||'No especificada')}</p>
    <p><b>Notas del cliente:</b> ${esc(c.notas||'Sin notas')}</p>
-   <p><b>Total registrado:</b> <span class="text-emerald-700 font-bold">${money(totalGastado)}</span></p>
+   <div class="grid grid-cols-2 gap-2 mt-3">
+    <div class="bg-white border rounded p-2"><b>🚲 Bicicletas compradas</b><br><span class="text-lg font-bold">${bicicletas.reduce((a,v)=>a+(Number(v.cantidad)||1),0)}</span></div>
+    <div class="bg-white border rounded p-2"><b>🛠️ Services / OT</b><br><span class="text-lg font-bold">${ots.length}</span></div>
+    <div class="bg-white border rounded p-2"><b>🧾 Total facturado</b><br><span class="text-lg font-bold">${money(totalFacturado)}</span></div>
+    <div class="bg-white border rounded p-2"><b>📌 Saldo pendiente</b><br><span class="text-lg font-bold ${saldoPendiente>0?'text-amber-700':'text-emerald-700'}">${money(saldoPendiente)}</span></div>
+   </div>
+   <p class="mt-2"><b>💰 Total gastado:</b> <span class="text-emerald-700 font-bold">${money(totalGastado)}</span></p>
   </div>
   <div>
    <h4 class="font-semibold text-sm mb-2">🧾 Facturas ARCA (${fs.length})</h4>
@@ -861,10 +916,19 @@ function historialCliente(i){
    </div>
   </div>
   <div>
+   <h4 class="font-semibold text-sm mb-2">🚲 Bicicletas del cliente (${bicicletas.length})</h4>
+   <div class="space-y-2 max-h-56 overflow-auto text-xs">
+    ${bicicletas.map(v=>`<div class="border rounded-lg p-3 bg-slate-50">
+      <div><b class="text-sm">${esc(descripcionVenta(v))}</b>${v.nroSerie?`<div class="mt-1"><b>Serie:</b> <span class="font-mono">${esc(v.nroSerie)}</span></div>`:''}<div class="text-slate-500 mt-1">Compra: ${fecha(v.fecha)} · ${money(v.total)}</div></div>
+      <div class="flex gap-2 mt-2 flex-wrap"><button onclick="abrirVentaDesdeCliente('${v.id}')" class="bg-indigo-600 text-white px-2 py-1 rounded">Ver venta</button><button onclick="nuevaOTDesdeBicicleta('${c.id}','${v.id}')" class="bg-blue-600 text-white px-2 py-1 rounded">🔧 Nueva OT</button></div>
+     </div>`).join('')||'<p class="text-slate-400">Sin bicicletas identificadas.</p>'}
+   </div>
+  </div>
+  <div>
    <h4 class="font-semibold text-sm mb-2">🛒 Historial de Ventas / Compras (${vs.length})</h4>
    <div class="space-y-2 max-h-56 overflow-auto text-xs">
     ${vs.map(v=>`<div class="border rounded p-2">
-      <div class="flex justify-between gap-3"><span><b>${fecha(v.fecha)}</b> - ${esc(v.producto)} (${v.cantidad} un.)</span><b class="money">${money(v.total)}</b></div>
+      <div class="flex justify-between gap-3"><span><b>${fecha(v.fecha)}</b> - ${esc(descripcionVenta(v))} (${v.cantidad} un.)</span><b class="money">${money(v.total)}</b></div>
       ${v.nroSerie?`<div class="mt-1"><b>Nro. de serie:</b> <span class="font-mono">${esc(v.nroSerie)}</span></div>`:''}
       ${v.notas?`<div class="mt-1"><b>Notas:</b> ${esc(v.notas)}</div>`:''}
      </div>`).join('')||'<p class="text-slate-400">Sin compras registradas.</p>'}
@@ -888,11 +952,11 @@ function whatsappFichaCliente(i){
  const fs=facturasClienteCRM(c).filter(f=>String(f.origenTipo||f.origen_tipo||'').toLowerCase()==='caja');
  const totalVentas=vs.reduce((a,v)=>a+(v.total||0),0);
  const totalTaller=ots.reduce((a,o)=>a+(o.sena||0)+(o.pagado||0),0);
- const totalFacturasCaja=fs.reduce((a,f)=>a+(Number(f.importe)||0),0);
+ // Facturas: se muestran como documentos fiscales, pero no se suman otra vez al gasto.
  let msg=`🚲 *BICICLETÍA DEL ABASTO*\n*Ficha de cliente*\n\n👤 ${c.nombre}\n📱 ${c.telefono||'-'}\n📧 ${c.email||'-'}\n📍 ${c.direccion||'-'}${c.documento?`\n🪪 DNI / CUIT: ${c.documento}`:''}${c.notas?`\n📝 Notas: ${c.notas}`:''}`;
  if(vs.length){
   msg+=`\n\n🛒 *VENTAS / COMPRAS*`;
-  vs.forEach(v=>{msg+=`\n\n📅 ${fecha(v.fecha)}\n• ${v.producto} x${v.cantidad}\n• Importe: ${money(v.total)}${v.nroSerie?`\n• Nro. de serie: ${v.nroSerie}`:''}${v.notas?`\n• Notas: ${v.notas}`:''}`});
+  vs.forEach(v=>{msg+=`\n\n📅 ${fecha(v.fecha)}\n• ${descripcionVenta(v)} x${v.cantidad}\n• Importe: ${money(v.total)}${v.nroSerie?`\n• Nro. de serie: ${v.nroSerie}`:''}${v.notas?`\n• Notas: ${v.notas}`:''}`});
  }
  if(fs.length){
   msg+=`\n\n🧾 *FACTURAS DE CAJA*`;
@@ -902,7 +966,7 @@ function whatsappFichaCliente(i){
   msg+=`\n\n🛠️ *TALLER / SERVICES*`;
   ots.forEach(o=>{msg+=`\n\n📅 ${fecha(o.fecha)} · OT #${String(o.id).slice(-6)}\n• ${o.bici}\n• ${o.trabajo}\n• Estado: ${o.estado}\n• Cobrado: ${money((o.sena||0)+(o.pagado||0))}`});
  }
- msg+=`\n\n💰 *Total registrado: ${money(totalVentas+totalTaller+totalFacturasCaja)}*`;
+ msg+=`\n\n💰 *Total gastado: ${money(totalVentas+totalTaller)}*`;
  window.open('https://wa.me/549'+tel+'?text='+encodeURIComponent(msg),'_blank');
 }
 function crmWP(i){const c=state.clientes.find(x=>String(x.id)===String(i));if(!c?.telefono)return;window.open('https://wa.me/549'+c.telefono.replace(/\D/g,'')+'?text='+encodeURIComponent(`Hola ${c.nombre}! Te escribimos de Bicicletería del Abasto. ¿Cómo estás? Si necesitás service o algún repuesto, estamos a disposición.`),'_blank')}
@@ -958,9 +1022,9 @@ async function guardarRecordatorio(){
 
 /* --- STOCK --- */
 async function guardarStock(){
- const x={marca:sMarca.value.trim(),modelo:sModelo.value.trim(),color:sColor.value.trim(),talle:'',nro_serie:sSerie.value.trim(),precio:+sPrecio.value||0,costo:+sCosto.value||0,estado:'Disponible',stock:+sCantidad.value||0};
+ const x={marca:valorMarcaStock(),modelo:valorModeloStock(),color:sColor.value.trim(),talle:'',nro_serie:sSerie.value.trim(),precio:+sPrecio.value||0,costo:+sCosto.value||0,estado:'Disponible',stock:+sCantidad.value||0};
  if(!x.modelo)return alert('Producto obligatorio.');
- try{await dbInsert('inventario_bicicletas',x);['sMarca','sModelo','sColor','sSerie','sPrecio','sCosto'].forEach(y=>document.getElementById(y).value='');sCantidad.value=1;await cargarSupabase(true)}catch(e){alert('No se pudo guardar el stock: '+e.message+'\n\nSi el error menciona nro_serie, ejecutá la actualización SQL incluida con esta versión.')}
+ try{await dbInsert('inventario_bicicletas',x);['sMarca','sModelo','sMarcaManual','sModeloManual','sColor','sSerie','sPrecio','sCosto'].forEach(y=>document.getElementById(y).value='');sMarcaManual.classList.add('hidden');sModeloManual.classList.add('hidden');sCantidad.value=1;await cargarSupabase(true)}catch(e){alert('No se pudo guardar el stock: '+e.message+'\n\nSi el error menciona nro_serie, ejecutá la actualización SQL incluida con esta versión.')}
 }
 
 function renderStock(){
@@ -1024,7 +1088,7 @@ async function confirmarVentaStock(i){
   const venta=await dbInsert('ventas',{fecha:fechaHoraLocal(),cliente:nombre,telefono,cliente_id:cliente.id,cliente_documento:documento||null,producto,total,costo,ganancia:total-costo,cantidad:cant,medio,notas:('Venta desde stock'+(notas?' · '+notas:'')),nro_serie:x.nroSerie||null,marca:x.marca||null,modelo:x.modelo||null});
   try{
    await dbUpdate('inventario_bicicletas',x.id,{stock:x.cantidad-cant});
-   await agregarMovInterno('Entrada','Venta de productos',medio,total,'Venta #'+venta.id+' - '+producto+' - Cliente: '+nombre);
+   await agregarMovInterno('Entrada','Venta',medio,total,'Venta #'+venta.id+' - '+producto+' - Cliente: '+nombre);
   }catch(err){
    await dbDelete('ventas',venta.id).catch(()=>{});
    await dbUpdate('inventario_bicicletas',x.id,{stock:x.cantidad}).catch(()=>{});
@@ -1038,7 +1102,7 @@ async function confirmarVentaStock(i){
 function actualizarSelectProductos(){
  const sel=document.getElementById('vProductoSelect'); if(!sel)return;
  const actual=sel.value;
- sel.innerHTML='<option value="">— Elegir del catálogo o escribir manual —</option>'+state.productos.map(p=>`<option value="${p.id}">${esc(p.nombre)} · ${money(p.precio)}</option>`).join('');
+ sel.innerHTML='<option value="">— Elegir del catálogo o escribir manual —</option>'+state.productos.map(p=>`<option value="${p.id}">${esc(p.nombre)} · ${esc(p.tipo||'Producto/Accesorio')} · ${money(p.precio)}</option>`).join('');
  if(actual&&state.productos.some(p=>String(p.id)===String(actual)))sel.value=actual;
 }
 function seleccionarProductoVenta(){
@@ -1047,6 +1111,8 @@ function seleccionarProductoVenta(){
  if(!p)return;
  vProducto.value=p.nombre; vCosto.value=p.costo||0; vPrecio.value=p.precio||0;
  vMargen.value=p.costo>0?(((p.precio-p.costo)/p.costo)*100).toFixed(2):'';
+ if((p.tipo||'')==='Bicicleta'&&!valorMarcaVenta()){ /* La marca/modelo se completa aparte para mantener el catálogo normalizado. */ }
+ actualizarResumenPagoVenta();
 }
 function calcularPrecioPorMargen(){
  const costo=+vCosto.value||0, margen=vMargen.value===''?null:+vMargen.value;
@@ -1058,6 +1124,7 @@ function abrirGestionProductos(){
   <div id="listaProductosServicios" class="space-y-1 mb-2 max-h-56 overflow-auto"></div>
   <div class="grid grid-cols-3 gap-1">
    <input id="nuevoProdNombre" class="border p-2 rounded text-sm col-span-3" placeholder="Nombre del producto / servicio">
+   <select id="nuevoProdTipo" class="border p-2 rounded text-sm col-span-3"><option>Bicicleta</option><option selected>Producto/Accesorio</option><option>Servicio</option></select>
    <input id="nuevoProdCosto" type="number" class="border p-2 rounded text-sm" placeholder="Costo">
    <input id="nuevoProdPrecio" type="number" class="border p-2 rounded text-sm" placeholder="Precio">
    <button onclick="addProductoServicio()" class="bg-emerald-600 text-white px-3 py-2 rounded text-sm">➕ Agregar</button>
@@ -1068,38 +1135,59 @@ function abrirGestionProductos(){
 }
 function renderListaProductosModal(){
  const el=document.getElementById('listaProductosServicios'); if(!el)return;
- el.innerHTML=state.productos.map(p=>`<div class="flex justify-between items-center text-sm border-b py-2 gap-2"><span class="flex-1">${esc(p.nombre)}<br><span class="small text-slate-500">Costo ${money(p.costo)} · Precio ${money(p.precio)}</span></span><span class="flex gap-2"><button onclick="editarProductoServicio('${p.id}')" class="text-blue-600 text-xs" title="Modificar">✏️</button><button type="button" data-delete-table="productos_servicios" data-delete-id="${p.id}" class="text-rose-600 text-xs delete-btn" data-after-delete="productos" title="Eliminar">🗑️</button></span></div>`).join('')||'<p class="text-slate-400">Sin productos ni servicios cargados.</p>';
+ el.innerHTML=state.productos.map(p=>`<div class="flex justify-between items-center text-sm border-b py-2 gap-2"><span class="flex-1">${esc(p.nombre)}<br><span class="small text-slate-500">${esc(p.tipo||'Producto/Accesorio')} · Costo ${money(p.costo)} · Precio ${money(p.precio)}</span></span><span class="flex gap-2"><button onclick="editarProductoServicio('${p.id}')" class="text-blue-600 text-xs" title="Modificar">✏️</button><button type="button" data-delete-table="productos_servicios" data-delete-id="${p.id}" class="text-rose-600 text-xs delete-btn" data-after-delete="productos" title="Eliminar">🗑️</button></span></div>`).join('')||'<p class="text-slate-400">Sin productos ni servicios cargados.</p>';
 }
 async function addProductoServicio(){
  const nombre=document.getElementById('nuevoProdNombre')?.value.trim();
  const costo=+document.getElementById('nuevoProdCosto')?.value||0;
  const precio=+document.getElementById('nuevoProdPrecio')?.value||0;
+ const tipo=document.getElementById('nuevoProdTipo')?.value||'Producto/Accesorio';
  if(!nombre)return alert('Ingresá el nombre del producto o servicio.');
  try{
-  await dbInsert('productos_servicios',{nombre,costo,precio});
-  document.getElementById('nuevoProdNombre').value='';document.getElementById('nuevoProdCosto').value='';document.getElementById('nuevoProdPrecio').value='';
+  await dbInsert('productos_servicios',{nombre,costo,precio,tipo});
+  document.getElementById('nuevoProdNombre').value='';document.getElementById('nuevoProdCosto').value='';document.getElementById('nuevoProdPrecio').value='';document.getElementById('nuevoProdTipo').value='Producto/Accesorio';
   await cargarSupabase(true); renderListaProductosModal();
  }catch(e){alert('No se pudo agregar el producto/servicio: '+e.message+'\n\nEs necesario crear la tabla productos_servicios en Supabase (ver nota de instalación).')}
 }
 function editarProductoServicio(i){
  const p=state.productos.find(x=>String(x.id)===String(i));if(!p)return;
- abrirModal('✏️ Modificar producto / servicio',`<div class="space-y-3"><input id="edProdNombre" class="border p-2 rounded w-full" value="${esc(p.nombre)}"><div class="grid grid-cols-2 gap-2"><input id="edProdCosto" type="number" class="border p-2 rounded w-full" value="${p.costo}"><input id="edProdPrecio" type="number" class="border p-2 rounded w-full" value="${p.precio}"></div><button onclick="guardarEdProducto('${p.id}')" class="bg-blue-600 text-white px-4 py-2 rounded w-full font-semibold">💾 Guardar cambios</button></div>`);
+ abrirModal('✏️ Modificar producto / servicio',`<div class="space-y-3"><input id="edProdNombre" class="border p-2 rounded w-full" value="${esc(p.nombre)}"><select id="edProdTipo" class="border p-2 rounded w-full">${['Bicicleta','Producto/Accesorio','Servicio'].map(t=>`<option ${t===(p.tipo||'Producto/Accesorio')?'selected':''}>${t}</option>`).join('')}</select><div class="grid grid-cols-2 gap-2"><input id="edProdCosto" type="number" class="border p-2 rounded w-full" value="${p.costo}"><input id="edProdPrecio" type="number" class="border p-2 rounded w-full" value="${p.precio}"></div><button onclick="guardarEdProducto('${p.id}')" class="bg-blue-600 text-white px-4 py-2 rounded w-full font-semibold">💾 Guardar cambios</button></div>`);
 }
 async function guardarEdProducto(i){
  const nombre=document.getElementById('edProdNombre')?.value.trim();
  if(!nombre)return alert('El nombre es obligatorio.');
- const costo=+document.getElementById('edProdCosto')?.value||0, precio=+document.getElementById('edProdPrecio')?.value||0;
- try{await dbUpdate('productos_servicios',i,{nombre,costo,precio});cerrarModal();await cargarSupabase(true);abrirGestionProductos()}catch(e){alert('No se pudo modificar el producto/servicio: '+e.message)}
+ const costo=+document.getElementById('edProdCosto')?.value||0, precio=+document.getElementById('edProdPrecio')?.value||0, tipo=document.getElementById('edProdTipo')?.value||'Producto/Accesorio';
+ try{await dbUpdate('productos_servicios',i,{nombre,costo,precio,tipo});cerrarModal();await cargarSupabase(true);abrirGestionProductos()}catch(e){alert('No se pudo modificar el producto/servicio: '+e.message)}
 }
 
 function normalizarTelefono(v){return String(v||'').replace(/\D/g,'').replace(/^549?/,'')}
-function actualizarListasMarcaModeloVenta(){
- const marcas=[...new Set([...state.stock.map(x=>x.marca),...state.ventas.map(x=>x.marca)].filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
- const modelos=[...new Set([...state.stock.map(x=>x.modelo),...state.ventas.map(x=>x.modelo)].filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
- const lm=document.getElementById('listaMarcasVenta'),lmo=document.getElementById('listaModelosVenta');
- if(lm)lm.innerHTML=marcas.map(x=>`<option value="${esc(x)}"></option>`).join('');
- if(lmo)lmo.innerHTML=modelos.map(x=>`<option value="${esc(x)}"></option>`).join('');
+function catalogoMarcaModeloCompleto(){
+ const base=[...(state.marcasModelos||[])];
+ // Compatibilidad: también muestra combinaciones ya existentes en Stock/Ventas aunque todavía no estén en el catálogo.
+ [...state.stock,...state.ventas].forEach(x=>{if(x.marca||x.modelo)base.push({id:null,marca:x.marca||'',modelo:x.modelo||''})});
+ const seen=new Set();return base.filter(x=>{const k=(x.marca+'|'+x.modelo).toLowerCase();if(!x.marca||seen.has(k))return false;seen.add(k);return true});
 }
+function marcasCatalogo(){return [...new Set(catalogoMarcaModeloCompleto().map(x=>x.marca).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'))}
+function modelosCatalogo(marca){return [...new Set(catalogoMarcaModeloCompleto().filter(x=>!marca||x.marca===marca).map(x=>x.modelo).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'))}
+function llenarSelectMarca(id){const el=document.getElementById(id);if(!el)return;const actual=el.value;el.innerHTML='<option value="">— Elegir marca —</option>'+marcasCatalogo().map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('')+'<option value="__manual__">✍️ Otra / escribir manualmente</option>';if([...el.options].some(o=>o.value===actual))el.value=actual}
+function llenarSelectModelo(id,marca){const el=document.getElementById(id);if(!el)return;const actual=el.value;el.innerHTML='<option value="">— Elegir modelo —</option>'+modelosCatalogo(marca).map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('')+'<option value="__manual__">✍️ Otro / escribir manualmente</option>';if([...el.options].some(o=>o.value===actual))el.value=actual}
+function actualizarCatalogosMarcaModelo(){llenarSelectMarca('vMarca');llenarSelectMarca('sMarca');const vm=document.getElementById('vMarca')?.value;const sm=document.getElementById('sMarca')?.value;llenarSelectModelo('vModelo',vm&&vm!=='__manual__'?vm:'');llenarSelectModelo('sModelo',sm&&sm!=='__manual__'?sm:'')}
+function cambiarMarcaVenta(){const m=vMarca.value;vMarcaManual.classList.toggle('hidden',m!=='__manual__');if(m!=='__manual__')vMarcaManual.value='';llenarSelectModelo('vModelo',m==='__manual__'?'':m);vModeloManual.classList.add('hidden');vModeloManual.value=''}
+function cambiarModeloVenta(){vModeloManual.classList.toggle('hidden',vModelo.value!=='__manual__');if(vModelo.value!=='__manual__')vModeloManual.value=''}
+function cambiarMarcaStock(){const m=sMarca.value;sMarcaManual.classList.toggle('hidden',m!=='__manual__');if(m!=='__manual__')sMarcaManual.value='';llenarSelectModelo('sModelo',m==='__manual__'?'':m);sModeloManual.classList.add('hidden');sModeloManual.value=''}
+function cambiarModeloStock(){sModeloManual.classList.toggle('hidden',sModelo.value!=='__manual__');if(sModelo.value!=='__manual__')sModeloManual.value=''}
+function valorMarcaVenta(){return (vMarca.value==='__manual__'?vMarcaManual.value:vMarca.value).trim()}
+function valorModeloVenta(){return (vModelo.value==='__manual__'?vModeloManual.value:vModelo.value).trim()}
+function valorMarcaStock(){return (sMarca.value==='__manual__'?sMarcaManual.value:sMarca.value).trim()}
+function valorModeloStock(){return (sModelo.value==='__manual__'?sModeloManual.value:sModelo.value).trim()}
+function abrirGestionMarcasModelos(){
+ const rows=(state.marcasModelos||[]).slice().sort((a,b)=>(a.marca+' '+a.modelo).localeCompare(b.marca+' '+b.modelo,'es')).map(x=>`<div class="border rounded p-2 flex justify-between gap-2 items-center"><div><b>${esc(x.marca)}</b>${x.modelo?`<span class="text-slate-500"> · ${esc(x.modelo)}</span>`:''}</div><div class="flex gap-1"><button onclick="editarMarcaModelo('${x.id}')" class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs">✏️</button><button onclick="eliminarMarcaModelo('${x.id}')" class="bg-rose-50 text-rose-700 px-2 py-1 rounded text-xs">🗑️</button></div></div>`).join('')||'<p class="text-slate-400">Todavía no hay marcas/modelos cargados.</p>';
+ abrirModal('🚲 Gestionar marcas y modelos',`<div class="space-y-3"><p class="small text-slate-500">Cada modelo queda asociado a una marca. Después aparecerá automáticamente en los desplegables de Ventas y Stock.</p><div class="grid grid-cols-2 gap-2"><input id="gmMarca" class="border p-2 rounded" placeholder="Marca (ej. ZMB)"><input id="gmModelo" class="border p-2 rounded" placeholder="Modelo (ej. R29 Pro)"></div><button onclick="agregarMarcaModelo()" class="bg-emerald-600 text-white px-4 py-2 rounded w-full font-semibold">＋ Agregar al catálogo</button><div class="border-t pt-3 space-y-2 max-h-72 overflow-auto">${rows}</div></div>`)
+}
+async function agregarMarcaModelo(){const marca=gmMarca.value.trim(),modelo=gmModelo.value.trim();if(!marca||!modelo)return alert('Ingresá marca y modelo.');if((state.marcasModelos||[]).some(x=>x.marca.toLowerCase()===marca.toLowerCase()&&x.modelo.toLowerCase()===modelo.toLowerCase()))return alert('Ese modelo ya está cargado para esa marca.');try{await dbInsert('marcas_modelos',{marca,modelo});await cargarSupabase(true);abrirGestionMarcasModelos()}catch(e){alert('No se pudo agregar: '+e.message)}}
+function editarMarcaModelo(id){const x=(state.marcasModelos||[]).find(y=>String(y.id)===String(id));if(!x)return;abrirModal('✏️ Editar marca / modelo',`<div class="space-y-3"><input id="emmMarca" class="border p-2 rounded w-full" value="${esc(x.marca)}"><input id="emmModelo" class="border p-2 rounded w-full" value="${esc(x.modelo)}"><button onclick="guardarMarcaModelo('${x.id}')" class="bg-blue-600 text-white px-4 py-2 rounded w-full">Guardar cambios</button></div>`)}
+async function guardarMarcaModelo(id){const marca=emmMarca.value.trim(),modelo=emmModelo.value.trim();if(!marca||!modelo)return alert('Ingresá marca y modelo.');try{await dbUpdate('marcas_modelos',id,{marca,modelo});cerrarModal();await cargarSupabase(true);abrirGestionMarcasModelos()}catch(e){alert('No se pudo modificar: '+e.message)}}
+async function eliminarMarcaModelo(id){if(!confirm('¿Eliminar esta marca/modelo del catálogo? No se borrarán ventas ni stock existentes.'))return;try{await dbDelete('marcas_modelos',id);await cargarSupabase(true);abrirGestionMarcasModelos()}catch(e){alert('No se pudo eliminar: '+e.message)}}
 function actualizarResumenPagoVenta(){
  const cantidad=Math.max(1,+document.getElementById('vCantidad')?.value||1);
  const total=(+document.getElementById('vPrecio')?.value||0)*cantidad;
@@ -1109,6 +1197,14 @@ function actualizarResumenPagoVenta(){
  if(document.getElementById('vResumenSena'))vResumenSena.textContent=money(Math.min(sena,total));
  if(document.getElementById('vResumenSaldo'))vResumenSaldo.textContent=money(saldo);
 }
+function tipoVentaActual(){
+ const p=state.productos.find(x=>String(x.id)===String(document.getElementById('vProductoSelect')?.value));
+ if((p?.tipo||'')==='Bicicleta')return 'Bicicleta';
+ if(valorMarcaVenta()||valorModeloVenta()||String(vNroSerie?.value||'').trim())return 'Bicicleta';
+ return 'Mostrador';
+}
+function conceptoCajaVenta(v){return (v?.marca||v?.modelo||v?.nroSerie||v?.tipoVenta==='Bicicleta')?'Venta':'Ventas Mostrador'}
+
 async function guardarVenta(){
  const cantidad=+vCantidad.value||1,total=(+vPrecio.value||0)*cantidad,costo=(+vCosto.value||0)*cantidad;if(total<=0)return alert('Precio inválido.');
  const sena=Math.max(0,+vSena.value||0);if(sena>total)return alert('La seña no puede ser mayor al total de la venta.');
@@ -1116,7 +1212,8 @@ async function guardarVenta(){
  const pagoInicial=sena>0?sena:total;
  const saldo=Math.max(0,total-pagoInicial);
  const documento=vDocumento.value.trim();
- const v={fecha:fechaHoraLocal(),cliente:vCliente.value.trim()||'Consumidor final',telefono:vTelefono.value.trim(),cliente_documento:documento||null,marca:vMarca.value.trim()||null,modelo:vModelo.value.trim()||null,producto:vProducto.value.trim()||'Venta general',total,costo,ganancia:total-costo,cantidad,medio:vMedio.value,notas:vNotas.value.trim(),nro_serie:vNroSerie.value.trim()||null,sena:sena,pagado:sena>0?0:total,precio_cobrado:saldo};
+ const tipoVenta=tipoVentaActual();
+ const v={fecha:fechaHoraLocal(),tipoVenta,cliente:vCliente.value.trim()||'Consumidor final',telefono:vTelefono.value.trim(),cliente_documento:documento||null,marca:valorMarcaVenta()||null,modelo:valorModeloVenta()||null,producto:vProducto.value.trim()||'Venta general',total,costo,ganancia:total-costo,cantidad,medio:vMedio.value,notas:vNotas.value.trim(),nro_serie:vNroSerie.value.trim()||null,sena:sena,pagado:sena>0?0:total,precio_cobrado:saldo};
  try{
   let cliente=null;
   if(documento)cliente=state.clientes.find(x=>String(x.documento||'').replace(/\D/g,'')===documento.replace(/\D/g,''));
@@ -1128,9 +1225,9 @@ async function guardarVenta(){
    try{cliente=await dbInsert('clientes',{nombre:v.cliente,telefono:v.telefono,email:null,direccion:null,documento:documento||null,segmento:'Nuevo',notas:'Cliente de venta'});v.cliente_id=cliente.id}catch(err){console.warn('La venta continuará, pero no se pudo crear el cliente:',err)}
   }
   const venta=await dbInsert('ventas',v);
-  try{await agregarMovInterno('Entrada',saldo>0?'Seña de venta':'Venta',v.medio,pagoInicial,(saldo>0?'Seña ':'Venta ')+'#'+venta.id+' - '+v.producto+' - '+v.cliente)}
+  try{await agregarMovInterno('Entrada',conceptoCajaVenta(v),v.medio,pagoInicial,(saldo>0?'Seña ':'Venta ')+'#'+venta.id+' - '+detalleVentaCaja(v)+' - '+v.cliente)}
   catch(err){await dbDelete('ventas',venta.id).catch(()=>{});throw new Error('No se pudo registrar la entrada en Caja; la venta fue revertida. '+err.message)}
-  ['vCliente','vTelefono','vDocumento','vMarca','vModelo','vProducto','vCosto','vPrecio','vNotas','vNroSerie','vMargen'].forEach(x=>document.getElementById(x).value='');vSena.value=0;vCantidad.value=1;vProductoSelect.value='';actualizarResumenPagoVenta();
+  ['vCliente','vTelefono','vDocumento','vMarca','vModelo','vProducto','vCosto','vPrecio','vNotas','vNroSerie','vMargen','vMarcaManual','vModeloManual'].forEach(x=>document.getElementById(x).value='');vMarcaManual.classList.add('hidden');vModeloManual.classList.add('hidden');vSena.value=0;vCantidad.value=1;vProductoSelect.value='';actualizarResumenPagoVenta();
   await cargarSupabase(true);
   alert(saldo>0?'Venta señada y sincronizada. Saldo pendiente: '+money(saldo):'Venta registrada y sincronizada.');
  }catch(e){console.error(e);alert('No se pudo registrar la venta en Supabase: '+e.message+'\n\nSi el error menciona sena, pagado, precio_cobrado, marca o modelo, ejecutá el SQL de actualización de Ventas.');await cargarSupabase(true)}
@@ -1865,7 +1962,7 @@ function renderVentas(){
   const saldo=Math.max(0,(Number(v.total)||0)-cobrado);
   const aCobrar=v.montoCobrar==null?saldo:Math.min(saldo,Math.max(0,Number(v.montoCobrar)||0));
   const marcaFactura=f?.cae?`<br><span class="small text-emerald-700 font-semibold">✓ ${nombreCbte(f.tipo)} ${String(f.ptoVta||4).padStart(4,'0')}-${String(f.numero||'').padStart(8,'0')}</span>`:f?'<br><span class="small text-amber-700 font-semibold">🕓 Factura pendiente</span>':'';
-  return `<tr class="border-b"><td class="p-2 small">${fecha(v.fecha)}</td><td class="p-2">${esc(v.cliente)}${v.documento?`<br><span class="small font-mono text-slate-500">${esc(v.documento)}</span>`:''}</td><td class="p-2">${esc(v.producto)}${v.nroSerie?`<br><span class="small font-mono text-slate-500">Serie: ${esc(v.nroSerie)}</span>`:''}${marcaFactura}</td><td class="p-2">${v.cantidad}</td><td class="p-2 font-semibold">${money(v.total)}</td><td class="p-2 text-emerald-700">${money(sena)}</td><td class="p-2">${money(cobrado)}</td><td class="p-2 font-semibold ${saldo>0?'text-amber-700':'text-emerald-700'}">${money(saldo)}</td><td class="p-2">${saldo>0?`<input type="number" min="0" max="${saldo}" class="border rounded p-1 w-24" value="${aCobrar}" onchange="setMontoCobrarVenta('${v.id}',this.value)">`:'<span class="text-emerald-700 font-semibold">Pagada</span>'}</td><td class="p-2">${money(v.costo)}</td><td class="p-2 text-emerald-600 font-semibold">${money(v.ganancia)}</td><td class="p-2">${mg.toFixed(1)}%</td><td class="p-2 flex gap-1 flex-wrap"><button onclick="editarVenta('${v.id}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs">✏️ Editar</button>${saldo>0?`<button onclick="cobrarVenta('${v.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">💵 Cobrar</button>`:''}<button onclick="fichaClienteVenta('${v.id}')" class="bg-indigo-600 text-white px-2 py-1 rounded text-xs">👤 Ficha</button><button onclick="whatsappVenta('${v.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">💬 WhatsApp</button><button onclick="facturarYEnviar('${v.id}')" class="${f?'bg-slate-700':'bg-violet-700'} text-white px-2 py-1 rounded text-xs">${f?.cae?'✅ Factura':f?'🕓 Pendiente':'🧾 Facturar'}</button><button type="button" data-delete-table="ventas" data-delete-id="${v.id}" class="bg-rose-50 text-rose-700 px-2 py-1 rounded text-xs delete-btn">🗑️</button></td></tr>`
+  return `<tr class="border-b"><td class="p-2 small">${fecha(v.fecha)}</td><td class="p-2">${esc(v.cliente)}${v.documento?`<br><span class="small font-mono text-slate-500">${esc(v.documento)}</span>`:''}</td><td class="p-2">${esc(descripcionVenta(v))}${v.nroSerie?`<br><span class="small font-mono text-slate-500">Serie: ${esc(v.nroSerie)}</span>`:''}${marcaFactura}</td><td class="p-2">${v.cantidad}</td><td class="p-2 font-semibold">${money(v.total)}</td><td class="p-2 text-emerald-700">${money(sena)}</td><td class="p-2">${money(cobrado)}</td><td class="p-2 font-semibold ${saldo>0?'text-amber-700':'text-emerald-700'}">${money(saldo)}</td><td class="p-2">${saldo>0?`<input type="number" min="0" max="${saldo}" class="border rounded p-1 w-24" value="${aCobrar}" onchange="setMontoCobrarVenta('${v.id}',this.value)">`:'<span class="text-emerald-700 font-semibold">Pagada</span>'}</td><td class="p-2">${money(v.costo)}</td><td class="p-2 text-emerald-600 font-semibold">${money(v.ganancia)}</td><td class="p-2">${mg.toFixed(1)}%</td><td class="p-2 flex gap-1 flex-wrap"><button onclick="editarVenta('${v.id}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs">✏️ Editar</button>${saldo>0?`<button onclick="cobrarVenta('${v.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">💵 Cobrar</button>`:''}<button onclick="fichaClienteVenta('${v.id}')" class="bg-indigo-600 text-white px-2 py-1 rounded text-xs">👤 Ficha</button><button onclick="whatsappVenta('${v.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">💬 WhatsApp</button><button onclick="facturarYEnviar('${v.id}')" class="${f?'bg-slate-700':'bg-violet-700'} text-white px-2 py-1 rounded text-xs">${f?.cae?'✅ Factura':f?'🕓 Pendiente':'🧾 Facturar'}</button><button type="button" data-delete-table="ventas" data-delete-id="${v.id}" class="bg-rose-50 text-rose-700 px-2 py-1 rounded text-xs delete-btn">🗑️</button></td></tr>`
  }).join('')||'<tr><td colspan="14" class="p-4 text-center">Sin ventas.</td></tr>'
 }
 async function setMontoCobrarVenta(i,valor){
@@ -1885,7 +1982,7 @@ async function cobrarVenta(i){
   const nuevoPagado=(Number(v.pagado)||0)+monto;
   const nuevoSaldo=Math.max(0,saldo-monto);
   await dbUpdate('ventas',i,{pagado:nuevoPagado,precio_cobrado:nuevoSaldo});
-  await agregarMovInterno('Entrada','Venta',v.medio,monto,'Cobro venta #'+v.id+' - '+v.producto+' - Cliente: '+v.cliente);
+  await agregarMovInterno('Entrada',conceptoCajaVenta(v),v.medio,monto,'Cobro venta #'+v.id+' - '+detalleVentaCaja(v)+' - Cliente: '+v.cliente);
   await cargarSupabase(true);alert(nuevoSaldo>0?'Cobro registrado. Saldo pendiente: '+money(nuevoSaldo):'Venta cobrada completamente.');
  }catch(e){console.error(e);alert('No se pudo registrar el cobro: '+e.message);await cargarSupabase(true)}
 }
@@ -2003,8 +2100,66 @@ document.addEventListener('click',function(ev){
  const afterDelete=btn.dataset.afterDelete||'';
  eliminarRegistro(tabla,id,afterDelete);
 });
-function rango(){const now=new Date();let from=new Date(0),to=new Date();if(periodoActual==='hoy'){from=new Date();from.setHours(0,0,0,0)}if(periodoActual==='semana'){from=new Date();from.setDate(now.getDate()-6);from.setHours(0,0,0,0)}if(periodoActual==='mes'){from=new Date(now.getFullYear(),now.getMonth(),1)}if(periodoActual==='anio'){from=new Date(now.getFullYear(),0,1)}return [from,to]}
-function periodo(p){periodoActual=p;reportes()}
+function fechaInputLocal(d){
+ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dia=String(d.getDate()).padStart(2,'0');
+ return `${y}-${m}-${dia}`;
+}
+function fechaDesdeInput(v,inicio=true){
+ if(!v)return null;
+ const [y,m,d]=v.split('-').map(Number);
+ const x=new Date(y,m-1,d);
+ x.setHours(inicio?0:23,inicio?0:59,inicio?0:59,inicio?0:999);
+ return x;
+}
+function rango(){
+ const now=new Date();let from=new Date(0),to=new Date();
+ if(periodoActual==='hoy'){from=new Date();from.setHours(0,0,0,0);to=new Date();to.setHours(23,59,59,999)}
+ if(periodoActual==='semana'){from=new Date();from.setDate(now.getDate()-6);from.setHours(0,0,0,0);to=new Date();to.setHours(23,59,59,999)}
+ if(periodoActual==='30dias'){from=new Date();from.setDate(now.getDate()-29);from.setHours(0,0,0,0);to=new Date();to.setHours(23,59,59,999)}
+ if(periodoActual==='mes'){from=new Date(now.getFullYear(),now.getMonth(),1);to=new Date();to.setHours(23,59,59,999)}
+ if(periodoActual==='anio'){from=new Date(now.getFullYear(),0,1);to=new Date();to.setHours(23,59,59,999)}
+ if(periodoActual==='personalizado'){
+   const fd=document.getElementById('rFechaDesde')?.value,fh=document.getElementById('rFechaHasta')?.value;
+   const a=fechaDesdeInput(fd,true),b=fechaDesdeInput(fh,false);
+   if(a&&b){from=a;to=b}
+ }
+ return [from,to];
+}
+function etiquetaPeriodo(){
+ const [f,t]=rango();
+ if(periodoActual==='todo')return 'Todo el historial';
+ if(periodoActual==='hoy')return 'Hoy';
+ if(periodoActual==='semana')return 'Últimos 7 días';
+ if(periodoActual==='30dias')return 'Últimos 30 días';
+ if(periodoActual==='mes')return 'Este mes';
+ if(periodoActual==='anio')return 'Este año';
+ return `${f.toLocaleDateString('es-AR')} al ${t.toLocaleDateString('es-AR')}`;
+}
+function actualizarPeriodoActivo(){
+ const el=document.getElementById('rPeriodoActivo');
+ if(el)el.textContent='Período activo: '+etiquetaPeriodo();
+}
+function periodo(p){
+ periodoActual=p;
+ const now=new Date(),desde=document.getElementById('rFechaDesde'),hasta=document.getElementById('rFechaHasta');
+ if(desde&&hasta){
+   let f=new Date(now);
+   if(p==='hoy')f=new Date(now);
+   else if(p==='semana')f.setDate(now.getDate()-6);
+   else if(p==='30dias')f.setDate(now.getDate()-29);
+   else if(p==='mes')f=new Date(now.getFullYear(),now.getMonth(),1);
+   else if(p==='anio')f=new Date(now.getFullYear(),0,1);
+   if(p!=='todo'){desde.value=fechaInputLocal(f);hasta.value=fechaInputLocal(now)}
+ }
+ actualizarPeriodoActivo();reportes();
+}
+function aplicarPeriodoPersonalizado(){
+ const desde=document.getElementById('rFechaDesde')?.value,hasta=document.getElementById('rFechaHasta')?.value;
+ if(!desde||!hasta)return alert('Elegí una fecha Desde y una fecha Hasta.');
+ const f=fechaDesdeInput(desde,true),t=fechaDesdeInput(hasta,false);
+ if(f>t)return alert('La fecha Desde no puede ser posterior a la fecha Hasta.');
+ periodoActual='personalizado';actualizarPeriodoActivo();reportes();
+}
 function filtrarMovPeriodo(){const [f,t]=rango();return state.movimientos.filter(m=>{const d=new Date(m.fecha);return d>=f&&d<=t})}
 function filtrarMov(){const conc=document.getElementById('rConceptoFiltro')?.value||'Todos';const medio=document.getElementById('rMedioFiltro')?.value||'Todos';return filtrarMovPeriodo().filter(m=>(conc==='Todos'||m.concepto===conc)&&(medio==='Todos'||m.medio===medio))}
 function filtrarVentas(){const [f,t]=rango();const ma=document.getElementById('rMarcaFiltro')?.value||'Todos',mo=document.getElementById('rModeloFiltro')?.value||'Todos';return state.ventas.filter(v=>{const d=new Date(v.fecha);return d>=f&&d<=t&&(ma==='Todos'||v.marca===ma)&&(mo==='Todos'||v.modelo===mo)})}
@@ -2020,6 +2175,7 @@ function actualizarFiltrosReportes(){
 function actualizarFiltroModelosReporte(){const sm=document.getElementById('rMarcaFiltro'),so=document.getElementById('rModeloFiltro');if(!so)return;const ma=sm?.value||'Todos',a=so.value||'Todos';const modelos=[...new Set(state.ventas.filter(v=>ma==='Todos'||v.marca===ma).map(v=>v.modelo).filter(Boolean))].sort((x,y)=>x.localeCompare(y,'es'));so.innerHTML='<option value="Todos">Todos los modelos</option>'+modelos.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');if(a==='Todos'||modelos.includes(a))so.value=a;}
 function clavePeriodo(fechaISO,agrupar){const d=new Date(fechaISO);if(agrupar==='anio')return String(d.getFullYear());if(agrupar==='mes')return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;return isoDate(d)}
 function reportes(){
+ actualizarPeriodoActivo();
  actualizarFiltrosReportes();
  const ms=filtrarMov(),vs=filtrarVentas();
  const entradas=ms.filter(m=>m.tipo==='Entrada').reduce((s,m)=>s+m.monto,0);
@@ -2037,6 +2193,15 @@ function reportes(){
  // Taller usa importes efectivamente registrados en la OT: seña + precio_pagado.
  // No usa conceptos de Caja, por lo que no duplica los cobros que Caja ya muestra en el flujo.
  const ingresosTaller=otsPeriodo.reduce((s,o)=>s+(Number(o.sena)||0)+(Number(o.pagado)||0),0);
+ const ventasBici=vs.filter(v=>!!(v.marca||v.modelo||v.nroSerie));
+ const ventasMostrador=vs.filter(v=>!(v.marca||v.modelo||v.nroSerie));
+ const montoBicis=ventasBici.reduce((s,v)=>s+(Number(v.total)||0),0), unidadesBicis=ventasBici.reduce((s,v)=>s+(Number(v.cantidad)||0),0);
+ const montoMostrador=ventasMostrador.reduce((s,v)=>s+(Number(v.total)||0),0);
+ const otsCobradas=otsPeriodo.filter(o=>(Number(o.sena)||0)+(Number(o.pagado)||0)>0);
+ if(document.getElementById('rResumenBicis'))rResumenBicis.textContent=ventasBici.length+' ops · '+money(montoBicis);
+ if(document.getElementById('rResumenBicisUnidades'))rResumenBicisUnidades.textContent=unidadesBicis+' bicicleta(s)';
+ if(document.getElementById('rResumenMostrador'))rResumenMostrador.textContent=ventasMostrador.length+' ops · '+money(montoMostrador);
+ if(document.getElementById('rResumenReparaciones'))rResumenReparaciones.textContent=otsCobradas.length+' OT · '+money(ingresosTaller);
  const costoTaller=otsPeriodo.reduce((s,o)=>s+(Number(o.costo)||0),0);
  const fact=ventasProductos+ingresosTaller;
  const cost=costoVentas+costoTaller;
