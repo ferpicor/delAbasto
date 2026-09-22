@@ -294,6 +294,7 @@ input,select,textarea{min-width:0}
   <div class="grid md:grid-cols-4 gap-3">
    <input id="vCliente" class="border p-2 rounded-lg" placeholder="Cliente">
    <input id="vTelefono" class="border p-2 rounded-lg" placeholder="WhatsApp">
+   <input id="vDocumento" class="border p-2 rounded-lg" placeholder="CUIT / CUIL / DNI (opcional)">
    <input id="vNroSerie" class="border p-2 rounded-lg" placeholder="Número de serie (opcional)">
    <select id="vMedio" class="border p-2 rounded-lg"><option>Efectivo</option><option>Transferencia</option><option>Débito</option><option>Crédito</option><option>Mercado Pago</option><option>Otro</option></select>
    <div class="md:col-span-2"><label class="small text-slate-500 block mb-1">Producto / servicio</label>
@@ -303,17 +304,19 @@ input,select,textarea{min-width:0}
     </div>
     <input id="vProducto" class="border p-2 rounded-lg w-full mt-1" placeholder="Nombre del producto / servicio">
    </div>
-   <input id="vCantidad" type="number" value="1" min="1" class="border p-2 rounded-lg" placeholder="Cantidad">
+   <input id="vCantidad" type="number" value="1" min="1" oninput="actualizarResumenPagoVenta()" class="border p-2 rounded-lg" placeholder="Cantidad">
    <input id="vCosto" type="number" oninput="calcularPrecioPorMargen()" class="border p-2 rounded-lg" placeholder="Costo unitario">
    <div><label class="small text-slate-500 block mb-1">% Margen sobre costo</label><input id="vMargen" type="number" oninput="calcularPrecioPorMargen()" class="border p-2 rounded-lg w-full" placeholder="Ej: 30"></div>
-   <input id="vPrecio" type="number" class="border p-2 rounded-lg" placeholder="Precio de venta unitario">
+   <input id="vPrecio" type="number" oninput="actualizarResumenPagoVenta()" class="border p-2 rounded-lg" placeholder="Precio de venta unitario">
+   <div><label class="small text-slate-500 block mb-1">Seña recibida</label><input id="vSena" type="number" min="0" value="0" oninput="actualizarResumenPagoVenta()" class="border p-2 rounded-lg w-full" placeholder="0"></div>
+   <div class="md:col-span-2 bg-amber-50 border border-amber-200 rounded-lg p-3"><div class="grid grid-cols-3 gap-2 text-center"><div><span class="small text-slate-500">Total</span><div id="vResumenTotal" class="font-bold">$0</div></div><div><span class="small text-slate-500">Seña</span><div id="vResumenSena" class="font-bold text-emerald-700">$0</div></div><div><span class="small text-slate-500">Saldo</span><div id="vResumenSaldo" class="font-bold text-amber-700">$0</div></div></div><p class="small text-slate-500 mt-2">Si la seña es mayor a $0 y menor al total, en Caja se registra sólo la seña. El resto queda pendiente para cobrar.</p></div>
    <input id="vNotas" class="border p-2 rounded-lg md:col-span-2" placeholder="Notas">
   </div>
   <button onclick="guardarVenta()" class="mt-4 bg-emerald-600 text-white px-4 py-2 rounded-lg">💰 Registrar venta</button>
  </div>
  <div class="card p-4 overflow-x-auto">
   <div class="flex flex-wrap justify-between items-center gap-2 mb-3"><h3 class="font-semibold">Ventas</h3><div class="flex gap-2"><button onclick="exportVentasExcel()" class="bg-emerald-700 text-white px-3 py-2 rounded-lg text-sm">📥 Excel</button><button onclick="exportVentasPDF()" class="bg-rose-700 text-white px-3 py-2 rounded-lg text-sm">📄 PDF</button></div></div>
-  <table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2">Fecha</th><th class="p-2">Cliente</th><th class="p-2">Producto</th><th class="p-2">Cantidad</th><th class="p-2">Venta</th><th class="p-2">Costo</th><th class="p-2">Ganancia</th><th class="p-2">Margen</th><th class="p-2">Acciones</th></tr></thead><tbody id="tablaVentas"></tbody></table></div>
+  <table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2">Fecha</th><th class="p-2">Cliente</th><th class="p-2">Producto</th><th class="p-2">Cantidad</th><th class="p-2">Venta</th><th class="p-2">Seña</th><th class="p-2">Pagado</th><th class="p-2">Saldo</th><th class="p-2">A cobrar</th><th class="p-2">Costo</th><th class="p-2">Ganancia</th><th class="p-2">Margen</th><th class="p-2">Acciones</th></tr></thead><tbody id="tablaVentas"></tbody></table></div>
 </section>
 
 <section id="caja" class="hidden space-y-5">
@@ -524,7 +527,7 @@ async function cargarSupabase(silencioso=false){
   if(resultados[2].status==='fulfilled')state.conceptos=conceptos.map(x=>({id:x.id,nombre:x.nombre||''})).filter(x=>x.nombre);
   if(resultados[3].status==='fulfilled')state.stock=stock.map(x=>({id:x.id,marca:x.marca||'',modelo:x.modelo||'',variante:[x.color,x.talle].filter(Boolean).join(' / '),nroSerie:x.nro_serie||'',precio:Number(x.precio)||0,costo:Number(x.costo)||0,cantidad:Number(x.stock)||0,estado:x.estado||'Disponible'}));
   if(resultados[4].status==='fulfilled')state.ots=taller.map(x=>({id:x.id,fecha:x.fecha_ingreso||x.created_at||new Date().toISOString(),cliente:x.cliente||'',telefono:x.telefono||'',bici:x.bicicleta||'',trabajo:x.trabajo||'',presupuesto:Number(x.presupuesto)||0,sena:Number(x.sena)||0,pagado:Number(x.precio_pagado)||0,costo:Number(x.costo)||0,estado:x.estado||'En taller',montoCobrar:Number(x.precio_cobrado)||0,promesa:x.fecha_promesa||'',prioridad:x.prioridad||'Normal',fechaPrioridad:x.fecha_prioridad||''}));
-  if(resultados[5].status==='fulfilled')state.ventas=ventas.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),cliente:x.cliente||'Consumidor final',telefono:x.telefono||'',producto:x.producto||'Venta general',total:Number(x.total)||0,costo:Number(x.costo)||0,ganancia:Number(x.ganancia ?? ((Number(x.total)||0)-(Number(x.costo)||0))),cantidad:Number(x.cantidad)||1,medio:x.medio||x.medio_pago||'Efectivo',notas:x.notas||'',clienteId:x.cliente_id||null,documento:x.cliente_documento||'',condicionIva:x.condicion_iva||'',direccion:x.cliente_direccion||'',email:x.cliente_email||'',nroSerie:x.nro_serie||'',facturaEstado:x.factura_estado||'',facturaTipo:x.factura_tipo||'',facturaNumero:x.factura_numero||'',facturaPuntoVenta:x.factura_punto_venta||'',cae:x.cae||'',caeVencimiento:x.cae_vencimiento||'',facturaFecha:x.factura_fecha||'',facturaCuenta:x.factura_cuenta||''}));
+  if(resultados[5].status==='fulfilled')state.ventas=ventas.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),cliente:x.cliente||'Consumidor final',telefono:x.telefono||'',producto:x.producto||'Venta general',total:Number(x.total)||0,costo:Number(x.costo)||0,ganancia:Number(x.ganancia ?? ((Number(x.total)||0)-(Number(x.costo)||0))),cantidad:Number(x.cantidad)||1,medio:x.medio||x.medio_pago||'Efectivo',notas:x.notas||'',clienteId:x.cliente_id||null,documento:x.cliente_documento||'',condicionIva:x.condicion_iva||'',direccion:x.cliente_direccion||'',email:x.cliente_email||'',nroSerie:x.nro_serie||'',sena:Number(x.sena)||0,pagado:Number(x.pagado)||0,montoCobrar:(x.precio_cobrado==null?null:Number(x.precio_cobrado)||0),facturaEstado:x.factura_estado||'',facturaTipo:x.factura_tipo||'',facturaNumero:x.factura_numero||'',facturaPuntoVenta:x.factura_punto_venta||'',cae:x.cae||'',caeVencimiento:x.cae_vencimiento||'',facturaFecha:x.factura_fecha||'',facturaCuenta:x.factura_cuenta||''}));
   if(resultados[6].status==='fulfilled')state.compras=compras.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),proveedor:x.proveedor||'',producto:x.producto||'',cantidad:Number(x.cantidad)||0,costo:Number(x.costo)||0,total:Number(x.total)||0,medio:x.medio||x.medio_pago||'Otro'}));
   if(resultados[7].status==='fulfilled')state.proveedores=proveedores.map(x=>({id:x.id,nombre:x.nombre||'',contacto:x.contacto||'',fecha:x.created_at||new Date().toISOString()}));
   if(resultados[8].status==='fulfilled')state.arqueos=arqueos.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),teorico:Number(x.teorico)||0,real:Number(x.real)||0,diferencia:Number(x.diferencia)||0,obs:x.obs||x.observaciones||''}));
@@ -1076,20 +1079,40 @@ async function guardarEdProducto(i){
  try{await dbUpdate('productos_servicios',i,{nombre,costo,precio});cerrarModal();await cargarSupabase(true);abrirGestionProductos()}catch(e){alert('No se pudo modificar el producto/servicio: '+e.message)}
 }
 
+function actualizarResumenPagoVenta(){
+ const cantidad=Math.max(1,+document.getElementById('vCantidad')?.value||1);
+ const total=(+document.getElementById('vPrecio')?.value||0)*cantidad;
+ const sena=Math.max(0,+document.getElementById('vSena')?.value||0);
+ const saldo=Math.max(0,total-sena);
+ if(document.getElementById('vResumenTotal'))vResumenTotal.textContent=money(total);
+ if(document.getElementById('vResumenSena'))vResumenSena.textContent=money(Math.min(sena,total));
+ if(document.getElementById('vResumenSaldo'))vResumenSaldo.textContent=money(saldo);
+}
 async function guardarVenta(){
  const cantidad=+vCantidad.value||1,total=(+vPrecio.value||0)*cantidad,costo=(+vCosto.value||0)*cantidad;if(total<=0)return alert('Precio inválido.');
- const v={fecha:fechaHoraLocal(),cliente:vCliente.value.trim()||'Consumidor final',telefono:vTelefono.value.trim(),producto:vProducto.value.trim()||'Venta general',total,costo,ganancia:total-costo,cantidad,medio:vMedio.value,notas:vNotas.value.trim(),nro_serie:vNroSerie.value.trim()||null};
+ const sena=Math.max(0,+vSena.value||0);if(sena>total)return alert('La seña no puede ser mayor al total de la venta.');
+ // Compatibilidad: seña 0 mantiene el comportamiento histórico = venta cobrada completa.
+ const pagoInicial=sena>0?sena:total;
+ const saldo=Math.max(0,total-pagoInicial);
+ const documento=vDocumento.value.trim();
+ const v={fecha:fechaHoraLocal(),cliente:vCliente.value.trim()||'Consumidor final',telefono:vTelefono.value.trim(),cliente_documento:documento||null,producto:vProducto.value.trim()||'Venta general',total,costo,ganancia:total-costo,cantidad,medio:vMedio.value,notas:vNotas.value.trim(),nro_serie:vNroSerie.value.trim()||null,sena:sena,pagado:sena>0?0:total,precio_cobrado:saldo};
  try{
-  const venta=await dbInsert('ventas',v);
-  try{await agregarMovInterno('Entrada','Venta',v.medio,total,'Venta #'+venta.id+' - '+v.producto+' - '+v.cliente)}
-  catch(err){await dbDelete('ventas',venta.id).catch(()=>{});throw new Error('No se pudo registrar la entrada en Caja; la venta fue revertida. '+err.message)}
-  if(v.telefono&&!state.clientes.some(x=>x.telefono===v.telefono)){
-   try{await dbInsert('clientes',{nombre:v.cliente,telefono:v.telefono,email:null,direccion:null,segmento:'Nuevo',notas:'Cliente de venta'})}catch(err){console.warn('La venta se guardó, pero no se pudo crear automáticamente el cliente:',err)}
+  let cliente=null;
+  if(documento)cliente=state.clientes.find(x=>String(x.documento||'').replace(/\D/g,'')===documento.replace(/\D/g,''));
+  if(!cliente&&v.telefono)cliente=state.clientes.find(x=>x.telefono===v.telefono);
+  if(cliente){
+   v.cliente_id=cliente.id;
+   try{await dbUpdate('clientes',cliente.id,{nombre:v.cliente,telefono:v.telefono||cliente.telefono,documento:documento||cliente.documento||null})}catch(err){console.warn('No se pudo actualizar el cliente:',err)}
+  }else if(v.cliente!=='Consumidor final'&&(v.telefono||documento)){
+   try{cliente=await dbInsert('clientes',{nombre:v.cliente,telefono:v.telefono,email:null,direccion:null,documento:documento||null,segmento:'Nuevo',notas:'Cliente de venta'});v.cliente_id=cliente.id}catch(err){console.warn('La venta continuará, pero no se pudo crear el cliente:',err)}
   }
-  ['vCliente','vTelefono','vProducto','vCosto','vPrecio','vNotas','vNroSerie','vMargen'].forEach(x=>document.getElementById(x).value='');vCantidad.value=1;vProductoSelect.value='';
+  const venta=await dbInsert('ventas',v);
+  try{await agregarMovInterno('Entrada',saldo>0?'Seña de venta':'Venta',v.medio,pagoInicial,(saldo>0?'Seña ':'Venta ')+'#'+venta.id+' - '+v.producto+' - '+v.cliente)}
+  catch(err){await dbDelete('ventas',venta.id).catch(()=>{});throw new Error('No se pudo registrar la entrada en Caja; la venta fue revertida. '+err.message)}
+  ['vCliente','vTelefono','vDocumento','vProducto','vCosto','vPrecio','vNotas','vNroSerie','vMargen'].forEach(x=>document.getElementById(x).value='');vSena.value=0;vCantidad.value=1;vProductoSelect.value='';actualizarResumenPagoVenta();
   await cargarSupabase(true);
-  alert('Venta registrada y sincronizada.');
- }catch(e){console.error(e);alert('No se pudo registrar la venta en Supabase: '+e.message);await cargarSupabase(true)}
+  alert(saldo>0?'Venta señada y sincronizada. Saldo pendiente: '+money(saldo):'Venta registrada y sincronizada.');
+ }catch(e){console.error(e);alert('No se pudo registrar la venta en Supabase: '+e.message+'\n\nSi el error menciona sena, pagado o precio_cobrado, ejecutá el SQL de actualización de Ventas.');await cargarSupabase(true)}
 }
 function editarVenta(i){
  const v=state.ventas.find(x=>String(x.id)===String(i));if(!v)return;
@@ -1099,6 +1122,8 @@ function editarVenta(i){
   <div class="grid grid-cols-2 gap-2">
    <div><label class="small text-slate-500">Cliente</label><input id="evCliente" class="border p-2 rounded w-full" value="${esc(v.cliente)}"></div>
    <div><label class="small text-slate-500">WhatsApp</label><input id="evTelefono" class="border p-2 rounded w-full" value="${esc(v.telefono)}"></div>
+   <div><label class="small text-slate-500">CUIT / CUIL / DNI</label><input id="evDocumento" class="border p-2 rounded w-full" value="${esc(v.documento||'')}"></div>
+   <div><label class="small text-slate-500">Seña</label><input id="evSena" type="number" min="0" class="border p-2 rounded w-full" value="${v.sena||0}"></div>
   </div>
   <div><label class="small text-slate-500">Producto / servicio</label><input id="evProducto" class="border p-2 rounded w-full" value="${esc(v.producto)}"></div>
   <div><label class="small text-slate-500">Número de serie</label><input id="evNroSerie" class="border p-2 rounded w-full" value="${esc(v.nroSerie||'')}"></div>
@@ -1123,6 +1148,8 @@ async function guardarEdVenta(i){
  const payload={
   cliente:document.getElementById('evCliente').value.trim()||'Consumidor final',
   telefono:document.getElementById('evTelefono').value.trim(),
+  cliente_documento:document.getElementById('evDocumento').value.trim()||null,
+  sena:Math.max(0,+document.getElementById('evSena').value||0),
   producto:document.getElementById('evProducto').value.trim()||'Venta general',
   nro_serie:document.getElementById('evNroSerie').value.trim()||null,
   cantidad, total, costo, ganancia:total-costo,
@@ -1808,9 +1835,36 @@ function mostrarFacturaEmitida(i){const f=facturaDeVenta(i);if(f)return mostrarF
 function renderVentas(){
  tablaVentas.innerHTML=state.ventas.map(v=>{
   const mg=v.total?((v.ganancia/v.total)*100):0, f=facturaDeVenta(v.id);
+  const sena=Number(v.sena)||0,pagado=Number(v.pagado)||0;
+  // Registros históricos sin campos de pago se consideran cobrados, como funcionaba antes.
+  const historica=(sena===0&&pagado===0&&v.montoCobrar==null);
+  const cobrado=historica?Number(v.total)||0:Math.min(Number(v.total)||0,sena+pagado);
+  const saldo=Math.max(0,(Number(v.total)||0)-cobrado);
+  const aCobrar=v.montoCobrar==null?saldo:Math.min(saldo,Math.max(0,Number(v.montoCobrar)||0));
   const marcaFactura=f?.cae?`<br><span class="small text-emerald-700 font-semibold">✓ ${nombreCbte(f.tipo)} ${String(f.ptoVta||4).padStart(4,'0')}-${String(f.numero||'').padStart(8,'0')}</span>`:f?'<br><span class="small text-amber-700 font-semibold">🕓 Factura pendiente</span>':'';
-  return `<tr class="border-b"><td class="p-2 small">${fecha(v.fecha)}</td><td class="p-2">${esc(v.cliente)}</td><td class="p-2">${esc(v.producto)}${v.nroSerie?`<br><span class="small font-mono text-slate-500">Serie: ${esc(v.nroSerie)}</span>`:''}${marcaFactura}</td><td class="p-2">${v.cantidad}</td><td class="p-2">${money(v.total)}</td><td class="p-2">${money(v.costo)}</td><td class="p-2 text-emerald-600 font-semibold">${money(v.ganancia)}</td><td class="p-2">${mg.toFixed(1)}%</td><td class="p-2 flex gap-1 flex-wrap"><button onclick="editarVenta('${v.id}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs">✏️ Editar</button><button onclick="fichaClienteVenta('${v.id}')" class="bg-indigo-600 text-white px-2 py-1 rounded text-xs">👤 Ficha</button><button onclick="whatsappVenta('${v.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">💬 WhatsApp</button><button onclick="facturarYEnviar('${v.id}')" class="${f?'bg-slate-700':'bg-violet-700'} text-white px-2 py-1 rounded text-xs">${f?.cae?'✅ Factura':f?'🕓 Pendiente':'🧾 Facturar'}</button><button type="button" data-delete-table="ventas" data-delete-id="${v.id}" class="bg-rose-50 text-rose-700 px-2 py-1 rounded text-xs delete-btn">🗑️</button></td></tr>`
- }).join('')||'<tr><td colspan="9" class="p-4 text-center">Sin ventas.</td></tr>'
+  return `<tr class="border-b"><td class="p-2 small">${fecha(v.fecha)}</td><td class="p-2">${esc(v.cliente)}${v.documento?`<br><span class="small font-mono text-slate-500">${esc(v.documento)}</span>`:''}</td><td class="p-2">${esc(v.producto)}${v.nroSerie?`<br><span class="small font-mono text-slate-500">Serie: ${esc(v.nroSerie)}</span>`:''}${marcaFactura}</td><td class="p-2">${v.cantidad}</td><td class="p-2 font-semibold">${money(v.total)}</td><td class="p-2 text-emerald-700">${money(sena)}</td><td class="p-2">${money(cobrado)}</td><td class="p-2 font-semibold ${saldo>0?'text-amber-700':'text-emerald-700'}">${money(saldo)}</td><td class="p-2">${saldo>0?`<input type="number" min="0" max="${saldo}" class="border rounded p-1 w-24" value="${aCobrar}" onchange="setMontoCobrarVenta('${v.id}',this.value)">`:'<span class="text-emerald-700 font-semibold">Pagada</span>'}</td><td class="p-2">${money(v.costo)}</td><td class="p-2 text-emerald-600 font-semibold">${money(v.ganancia)}</td><td class="p-2">${mg.toFixed(1)}%</td><td class="p-2 flex gap-1 flex-wrap"><button onclick="editarVenta('${v.id}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs">✏️ Editar</button>${saldo>0?`<button onclick="cobrarVenta('${v.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">💵 Cobrar</button>`:''}<button onclick="fichaClienteVenta('${v.id}')" class="bg-indigo-600 text-white px-2 py-1 rounded text-xs">👤 Ficha</button><button onclick="whatsappVenta('${v.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">💬 WhatsApp</button><button onclick="facturarYEnviar('${v.id}')" class="${f?'bg-slate-700':'bg-violet-700'} text-white px-2 py-1 rounded text-xs">${f?.cae?'✅ Factura':f?'🕓 Pendiente':'🧾 Facturar'}</button><button type="button" data-delete-table="ventas" data-delete-id="${v.id}" class="bg-rose-50 text-rose-700 px-2 py-1 rounded text-xs delete-btn">🗑️</button></td></tr>`
+ }).join('')||'<tr><td colspan="13" class="p-4 text-center">Sin ventas.</td></tr>'
+}
+async function setMontoCobrarVenta(i,valor){
+ const v=state.ventas.find(x=>String(x.id)===String(i));if(!v)return;
+ const saldo=Math.max(0,(Number(v.total)||0)-(Number(v.sena)||0)-(Number(v.pagado)||0));
+ const monto=Math.min(saldo,Math.max(0,+valor||0));
+ try{await dbUpdate('ventas',i,{precio_cobrado:monto});v.montoCobrar=monto}catch(e){alert('No se pudo actualizar el monto a cobrar: '+e.message);await cargarSupabase(true)}
+}
+async function cobrarVenta(i){
+ const v=state.ventas.find(x=>String(x.id)===String(i));if(!v)return;
+ const saldo=Math.max(0,(Number(v.total)||0)-(Number(v.sena)||0)-(Number(v.pagado)||0));
+ if(saldo<=0)return alert('Esta venta ya está pagada.');
+ const sugerido=(v.montoCobrar!=null&&Number(v.montoCobrar)>0)?Math.min(saldo,Number(v.montoCobrar)):saldo;
+ const entrada=prompt('Monto a cobrar',String(sugerido));if(entrada===null)return;
+ const monto=Number(String(entrada).replace(',','.'));if(!Number.isFinite(monto)||monto<=0||monto>saldo)return alert('Ingresá un monto válido, hasta '+money(saldo)+'.');
+ try{
+  const nuevoPagado=(Number(v.pagado)||0)+monto;
+  const nuevoSaldo=Math.max(0,saldo-monto);
+  await dbUpdate('ventas',i,{pagado:nuevoPagado,precio_cobrado:nuevoSaldo});
+  await agregarMovInterno('Entrada','Venta',v.medio,monto,'Cobro venta #'+v.id+' - '+v.producto+' - Cliente: '+v.cliente);
+  await cargarSupabase(true);alert(nuevoSaldo>0?'Cobro registrado. Saldo pendiente: '+money(nuevoSaldo):'Venta cobrada completamente.');
+ }catch(e){console.error(e);alert('No se pudo registrar el cobro: '+e.message);await cargarSupabase(true)}
 }
 
 /* --- COMPRAS & PROVEEDORES --- */
