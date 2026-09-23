@@ -361,7 +361,7 @@ input,select,textarea{min-width:0}
   </div><button onclick="guardarCliente()" class="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg">💾 Guardar cliente</button>
  </div>
  <div class="card p-4 overflow-x-auto"><div class="flex justify-between mb-3"><h3 class="font-semibold">Base de clientes</h3><input id="buscarCli" oninput="renderCRM()" class="border p-2 rounded-lg text-sm" placeholder="Buscar"></div>
- <table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2">Cliente</th><th class="p-2">WhatsApp</th><th class="p-2">Segmento</th><th class="p-2">Compras</th><th class="p-2">Gastado</th><th class="p-2">Última actividad</th><th class="p-2">Acciones</th></tr></thead><tbody id="tablaCRM"></tbody></table></div>
+ <table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2">Cliente</th><th class="p-2">WhatsApp</th><th class="p-2">Segmento</th><th class="p-2">Tipo de cliente</th><th class="p-2">Operaciones</th><th class="p-2">Pagado</th><th class="p-2">Adeuda</th><th class="p-2">Última actividad</th><th class="p-2">Acciones</th></tr></thead><tbody id="tablaCRM"></tbody></table></div>
 </section>
 
 <section id="stock" class="hidden space-y-5">
@@ -560,7 +560,7 @@ async function cargarSupabase(silencioso=false){
   if(resultados[2].status==='fulfilled')state.conceptos=conceptos.map(x=>({id:x.id,nombre:x.nombre||''})).filter(x=>x.nombre);
   if(resultados[3].status==='fulfilled')state.stock=stock.map(x=>({id:x.id,marca:x.marca||'',modelo:x.modelo||'',variante:[x.color,x.talle].filter(Boolean).join(' / '),nroSerie:x.nro_serie||'',precio:Number(x.precio)||0,costo:Number(x.costo)||0,cantidad:Number(x.stock)||0,estado:x.estado||'Disponible'}));
   if(resultados[4].status==='fulfilled')state.ots=taller.map(x=>({id:x.id,fecha:x.fecha_ingreso||x.created_at||new Date().toISOString(),cliente:x.cliente||'',telefono:x.telefono||'',bici:x.bicicleta||'',trabajo:x.trabajo||'',presupuesto:Number(x.presupuesto)||0,sena:Number(x.sena)||0,pagado:Number(x.precio_pagado)||0,costo:Number(x.costo)||0,estado:x.estado||'En taller',montoCobrar:Number(x.precio_cobrado)||0,promesa:x.fecha_promesa||'',prioridad:x.prioridad||'Normal',fechaPrioridad:x.fecha_prioridad||''}));
-  if(resultados[5].status==='fulfilled')state.ventas=ventas.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),cliente:x.cliente||'Consumidor final',telefono:x.telefono||'',producto:x.producto||'Venta general',total:Number(x.total)||0,costo:Number(x.costo)||0,ganancia:Number(x.ganancia ?? ((Number(x.total)||0)-(Number(x.costo)||0))),cantidad:Number(x.cantidad)||1,medio:x.medio||x.medio_pago||'Efectivo',notas:x.notas||'',clienteId:x.cliente_id||null,documento:x.cliente_documento||'',condicionIva:x.condicion_iva||'',direccion:x.cliente_direccion||'',email:x.cliente_email||'',nroSerie:x.nro_serie||'',marca:x.marca||'',modelo:x.modelo||'',sena:Number(x.sena)||0,pagado:Number(x.pagado)||0,montoCobrar:(x.precio_cobrado==null?null:Number(x.precio_cobrado)||0),facturaEstado:x.factura_estado||'',facturaTipo:x.factura_tipo||'',facturaNumero:x.factura_numero||'',facturaPuntoVenta:x.factura_punto_venta||'',cae:x.cae||'',caeVencimiento:x.cae_vencimiento||'',facturaFecha:x.factura_fecha||'',facturaCuenta:x.factura_cuenta||''}));
+  if(resultados[5].status==='fulfilled')state.ventas=ventas.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),cliente:x.cliente||'Consumidor final',telefono:x.telefono||'',producto:x.producto||'Venta general',total:Number(x.total)||0,costo:Number(x.costo)||0,ganancia:Number(x.ganancia ?? ((Number(x.total)||0)-(Number(x.costo)||0))),cantidad:Number(x.cantidad)||1,medio:x.medio||x.medio_pago||'Efectivo',notas:x.notas||'',clienteId:x.cliente_id||null,documento:x.cliente_documento||'',condicionIva:x.condicion_iva||'',direccion:x.cliente_direccion||'',email:x.cliente_email||'',nroSerie:x.nro_serie||'',marca:x.marca||'',modelo:x.modelo||'',sena:Number(x.sena)||0,pagado:Number(x.pagado)||0,montoCobrar:(x.precio_cobrado==null?null:Number(x.precio_cobrado)||0),facturaEstado:x.factura_estado||'',facturaTipo:x.factura_tipo||'',facturaNumero:x.factura_numero||'',facturaPuntoVenta:x.factura_punto_venta||'',cae:x.cae||'',caeVencimiento:x.cae_vencimiento||'',facturaFecha:x.factura_fecha||'',facturaCuenta:x.factura_cuenta||'',tipoVenta:x.tipoVenta||x.tipo_venta||''}));
   if(resultados[6].status==='fulfilled')state.compras=compras.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),proveedor:x.proveedor||'',producto:x.producto||'',cantidad:Number(x.cantidad)||0,costo:Number(x.costo)||0,total:Number(x.total)||0,medio:x.medio||x.medio_pago||'Otro'}));
   if(resultados[7].status==='fulfilled')state.proveedores=proveedores.map(x=>({id:x.id,nombre:x.nombre||'',contacto:x.contacto||'',fecha:x.created_at||new Date().toISOString()}));
   if(resultados[8].status==='fulfilled')state.arqueos=arqueos.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),teorico:Number(x.teorico)||0,real:Number(x.real)||0,diferencia:Number(x.diferencia)||0,obs:x.obs||x.observaciones||''}));
@@ -858,21 +858,36 @@ function facturaNumeroCRM(f){
   return `${String(p||0).padStart(4,'0')}-${String(n).padStart(8,'0')}`;
 }
 
+function datosClienteCRM(c){
+ const doc=String(c.documento||'').replace(/\D/g,'');
+ const tel=normalizarTelefono(c.telefono||'');
+ const vs=state.ventas.filter(v=>(v.clienteId&&String(v.clienteId)===String(c.id))||(doc&&v.documento&&doc===String(v.documento).replace(/\D/g,''))||(tel&&v.telefono&&tel===normalizarTelefono(v.telefono)));
+ const ots=state.ots.filter(o=>(tel&&o.telefono&&tel===normalizarTelefono(o.telefono)));
+ const fs=facturasClienteCRM(c);
+ const esBici=v=>!!(v.marca||v.modelo||v.nroSerie||String(v.tipoVenta||'').toLowerCase()==='bicicleta');
+ const bicis=vs.filter(esBici), mostrador=vs.filter(v=>!esBici(v));
+ const pagadoVentas=vs.reduce((a,v)=>{const total=Number(v.total)||0,se=Number(v.sena)||0,pa=Number(v.pagado)||0;const hist=(se===0&&pa===0&&v.montoCobrar==null);return a+(hist?total:Math.min(total,se+pa));},0);
+ const deudaVentas=vs.reduce((a,v)=>{const total=Number(v.total)||0,se=Number(v.sena)||0,pa=Number(v.pagado)||0;const hist=(se===0&&pa===0&&v.montoCobrar==null);return a+(hist?0:Math.max(0,total-se-pa));},0);
+ const pagadoTaller=ots.reduce((a,o)=>a+(Number(o.sena)||0)+(Number(o.pagado)||0),0);
+ const deudaTaller=ots.reduce((a,o)=>a+Math.max(0,(Number(o.presupuesto)||0)-(Number(o.sena)||0)-(Number(o.pagado)||0)),0);
+ return {vs,ots,fs,bicis,mostrador,pagado:pagadoVentas+pagadoTaller,deuda:deudaVentas+deudaTaller,deudaVentas,deudaTaller,totalFacturado:fs.reduce((a,f)=>a+(Number(f.importe)||0),0)};
+}
+function badgesOrigenCliente(d){
+ const b=[];
+ if(d.bicis.length)b.push('<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">🚲 Bicicleta</span>');
+ if(d.ots.length)b.push('<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800">🔧 Taller</span>');
+ if(d.mostrador.length)b.push('<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-violet-100 text-violet-800">🛍️ Mostrador</span>');
+ return b.join(' ')||'<span class="text-slate-400 text-xs">Sin clasificar</span>';
+}
 function renderCRM(){
  const q=(buscarCli?.value||'').toLowerCase();
  tablaCRM.innerHTML=state.clientes.filter(c=>(c.nombre+' '+c.telefono+' '+c.email+' '+(c.documento||'')).toLowerCase().includes(q)).map(c=>{
-  const vs=state.ventas.filter(v=>(v.clienteId&&String(v.clienteId)===String(c.id))||(c.documento&&v.documento&&String(c.documento).replace(/\D/g,'')===String(v.documento).replace(/\D/g,''))||(c.telefono&&v.telefono&&normalizarTelefono(c.telefono)===normalizarTelefono(v.telefono)));
-  const ots=state.ots.filter(o=>(c.telefono&&o.telefono&&normalizarTelefono(c.telefono)===normalizarTelefono(o.telefono)));
-  const fs=facturasClienteCRM(c);
-  const gVentas=vs.reduce((sum,v)=>sum+v.total,0);
-  const gTaller=ots.reduce((sum,o)=>sum+(o.sena||0)+(o.pagado||0),0);
-  const facturasCaja=fs.filter(f=>String(f.origenTipo||f.origen_tipo||'').toLowerCase()==='caja');
-  // Las facturas ARCA documentan operaciones ya cobradas; no vuelven a sumar gasto ni operaciones.
-  const g=gVentas+gTaller;
-  const cantidadOps=vs.length+ots.length;
-  const last=[...vs,...ots,...fs].map(x=>x.fecha).filter(Boolean).sort().reverse()[0]||c.fecha;
-  return `<tr class="border-b"><td class="p-2 font-semibold">${esc(c.nombre)}<br><span class="small">${esc(c.email)}</span></td><td class="p-2"><a class="text-blue-600" target="_blank" href="https://wa.me/549${(c.telefono||'').replace(/\D/g,'')}">${esc(c.telefono||'-')}</a></td><td class="p-2">${esc(c.segmento)}</td><td class="p-2">${cantidadOps}</td><td class="p-2 font-semibold">${money(g)}</td><td class="p-2 small">${fecha(last)}</td><td class="p-2 flex gap-1 flex-wrap"><button onclick="editarCliente('${c.id}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs" title="Editar / modificar contacto">✏️</button><button onclick="historialCliente('${c.id}')" class="bg-indigo-600 text-white px-2 py-1 rounded text-xs" title="Historial compras, facturas y service">📜</button><button onclick="crmWP('${c.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs" title="Recordar">💬</button><button type="button" data-delete-table="clientes" data-delete-id="${c.id}" class="text-rose-600 delete-btn" title="Eliminar">🗑️</button></td></tr>`
- }).join('')||'<tr><td colspan="7" class="p-4 text-center">Sin clientes.</td></tr>';
+  const d=datosClienteCRM(c);
+  const cantidadOps=d.vs.length+d.ots.length;
+  const last=[...d.vs,...d.ots,...d.fs].map(x=>x.fecha).filter(Boolean).sort().reverse()[0]||c.fecha;
+  const facturada=d.fs.length>0;
+  return `<tr class="border-b"><td class="p-2 font-semibold">${esc(c.nombre)}<br><span class="small">${esc(c.email)}</span></td><td class="p-2"><a class="text-blue-600" target="_blank" href="https://wa.me/549${(c.telefono||'').replace(/\D/g,'')}">${esc(c.telefono||'-')}</a></td><td class="p-2">${esc(c.segmento)}</td><td class="p-2"><div class="flex gap-1 flex-wrap">${badgesOrigenCliente(d)}</div></td><td class="p-2">${cantidadOps}</td><td class="p-2 font-semibold text-emerald-700">${money(d.pagado)}</td><td class="p-2 font-bold ${d.deuda>0?'text-red-600':'text-slate-400'}">${money(d.deuda)}</td><td class="p-2 small">${fecha(last)}</td><td class="p-2"><div class="flex gap-1 flex-wrap items-center">${facturada?'<span class="inline-block w-3 h-3 rounded-full bg-green-500 ring-2 ring-green-100" title="Cliente con factura ARCA emitida"></span>':''}<button onclick="editarCliente('${c.id}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs" title="Editar / modificar contacto">✏️</button><button onclick="historialCliente('${c.id}')" class="bg-indigo-600 text-white px-2 py-1 rounded text-xs" title="Historial compras, facturas y service">📜</button><button onclick="crmWP('${c.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs" title="Recordar">💬</button><button type="button" data-delete-table="clientes" data-delete-id="${c.id}" class="text-rose-600 delete-btn" title="Eliminar">🗑️</button></div></td></tr>`
+ }).join('')||'<tr><td colspan="9" class="p-4 text-center">Sin clientes.</td></tr>';
 }
 function historialCliente(i){
  const c=state.clientes.find(x=>String(x.id)===String(i)); if(!c)return;
@@ -880,13 +895,11 @@ function historialCliente(i){
  const ots=state.ots.filter(o=>(c.telefono&&o.telefono&&normalizarTelefono(c.telefono)===normalizarTelefono(o.telefono)));
  const fs=facturasClienteCRM(c).sort((a,b)=>String(b.fecha||'').localeCompare(String(a.fecha||'')));
  const facturasCaja=fs.filter(f=>String(f.origenTipo||f.origen_tipo||'').toLowerCase()==='caja');
- const totalVentas=vs.reduce((sum,v)=>sum+v.total,0);
- const totalTaller=ots.reduce((sum,o)=>sum+(o.sena||0)+(o.pagado||0),0);
- // Una factura de Caja no es una nueva operación económica: evita duplicar Venta/OT + Factura.
- const totalGastado=totalVentas+totalTaller;
- const bicicletas=vs.filter(v=>v.marca||v.modelo||v.nroSerie);
- const saldoPendiente=vs.reduce((sum,v)=>{const sena=Number(v.sena)||0,pagado=Number(v.pagado)||0;const historica=(sena===0&&pagado===0&&v.montoCobrar==null);return sum+(historica?0:Math.max(0,(Number(v.total)||0)-sena-pagado));},0);
- const totalFacturado=fs.reduce((sum,f)=>sum+(Number(f.importe)||0),0);
+ const dcrm=datosClienteCRM(c);
+ const totalGastado=dcrm.pagado;
+ const bicicletas=dcrm.bicis;
+ const saldoPendiente=dcrm.deuda;
+ const totalFacturado=dcrm.totalFacturado;
 
  let html=`<div class="space-y-4">
   <div class="bg-slate-50 p-3 rounded-lg text-sm">
@@ -900,9 +913,9 @@ function historialCliente(i){
     <div class="bg-white border rounded p-2"><b>🚲 Bicicletas compradas</b><br><span class="text-lg font-bold">${bicicletas.reduce((a,v)=>a+(Number(v.cantidad)||1),0)}</span></div>
     <div class="bg-white border rounded p-2"><b>🛠️ Services / OT</b><br><span class="text-lg font-bold">${ots.length}</span></div>
     <div class="bg-white border rounded p-2"><b>🧾 Total facturado</b><br><span class="text-lg font-bold">${money(totalFacturado)}</span></div>
-    <div class="bg-white border rounded p-2"><b>📌 Saldo pendiente</b><br><span class="text-lg font-bold ${saldoPendiente>0?'text-amber-700':'text-emerald-700'}">${money(saldoPendiente)}</span></div>
+    <div class="bg-white border rounded p-2"><b>📌 Saldo pendiente</b><br><span class="text-lg font-bold ${saldoPendiente>0?'text-red-600':'text-emerald-700'}">${money(saldoPendiente)}</span></div>
    </div>
-   <p class="mt-2"><b>💰 Total gastado:</b> <span class="text-emerald-700 font-bold">${money(totalGastado)}</span></p>
+   <div class="mt-3 flex gap-1 flex-wrap"><b class="mr-1">Tipo de cliente:</b>${badgesOrigenCliente(dcrm)}</div><p class="mt-2"><b>💰 Total pagado:</b> <span class="text-emerald-700 font-bold">${money(totalGastado)}</span></p>${saldoPendiente>0?`<p class="mt-1"><b>🔴 Resto pendiente a pagar:</b> <span class="text-red-600 font-bold">${money(saldoPendiente)}</span></p>`:''}
   </div>
   <div>
    <h4 class="font-semibold text-sm mb-2">🧾 Facturas ARCA (${fs.length})</h4>
