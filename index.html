@@ -826,7 +826,7 @@ kbd{font-family:var(--mono);font-size:.66rem;padding:2px 6px;border-radius:6px;b
   <div class="flex flex-wrap gap-2 mt-4"><button onclick="guardarOT()" class="bg-blue-600 text-white px-4 py-2 rounded-lg">💾 Guardar OT</button><button onclick="limpiarOT()" class="bg-slate-200 px-4 py-2 rounded-lg">Limpiar</button></div>
  </div>
  <div class="card p-4 overflow-x-auto"><div class="flex justify-between items-center mb-3"><h3 class="font-semibold">Órdenes de trabajo</h3><input id="buscarOT" oninput="renderOT()" class="border p-2 rounded-lg text-sm" placeholder="Buscar cliente/bici/trabajo"></div>
- <table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2">OT</th><th class="p-2">Fecha ingreso</th><th class="p-2">Cliente</th><th class="p-2">Bici / trabajo</th><th class="p-2">Presupuesto</th><th class="p-2">Seña</th><th class="p-2">Estado</th><th class="p-2">Saldo</th><th class="p-2">A cobrar</th><th class="p-2">Acciones</th></tr></thead><tbody id="tablaOT"></tbody></table></div>
+ <table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2">OT</th><th class="p-2">Fecha ingreso</th><th class="p-2">Cliente</th><th class="p-2">Bici / trabajo</th><th class="p-2">Presupuesto</th><th class="p-2">Seña</th><th class="p-2">Pagado</th><th class="p-2">Estado</th><th class="p-2">Saldo</th><th class="p-2">A cobrar</th><th class="p-2">Acciones</th></tr></thead><tbody id="tablaOT"></tbody></table></div>
 </section>
 
 <section id="ventas" class="hidden space-y-5">
@@ -1081,9 +1081,15 @@ async function controlarAcceso(){
  });
 }
 async function qTabla(tabla,orderCol='id'){
- const {data,error}=await supabaseClient.from(tabla).select('*').order(orderCol,{ascending:false}).limit(5000);
- if(error)throw new Error(tabla+': '+error.message);
- return data||[];
+ // Carga paginada: evita que reportes/CRM queden incompletos al superar 5.000 filas.
+ const lote=1000, todo=[];
+ for(let desde=0;;desde+=lote){
+  const {data,error}=await supabaseClient.from(tabla).select('*').order(orderCol,{ascending:false}).range(desde,desde+lote-1);
+  if(error)throw new Error(tabla+': '+error.message);
+  const filas=data||[]; todo.push(...filas);
+  if(filas.length<lote)break;
+ }
+ return todo;
 }
 async function cargarSupabase(silencioso=false){
  if(!silencioso)syncStatus('⏳ Sincronizando...');
@@ -1095,18 +1101,18 @@ async function cargarSupabase(silencioso=false){
   const [caja,clientes,conceptos,stock,taller,ventas,compras,proveedores,arqueos,recordatorios,productosServicios,facturas,marcasModelos]=tablas.map((_,i)=>valor(i));
 
   // Cada tabla que sí respondió se actualiza aunque otra tenga un problema.
-  if(resultados[0].status==='fulfilled')state.movimientos=caja.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),tipo:x.tipo||'Entrada',concepto:x.concepto||x.categoria||'General',medio:x.medio_pago||x.medio||'Efectivo',monto:Number(x.monto)||0,descripcion:x.descripcion||'',cuit:x.cuit||''}));
+  if(resultados[0].status==='fulfilled')state.movimientos=caja.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),tipo:x.tipo||'Entrada',concepto:x.concepto||x.categoria||'General',medio:x.medio_pago||x.medio||'Efectivo',monto:Number(x.monto)||0,descripcion:x.descripcion||'',cuit:x.cuit||'',origenTipo:x.origen_tipo||'',origenId:x.origen_id||'',clienteId:x.cliente_id||null}));
   if(resultados[1].status==='fulfilled')state.clientes=clientes.map(x=>({id:x.id,nombre:x.nombre||'',telefono:x.telefono||'',email:x.email||'',direccion:x.direccion||'',segmento:x.segmento||'Nuevo',notas:x.notas||'',documento:x.documento||'',condicionIva:x.condicion_iva||'',fecha:x.created_at||new Date().toISOString()}));
   if(resultados[2].status==='fulfilled')state.conceptos=conceptos.map(x=>({id:x.id,nombre:x.nombre||''})).filter(x=>x.nombre);
   if(resultados[3].status==='fulfilled')state.stock=stock.map(x=>({id:x.id,marca:x.marca||'',modelo:x.modelo||'',variante:[x.color,x.talle].filter(Boolean).join(' / '),nroSerie:x.nro_serie||'',precio:Number(x.precio)||0,costo:Number(x.costo)||0,cantidad:Number(x.stock)||0,estado:x.estado||'Disponible'}));
-  if(resultados[4].status==='fulfilled')state.ots=taller.map(x=>({id:x.id,fecha:x.fecha_ingreso||x.created_at||new Date().toISOString(),cliente:x.cliente||'',telefono:x.telefono||'',bici:x.bicicleta||'',trabajo:x.trabajo||'',presupuesto:Number(x.presupuesto)||0,sena:Number(x.sena)||0,pagado:Number(x.precio_pagado)||0,costo:Number(x.costo)||0,estado:x.estado||'En taller',montoCobrar:Number(x.precio_cobrado)||0,promesa:x.fecha_promesa||'',prioridad:x.prioridad||'Normal',fechaPrioridad:x.fecha_prioridad||''}));
+  if(resultados[4].status==='fulfilled')state.ots=taller.map(x=>({id:x.id,fecha:x.fecha_ingreso||x.created_at||new Date().toISOString(),cliente:x.cliente||'',telefono:x.telefono||'',bici:x.bicicleta||'',trabajo:x.trabajo||'',presupuesto:Number(x.presupuesto)||0,sena:Number(x.sena)||0,pagado:Number(x.precio_pagado)||0,costo:Number(x.costo)||0,estado:x.estado||'En taller',montoCobrar:Number(x.precio_cobrado)||0,promesa:x.fecha_promesa||'',prioridad:x.prioridad||'Normal',fechaPrioridad:x.fecha_prioridad||'',clienteId:x.cliente_id||null}));
   if(resultados[5].status==='fulfilled')state.ventas=ventas.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),cliente:x.cliente||'Consumidor final',telefono:x.telefono||'',producto:x.producto||'Venta general',total:Number(x.total)||0,costo:Number(x.costo)||0,ganancia:Number(x.ganancia ?? ((Number(x.total)||0)-(Number(x.costo)||0))),cantidad:Number(x.cantidad)||1,medio:x.medio||x.medio_pago||'Efectivo',notas:x.notas||'',clienteId:x.cliente_id||null,documento:x.cliente_documento||'',condicionIva:x.condicion_iva||'',direccion:x.cliente_direccion||'',email:x.cliente_email||'',nroSerie:x.nro_serie||'',marca:x.marca||'',modelo:x.modelo||'',sena:Number(x.sena)||0,pagado:Number(x.pagado)||0,montoCobrar:(x.precio_cobrado==null?null:Number(x.precio_cobrado)||0),facturaEstado:x.factura_estado||'',facturaTipo:x.factura_tipo||'',facturaNumero:x.factura_numero||'',facturaPuntoVenta:x.factura_punto_venta||'',cae:x.cae||'',caeVencimiento:x.cae_vencimiento||'',facturaFecha:x.factura_fecha||'',facturaCuenta:x.factura_cuenta||'',tipoVenta:x.tipoVenta||x.tipo_venta||''}));
   if(resultados[6].status==='fulfilled')state.compras=compras.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),proveedor:x.proveedor||'',producto:x.producto||'',cantidad:Number(x.cantidad)||0,costo:Number(x.costo)||0,total:Number(x.total)||0,medio:x.medio||x.medio_pago||'Otro'}));
   if(resultados[7].status==='fulfilled')state.proveedores=proveedores.map(x=>({id:x.id,nombre:x.nombre||'',contacto:x.contacto||'',fecha:x.created_at||new Date().toISOString()}));
   if(resultados[8].status==='fulfilled')state.arqueos=arqueos.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),teorico:Number(x.teorico)||0,real:Number(x.real)||0,diferencia:Number(x.diferencia)||0,obs:x.obs||x.observaciones||''}));
   if(resultados[9].status==='fulfilled')state.recordatorios=recordatorios.map(x=>({id:x.id,fecha:x.fecha||'',cliente:x.cliente||'',texto:x.texto||'',created_at:x.created_at||new Date().toISOString()}));
   if(resultados[10].status==='fulfilled')state.productos=productosServicios.map(x=>({id:x.id,nombre:x.nombre||'',precio:Number(x.precio)||0,costo:Number(x.costo)||0,tipo:x.tipo||'Producto/Accesorio'}));
-   if(resultados[11]?.status==='fulfilled')state.facturas=facturas.map(x=>({id:x.id,origenTipo:x.origen_tipo||'',origenId:x.origen_id||'',clienteId:x.cliente_id||null,cliente:x.cliente_nombre||'Consumidor final',telefono:x.cliente_telefono||'',email:x.cliente_email||'',direccion:x.cliente_direccion||'',docTipo:Number(x.doc_tipo)||0,documento:x.doc_nro||'',condicionIva:Number(x.condicion_iva_receptor)||5,concepto:Number(x.concepto)||1,servicioDesde:x.servicio_desde||'',servicioHasta:x.servicio_hasta||'',vencimientoPago:x.vencimiento_pago||'',descripcion:x.descripcion||'',importe:Number(x.importe)||0,cuenta:x.cuenta_arca||'abasto',ptoVta:Number(x.pto_vta)||4,tipo:Number(x.cbte_tipo)||11,numero:x.cbte_nro||'',cae:x.cae||'',caeVencimiento:x.cae_vencimiento||'',fecha:x.factura_fecha||x.created_at||'',estado:x.estado||'pendiente'}));
+   if(resultados[11]?.status==='fulfilled')state.facturas=facturas.map(x=>({id:x.id,origenTipo:x.origen_tipo||'',origenId:x.origen_id||'',clienteId:x.cliente_id||null,cliente:x.cliente_nombre||'Consumidor final',telefono:x.cliente_telefono||'',email:x.cliente_email||'',direccion:x.cliente_direccion||'',docTipo:Number(x.doc_tipo)||0,documento:x.doc_nro||'',condicionIva:Number(x.condicion_iva_receptor)||5,concepto:Number(x.concepto)||1,servicioDesde:x.servicio_desde||'',servicioHasta:x.servicio_hasta||'',vencimientoPago:x.vencimiento_pago||'',descripcion:x.descripcion||'',importe:Number(x.importe)||0,cuenta:x.cuenta_arca||'abasto2',ptoVta:Number(x.pto_vta)||4,tipo:Number(x.cbte_tipo)||11,numero:x.cbte_nro||'',cae:x.cae||'',caeVencimiento:x.cae_vencimiento||'',fecha:x.factura_fecha||x.created_at||'',estado:x.estado||'pendiente'}));
   if(resultados[12]?.status==='fulfilled')state.marcasModelos=marcasModelos.map(x=>({id:x.id,marca:x.marca||'',modelo:x.modelo||''}));
 
   refresh();
@@ -1153,15 +1159,19 @@ function cerrarModal(){document.getElementById('modal').classList.add('hidden');
 async function guardarOT(){
  const o={cliente:otCliente.value.trim(),telefono:otTelefono.value.trim(),bici:otBici.value.trim(),trabajo:otTrabajo.value.trim(),presupuesto:+otPresupuesto.value||0,sena:+otSena.value||0,costo:+otCosto.value||0,estado:otEstado.value,fechaIngreso:otFechaIngreso.value||fechaLocalHoy(),promesa:otFechaPromesa.value||null,prioridad:otPrioridad.value||'Normal',fechaPrioridad:otFechaPrioridad.value||null};
  if(!o.cliente||!o.bici||!o.trabajo)return alert('Completa cliente, bicicleta y trabajo.');
+ if(o.sena>o.presupuesto&&o.presupuesto>0)return alert('La seña no puede superar el presupuesto.');
  try{
-  const row=await dbInsert('taller',{cliente:o.cliente,telefono:o.telefono,bicicleta:o.bici,trabajo:o.trabajo,estado:o.estado,precio_pagado:0,fecha_ingreso:fechaHoraLocal(o.fechaIngreso),presupuesto:o.presupuesto,precio_cobrado:o.presupuesto,sena:o.sena,costo:o.costo,fecha_promesa:o.promesa});
-   if(o.prioridad!=='Normal'||o.fechaPrioridad){try{await dbUpdate('taller',row.id,{prioridad:o.prioridad,fecha_prioridad:o.fechaPrioridad})}catch(err){console.warn('Para guardar prioridades, agregá las columnas prioridad y fecha_prioridad en Supabase:',err.message)}}
-  try{
-   if(o.sena>0)await agregarMovInterno('Entrada','Reparaciones','Efectivo',o.sena,'Seña OT #'+row.id);
-  }catch(err){await dbDelete('taller',row.id).catch(()=>{});throw new Error('No se pudo registrar la seña en Caja; la OT fue revertida. '+err.message)}
-  if(o.telefono&&!state.clientes.some(x=>x.telefono===o.telefono)){
-   try{await dbInsert('clientes',{nombre:o.cliente,telefono:o.telefono,email:null,direccion:null,segmento:'Nuevo',notas:'Cliente de taller'})}catch(err){console.warn('La OT se guardó, pero no se pudo crear automáticamente el cliente:',err)}
+  let cliente=state.clientes.find(x=>o.telefono&&normalizarTelefono(x.telefono)===normalizarTelefono(o.telefono));
+  if(!cliente&&o.telefono){
+   try{cliente=await dbInsert('clientes',{nombre:o.cliente,telefono:o.telefono,email:null,direccion:null,segmento:'Nuevo',notas:'Cliente de taller'})}
+   catch(err){console.warn('No se pudo crear el cliente automáticamente:',err)}
   }
+  const clienteId=cliente?.id||null;
+  const row=await dbInsert('taller',{cliente:o.cliente,telefono:o.telefono,cliente_id:clienteId,bicicleta:o.bici,trabajo:o.trabajo,estado:o.estado,precio_pagado:0,fecha_ingreso:fechaHoraLocal(o.fechaIngreso),presupuesto:o.presupuesto,precio_cobrado:Math.max(0,o.presupuesto-o.sena),sena:o.sena,costo:o.costo,fecha_promesa:o.promesa});
+  if(o.prioridad!=='Normal'||o.fechaPrioridad){try{await dbUpdate('taller',row.id,{prioridad:o.prioridad,fecha_prioridad:o.fechaPrioridad})}catch(err){console.warn('No se guardó prioridad:',err.message)}}
+  try{
+   if(o.sena>0)await agregarMovInterno('Entrada','Reparaciones','Efectivo',o.sena,'Seña OT #'+row.id+' · ref:'+row.id,'taller',row.id,clienteId);
+  }catch(err){await dbDelete('taller',row.id).catch(()=>{});throw new Error('No se pudo registrar la seña en Caja; la OT fue revertida. '+err.message)}
   limpiarOT(); await cargarSupabase(true); alert('OT registrada y sincronizada.');
  }catch(e){console.error(e);alert('No se pudo guardar la OT en Supabase: '+e.message)}
 }
@@ -1175,11 +1185,8 @@ function renderOT(){
   const montoCobrar=(o.montoCobrar!=null?o.montoCobrar:saldo);
   const colorFila=o.estado==='Entregada'?'bg-green-200':'bg-red-200';
    const prioridadBadge=(o.prioridad&&o.prioridad!=='Normal')?`<div class="mt-1"><span class="px-2 py-0.5 rounded-full text-xs font-semibold ${o.prioridad==='Urgente'?'bg-rose-200 text-rose-800':'bg-amber-200 text-amber-800'}">⚡ ${esc(o.prioridad)}${o.fechaPrioridad?' · '+esc(o.fechaPrioridad):''}</span></div>`:'';
-   return `<tr class="border-b ${colorFila}"><td class="p-2 font-semibold">#${String(o.id).slice(-6)}${prioridadBadge}</td><td class="p-2 small whitespace-nowrap">${fecha(o.fecha)}</td><td class="p-2">${esc(o.cliente)}<br><span class="small">${esc(o.telefono)}</span></td><td class="p-2">${esc(o.bici)}<br><span class="small">${esc(o.trabajo)}</span></td><td class="p-2">
-  <div>${money(o.presupuesto)}</div>
-  ${(Number(o.pagado)||0)>0 ? (saldo<=0 ? `<div class="text-xs text-emerald-600 font-semibold mt-1">✓ Pagado: ${money(Number(o.pagado)||0)}</div>` : `<div class="text-xs text-amber-700 font-semibold mt-1">Pagado parcial: ${money(Number(o.pagado)||0)} · Debe: ${money(saldo)}</div>`) : ''}
-</td><td class="p-2">${money(o.sena)}</td><td class="p-2"><select onchange="cambiarOT('${o.id}',this.value)" class="border rounded p-1"><option ${o.estado==='En taller'?'selected':''}>En taller</option><option ${o.estado==='En proceso'?'selected':''}>En proceso</option><option ${o.estado==='Esperando repuestos'?'selected':''}>Esperando repuestos</option><option ${o.estado==='Lista'?'selected':''}>Lista</option><option ${o.estado==='Entregada'?'selected':''}>Entregada</option></select></td><td class="p-2 font-semibold">${money(saldo)}</td><td class="p-2"><input type="number" class="border rounded p-1 w-24 ${lista?'':'bg-slate-100 text-slate-400'}" ${lista?'':'disabled'} value="${montoCobrar}" title="${lista?'Monto a cobrar al entregar':'Se habilita cuando la bici está Lista'}" onchange="setMontoCobrar('${o.id}',this.value)"></td><td class="p-2 flex gap-1 flex-wrap"><button onclick="editarOT('${o.id}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs" title="Modificar datos">✏️</button><button onclick="otWhatsApp('${o.id}')" class="bg-green-600 text-white px-2 py-1 rounded text-xs" title="Enviar WhatsApp al cliente">💬</button><button onclick="reciboOT('${o.id}')" class="bg-purple-600 text-white px-2 py-1 rounded text-xs" title="Generar recibo y enviar WhatsApp">🧾</button><button onclick="cobrarOT('${o.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">Cobrar</button><button type="button" data-delete-table="taller" data-delete-id="${o.id}" class="text-rose-600 delete-btn" title="Eliminar">🗑️</button></td></tr>`
- }).join('')||'<tr><td colspan="10" class="p-4 text-center text-slate-400">Sin órdenes.</td></tr>';
+   return `<tr class="border-b ${colorFila}"><td class="p-2 font-semibold">#${String(o.id).slice(-6)}${prioridadBadge}</td><td class="p-2 small whitespace-nowrap">${fecha(o.fecha)}</td><td class="p-2">${esc(o.cliente)}<br><span class="small">${esc(o.telefono)}</span></td><td class="p-2">${esc(o.bici)}<br><span class="small">${esc(o.trabajo)}</span></td><td class="p-2 font-semibold">${money(o.presupuesto)}</td><td class="p-2">${money(o.sena)}</td><td class="p-2 font-semibold ${(Number(o.pagado)||0)>0?'text-emerald-700':'text-slate-400'}">${money(Number(o.pagado)||0)}</td><td class="p-2"><select onchange="cambiarOT('${o.id}',this.value)" class="border rounded p-1"><option ${o.estado==='En taller'?'selected':''}>En taller</option><option ${o.estado==='En proceso'?'selected':''}>En proceso</option><option ${o.estado==='Esperando repuestos'?'selected':''}>Esperando repuestos</option><option ${o.estado==='Lista'?'selected':''}>Lista</option><option ${o.estado==='Entregada'?'selected':''}>Entregada</option></select></td><td class="p-2 font-semibold">${money(saldo)}</td><td class="p-2"><input type="number" class="border rounded p-1 w-24 ${lista?'':'bg-slate-100 text-slate-400'}" ${lista?'':'disabled'} value="${montoCobrar}" title="${lista?'Monto a cobrar al entregar':'Se habilita cuando la bici está Lista'}" onchange="setMontoCobrar('${o.id}',this.value)"></td><td class="p-2 flex gap-1 flex-wrap"><button onclick="editarOT('${o.id}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs" title="Modificar datos">✏️</button><button onclick="otWhatsApp('${o.id}')" class="bg-green-600 text-white px-2 py-1 rounded text-xs" title="Enviar WhatsApp al cliente">💬</button><button onclick="reciboOT('${o.id}')" class="bg-purple-600 text-white px-2 py-1 rounded text-xs" title="Generar recibo y enviar WhatsApp">🧾</button><button onclick="cobrarOT('${o.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">Cobrar</button><button type="button" data-delete-table="taller" data-delete-id="${o.id}" class="text-rose-600 delete-btn" title="Eliminar">🗑️</button></td></tr>`
+ }).join('')||'<tr><td colspan="11" class="p-4 text-center text-slate-400">Sin órdenes.</td></tr>';
 }
 async function setMontoCobrar(i,v){
  const o=state.ots.find(x=>String(x.id)===String(i));if(!o)return;
@@ -1260,26 +1267,20 @@ async function cobrarOT(i){
  const o=state.ots.find(x=>String(x.id)===String(i));
  if(!o)return alert('No se encontró la orden de trabajo. Recargá la página e intentá nuevamente.');
  const saldo=Math.max(0,(Number(o.presupuesto)||0)-(Number(o.sena)||0)-(Number(o.pagado)||0));
+ if(saldo<=0)return alert('Esta reparación ya está pagada.');
  const lista=(o.estado==='Lista'||o.estado==='Entregada');
- const sugerido=lista&&Number(o.montoCobrar)>0?Number(o.montoCobrar):saldo;
- const entrada=prompt('Monto a cobrar',String(sugerido));
- if(entrada===null)return;
+ const sugerido=lista&&Number(o.montoCobrar)>0?Math.min(saldo,Number(o.montoCobrar)):saldo;
+ const entrada=prompt('Monto a cobrar',String(sugerido)); if(entrada===null)return;
  const m=Number(String(entrada).replace(',','.'));
- if(!Number.isFinite(m)||m<=0)return alert('Ingresá un monto válido mayor a 0.');
+ if(!Number.isFinite(m)||m<=0||m>saldo)return alert('Ingresá un monto válido, hasta '+money(saldo)+'.');
  try{
-  const nuevoPagado=(Number(o.pagado)||0)+m;
-  const nuevoSaldo=Math.max(0,saldo-m);
-  // Primero comprobamos que Supabase permita actualizar la OT. Así evitamos crear un movimiento de Caja si UPDATE está bloqueado por RLS.
-  // Solo pasa a Entregada cuando el saldo queda en 0. Un cobro parcial no cambia el estado.
-  const estadoNuevo=nuevoSaldo>0?(o.estado||'En taller'):'Entregada';
-  await dbUpdate('taller',o.id,{precio_pagado:nuevoPagado,estado:estadoNuevo,precio_cobrado:nuevoSaldo});
-  // "ref:<id completo>" permite vincular el cobro con la OT sin depender de los últimos 6 dígitos ni del nombre del concepto.
-  await agregarMovInterno('Entrada','Reparaciones','Efectivo',m,'Cobro OT #'+String(i).slice(-6)+' - Cliente: '+(o.cliente||'Sin nombre')+' · ref:'+o.id);
+  const {data,error}=await supabaseClient.rpc('crm_cobrar_ot_v1',{p_ot_id:String(o.id),p_monto:m,p_medio:'Efectivo'});
+  if(error)throw error;
+  if(!data?.ok)throw new Error(data?.error||'Supabase no confirmó el cobro.');
   await cargarSupabase(true);
-  alert(nuevoSaldo>0?('Cobro parcial registrado. Saldo pendiente: '+money(nuevoSaldo)+'. La orden sigue en estado "'+estadoNuevo+'".'):'Cobro registrado correctamente. Orden entregada.');
+  alert(Number(data.saldo)>0?'Cobro parcial registrado. Saldo pendiente: '+money(Number(data.saldo)):'Cobro registrado correctamente. Orden entregada.');
  }catch(e){
-  console.error(e);
-  alert('No se pudo registrar el cobro.\n\n'+e.message);
+  console.error(e);alert('No se pudo registrar el cobro. No se modificó ni Taller ni Caja.\n\n'+e.message);
   await cargarSupabase(true);
  }
 }
@@ -1304,8 +1305,11 @@ async function addConcepto(){
 }
 async function delConcepto(i){return eliminarRegistro('conceptos',i,'conceptos')}
 
-async function agregarMovInterno(tipo,concepto,medio,monto,descripcion){
- const payload={tipo, categoria:concepto, concepto, medio_pago:medio, monto:Number(monto), descripcion:descripcion||'', fecha:fechaHoraLocal()};
+async function agregarMovInterno(tipo,concepto,medio,monto,descripcion,origenTipo='',origenId=null,clienteId=null){
+ const payload={tipo,categoria:concepto,concepto,medio_pago:medio,monto:Number(monto),descripcion:descripcion||'',fecha:fechaHoraLocal()};
+ if(origenTipo)payload.origen_tipo=origenTipo;
+ if(origenId!=null)payload.origen_id=String(origenId);
+ if(clienteId!=null)payload.cliente_id=String(clienteId);
  return dbInsert('caja',payload);
 }
 async function guardarMovimiento(){
@@ -1430,7 +1434,7 @@ function datosClienteCRM(c){
  const doc=String(c.documento||'').replace(/\D/g,'');
  const tel=normalizarTelefono(c.telefono||'');
  const vs=state.ventas.filter(v=>(v.clienteId&&String(v.clienteId)===String(c.id))||(doc&&v.documento&&doc===String(v.documento).replace(/\D/g,''))||(tel&&v.telefono&&tel===normalizarTelefono(v.telefono)));
- const ots=state.ots.filter(o=>(tel&&o.telefono&&tel===normalizarTelefono(o.telefono)));
+ const ots=state.ots.filter(o=>(o.clienteId&&String(o.clienteId)===String(c.id))||(!o.clienteId&&tel&&o.telefono&&tel===normalizarTelefono(o.telefono)));
  const cobrosOT=cobrosCajaDeOT(ots);
  const fs=facturasClienteCRM(c);
  const esBici=v=>!!(v.marca||v.modelo||v.nroSerie||String(v.tipoVenta||'').toLowerCase()==='bicicleta');
@@ -1441,7 +1445,11 @@ function datosClienteCRM(c){
  // se usan solo para la fecha de última actividad; no cuentan como operaciones ni suman al total.
  const pagadoTaller=ots.reduce((a,o)=>a+(Number(o.sena)||0)+(Number(o.pagado)||0),0);
  const deudaTaller=ots.reduce((a,o)=>a+Math.max(0,(Number(o.presupuesto)||0)-(Number(o.sena)||0)-(Number(o.pagado)||0)),0);
- return {vs,ots,cobrosOT,fs,bicis,mostrador,pagado:pagadoVentas+pagadoTaller,deuda:deudaVentas+deudaTaller,deudaVentas,deudaTaller,totalFacturado:fs.reduce((a,f)=>a+(Number(f.importe)||0),0)};
+ const totalOperaciones=vs.reduce((a,v)=>a+(Number(v.total)||0),0)+ots.reduce((a,o)=>a+(Number(o.presupuesto)||0),0);
+ const totalBicis=bicis.reduce((a,v)=>a+(Number(v.total)||0),0);
+ const totalMostrador=mostrador.reduce((a,v)=>a+(Number(v.total)||0),0);
+ const totalTaller=ots.reduce((a,o)=>a+(Number(o.presupuesto)||0),0);
+ return {vs,ots,cobrosOT,fs,bicis,mostrador,pagado:pagadoVentas+pagadoTaller,deuda:deudaVentas+deudaTaller,deudaVentas,deudaTaller,totalOperaciones,totalBicis,totalMostrador,totalTaller,totalFacturado:fs.reduce((a,f)=>a+(Number(f.importe)||0),0)};
 }
 function badgesOrigenCliente(d){
  const b=[];
@@ -1454,7 +1462,7 @@ function renderCRM(){
  const q=(buscarCli?.value||'').toLowerCase();
  tablaCRM.innerHTML=state.clientes.filter(c=>(c.nombre+' '+c.telefono+' '+c.email+' '+(c.documento||'')).toLowerCase().includes(q)).map(c=>{
   const d=datosClienteCRM(c);
-  const cantidadOps=d.vs.length+d.ots.length;
+  const cantidadOps=d.vs.length+d.ots.length+d.cobrosOT.length;
   const _ts=f=>{const t=new Date(f).getTime();return Number.isFinite(t)?t:0};
   const last=[...d.vs,...d.ots,...d.cobrosOT,...d.fs].map(x=>x.fecha).filter(Boolean).reduce((a,f)=>(!a||_ts(f)>_ts(a))?f:a,null)||c.fecha;
   const facturada=d.fs.length>0;
@@ -1464,7 +1472,7 @@ function renderCRM(){
 function historialCliente(i){
  const c=state.clientes.find(x=>String(x.id)===String(i)); if(!c)return;
  const vs=state.ventas.filter(v=>(v.clienteId&&String(v.clienteId)===String(c.id))||(c.documento&&v.documento&&String(c.documento).replace(/\D/g,'')===String(v.documento).replace(/\D/g,''))||(c.telefono&&v.telefono&&normalizarTelefono(c.telefono)===normalizarTelefono(v.telefono)));
- const ots=state.ots.filter(o=>(c.telefono&&o.telefono&&normalizarTelefono(c.telefono)===normalizarTelefono(o.telefono)));
+ const ots=state.ots.filter(o=>(o.clienteId&&String(o.clienteId)===String(c.id))||(!o.clienteId&&c.telefono&&o.telefono&&normalizarTelefono(c.telefono)===normalizarTelefono(o.telefono)));
  const fs=facturasClienteCRM(c).sort((a,b)=>String(b.fecha||'').localeCompare(String(a.fecha||'')));
  const facturasCaja=fs.filter(f=>String(f.origenTipo||f.origen_tipo||'').toLowerCase()==='caja');
  const dcrm=datosClienteCRM(c);
@@ -1472,6 +1480,10 @@ function historialCliente(i){
  const bicicletas=dcrm.bicis;
  const saldoPendiente=dcrm.deuda;
  const totalFacturado=dcrm.totalFacturado;
+ const pendientes=[
+  ...vs.map(v=>{const deuda=Math.max(0,(Number(v.total)||0)-(Number(v.sena)||0)-(Number(v.pagado)||0));return deuda>0?{tipo:'🛒',detalle:descripcionVenta(v),monto:deuda}:null}).filter(Boolean),
+  ...ots.map(o=>{const deuda=Math.max(0,(Number(o.presupuesto)||0)-(Number(o.sena)||0)-(Number(o.pagado)||0));return deuda>0?{tipo:'🔧',detalle:'OT #'+String(o.id).slice(-6)+' · '+o.bici,monto:deuda}:null}).filter(Boolean)
+ ];
 
  let html=`<div class="space-y-4">
   <div class="bg-slate-50 p-3 rounded-lg text-sm">
@@ -1482,11 +1494,15 @@ function historialCliente(i){
    <p><b>Dirección:</b> ${esc(c.direccion||'No especificada')}</p>
    <p><b>Notas del cliente:</b> ${esc(c.notas||'Sin notas')}</p>
    <div class="grid grid-cols-2 gap-2 mt-3">
-    <div class="bg-white border rounded p-2"><b>🚲 Bicicletas compradas</b><br><span class="text-lg font-bold">${bicicletas.reduce((a,v)=>a+(Number(v.cantidad)||1),0)}</span></div>
-    <div class="bg-white border rounded p-2"><b>🛠️ Services / OT</b><br><span class="text-lg font-bold">${ots.length}</span></div>
+    <div class="bg-white border rounded p-2"><b>💼 Total operaciones</b><br><span class="text-lg font-bold">${money(dcrm.totalOperaciones)}</span></div>
+    <div class="bg-white border rounded p-2"><b>💰 Total pagado</b><br><span class="text-lg font-bold text-emerald-700">${money(totalGastado)}</span></div>
+    <div class="bg-white border rounded p-2"><b>🚲 Bicicletas</b><br><span class="text-lg font-bold">${money(dcrm.totalBicis)}</span></div>
+    <div class="bg-white border rounded p-2"><b>🛍️ Mostrador</b><br><span class="text-lg font-bold">${money(dcrm.totalMostrador)}</span></div>
+    <div class="bg-white border rounded p-2"><b>🔧 Taller</b><br><span class="text-lg font-bold">${money(dcrm.totalTaller)}</span></div>
     <div class="bg-white border rounded p-2"><b>🧾 Total facturado</b><br><span class="text-lg font-bold">${money(totalFacturado)}</span></div>
-    <div class="bg-white border rounded p-2"><b>📌 Saldo pendiente</b><br><span class="text-lg font-bold ${saldoPendiente>0?'text-red-600':'text-emerald-700'}">${money(saldoPendiente)}</span></div>
+    <div class="bg-white border rounded p-2 col-span-2"><b>📌 Saldo pendiente</b><br><span class="text-lg font-bold ${saldoPendiente>0?'text-red-600':'text-emerald-700'}">${money(saldoPendiente)}</span></div>
    </div>
+   ${pendientes.length?`<div class="mt-3 border rounded-lg p-3"><b class="text-sm">Saldos pendientes</b><div class="mt-2 space-y-1">${pendientes.map(p=>`<div class="flex justify-between gap-3 text-xs"><span>${p.tipo} ${esc(p.detalle)}</span><b class="text-red-600">${money(p.monto)}</b></div>`).join('')}</div></div>`:''}
    <div class="mt-3 flex gap-1 flex-wrap"><b class="mr-1">Tipo de cliente:</b>${badgesOrigenCliente(dcrm)}</div><p class="mt-2"><b>💰 Total pagado:</b> <span class="text-emerald-700 font-bold">${money(totalGastado)}</span></p>${saldoPendiente>0?`<p class="mt-1"><b>🔴 Resto pendiente a pagar:</b> <span class="text-red-600 font-bold">${money(saldoPendiente)}</span></p>`:''}
   </div>
   <div>
@@ -1533,7 +1549,7 @@ function whatsappFichaCliente(i){
  const c=state.clientes.find(x=>String(x.id)===String(i));if(!c)return;
  const tel=(c.telefono||'').replace(/\D/g,'');if(!tel)return alert('El cliente no tiene WhatsApp cargado.');
  const vs=state.ventas.filter(v=>(v.clienteId&&String(v.clienteId)===String(c.id))||(c.documento&&v.documento&&String(c.documento).replace(/\D/g,'')===String(v.documento).replace(/\D/g,''))||(c.telefono&&v.telefono&&normalizarTelefono(c.telefono)===normalizarTelefono(v.telefono)));
- const ots=state.ots.filter(o=>(c.telefono&&o.telefono&&normalizarTelefono(c.telefono)===normalizarTelefono(o.telefono)));
+ const ots=state.ots.filter(o=>(o.clienteId&&String(o.clienteId)===String(c.id))||(!o.clienteId&&c.telefono&&o.telefono&&normalizarTelefono(c.telefono)===normalizarTelefono(o.telefono)));
  const fs=facturasClienteCRM(c).filter(f=>String(f.origenTipo||f.origen_tipo||'').toLowerCase()==='caja');
  const totalVentas=vs.reduce((a,v)=>a+(v.total||0),0);
  const totalTaller=ots.reduce((a,o)=>a+(o.sena||0)+(o.pagado||0),0);
@@ -1810,7 +1826,7 @@ async function guardarVenta(){
    try{cliente=await dbInsert('clientes',{nombre:v.cliente,telefono:v.telefono,email:null,direccion:null,documento:documento||null,segmento:'Nuevo',notas:'Cliente de venta'});v.cliente_id=cliente.id}catch(err){console.warn('La venta continuará, pero no se pudo crear el cliente:',err)}
   }
   const venta=await dbInsert('ventas',v);
-  try{await agregarMovInterno('Entrada',conceptoCajaVenta(v),v.medio,pagoInicial,(saldo>0?'Seña ':'Venta ')+'#'+venta.id+' - '+detalleVentaCaja(v)+' - '+v.cliente)}
+  try{await agregarMovInterno('Entrada',conceptoCajaVenta(v),v.medio,pagoInicial,(saldo>0?'Seña ':'Venta ')+'#'+venta.id+' - '+detalleVentaCaja(v)+' - '+v.cliente+' · ref:'+venta.id,'venta',venta.id,v.cliente_id||null)}
   catch(err){await dbDelete('ventas',venta.id).catch(()=>{});throw new Error('No se pudo registrar la entrada en Caja; la venta fue revertida. '+err.message)}
   ['vCliente','vTelefono','vDocumento','vMarca','vModelo','vProducto','vCosto','vPrecio','vNotas','vNroSerie','vMargen','vMarcaManual','vModeloManual'].forEach(x=>document.getElementById(x).value='');vMarcaManual.classList.add('hidden');vModeloManual.classList.add('hidden');vSena.value=0;vCantidad.value=1;vProductoSelect.value='';actualizarResumenPagoVenta();
   await cargarSupabase(true);
@@ -1839,7 +1855,7 @@ function editarVenta(i){
   <div><label class="small text-slate-500">Medio de pago</label><select id="evMedio" class="border p-2 rounded w-full">${['Efectivo','Transferencia','Débito','Crédito','Mercado Pago','Otro'].map(x=>`<option ${x===v.medio?'selected':''}>${x}</option>`).join('')}</select></div>
   <div><label class="small text-slate-500">Notas</label><textarea id="evNotas" class="border p-2 rounded w-full" rows="2">${esc(v.notas)}</textarea></div>
   <button onclick="guardarEdVenta('${v.id}')" class="bg-blue-600 text-white px-4 py-2 rounded w-full font-semibold">💾 Guardar cambios</button>
-  <p class="small text-amber-700">Nota: modificar una venta actualiza este registro. El movimiento correspondiente en Caja debe ajustarse aparte desde la pestaña Caja si cambió el importe o el medio de pago.</p>
+  <p class="small text-amber-700">Importante: si esta venta ya tiene cobros, no reduzcas el total por debajo de lo ya pagado. Los nuevos cobros quedan vinculados automáticamente con Caja.</p>
  </div>`;
  abrirModal('✏️ Modificar venta', body);
 }
@@ -2530,11 +2546,46 @@ async function validarFacturaVentaARCA(i){
    box.textContent='No se pudo validar: '+(e?.message||String(e));
  }finally{btn.disabled=false;btn.textContent='🔎 Validar nuevamente';}
 }
+async function sincronizarClienteVentaConDatosFiscales(v){
+ const nombre=facNombre.value.trim()||'Consumidor final';
+ const telefono=facTel.value.trim();
+ const documento=String(facDoc.value||'').replace(/\D/g,'');
+ const email=facEmail.value.trim();
+ const direccion=facDireccion.value.trim();
+ const condicionIva=Number(facIva.value)||null;
+ if(!nombre||nombre.toLowerCase()==='consumidor final')return v.clienteId||null;
+
+ // Prioridad: cliente_id existente -> CUIT/DNI -> teléfono. Nunca se vincula sólo por nombre.
+ let cliente=(state.clientes||[]).find(c=>v.clienteId&&String(c.id)===String(v.clienteId));
+ if(!cliente&&documento)cliente=(state.clientes||[]).find(c=>String(c.documento||'').replace(/\D/g,'')===documento);
+ if(!cliente&&telefono){
+  const tel=normalizarTelefono(telefono);
+  cliente=(state.clientes||[]).find(c=>c.telefono&&normalizarTelefono(c.telefono)===tel);
+ }
+ const datosCliente={nombre,telefono:telefono||(cliente?.telefono||''),email:email||(cliente?.email||null),direccion:direccion||(cliente?.direccion||null),documento:documento||(cliente?.documento||null),condicion_iva:condicionIva||(cliente?.condicionIva||null),segmento:cliente?.segmento||'Nuevo',notas:cliente?.notas||'Datos fiscales actualizados desde ARCA'};
+ let clienteId=cliente?.id||null;
+ if(cliente){await dbUpdate('clientes',cliente.id,datosCliente)}
+ else{const creado=await dbInsert('clientes',datosCliente);clienteId=creado?.id||null}
+
+ // La venta adopta inmediatamente la razón social/nombre fiscal y queda ligada al CRM.
+ const datosVenta={cliente:nombre,telefono,cliente_documento:documento||null};
+ if(clienteId!=null)datosVenta.cliente_id=clienteId;
+ await dbUpdate('ventas',v.id,datosVenta);
+ return clienteId;
+}
+
 async function prepararFacturaVenta(i){
  const v=state.ventas.find(x=>String(x.id)===String(i));if(!v)return;if(facturaDeVenta(v.id))return alert('Esta venta ya tiene una factura asociada.');
  const guardar=document.getElementById('btnGuardarFacturaVenta');if(guardar?.disabled)return alert('Primero validá la factura con ARCA.');
- const cuenta=cuentaArcaSeleccionada('facCuenta'); const payload={origen_tipo:'venta',origen_id:String(v.id),cliente_id:v.clienteId?String(v.clienteId):null,cliente_nombre:facNombre.value.trim()||'Consumidor final',cliente_telefono:facTel.value.trim(),cliente_email:facEmail.value.trim()||null,cliente_direccion:facDireccion.value.trim()||null,doc_tipo:Number(facDocTipo.value),doc_nro:facDoc.value.trim(),condicion_iva_receptor:Number(facIva.value),cuenta_arca:cuenta.clave,pto_vta:cuenta.ptoVta,cbte_tipo:tipoCbteEsperado(cuenta.id,Number(facIva.value)),concepto:1,descripcion:facDescripcion.value.trim(),importe:Number(v.total)||0,moneda:'PES',cotizacion:1,estado:'pendiente'};
- try{await dbInsert('facturas',payload);cerrarModal();await cargarSupabase(true);alert('Factura validada y guardada como PENDIENTE. Todavía no se emitió nada en ARCA.')}catch(e){alert('No se pudo guardar la factura pendiente: '+e.message)}
+ try{
+  // Antes de crear la factura pendiente, sincroniza la razón social/datos fiscales con CRM y Venta.
+  const clienteId=await sincronizarClienteVentaConDatosFiscales(v);
+  const cuenta=cuentaArcaSeleccionada('facCuenta');
+  const payload={origen_tipo:'venta',origen_id:String(v.id),cliente_id:clienteId!=null?clienteId:null,cliente_nombre:facNombre.value.trim()||'Consumidor final',cliente_telefono:facTel.value.trim(),cliente_email:facEmail.value.trim()||null,cliente_direccion:facDireccion.value.trim()||null,doc_tipo:Number(facDocTipo.value),doc_nro:facDoc.value.trim(),condicion_iva_receptor:Number(facIva.value),cuenta_arca:cuenta.clave,pto_vta:cuenta.ptoVta,cbte_tipo:tipoCbteEsperado(cuenta.id,Number(facIva.value)),concepto:1,descripcion:facDescripcion.value.trim(),importe:Number(v.total)||0,moneda:'PES',cotizacion:1,estado:'pendiente'};
+  await dbInsert('facturas',payload);
+  cerrarModal();await cargarSupabase(true);
+  alert('Datos fiscales sincronizados con CRM y Venta. Factura guardada como PENDIENTE; todavía no se emitió nada en ARCA.');
+ }catch(e){console.error(e);alert('No se pudo sincronizar el cliente o guardar la factura pendiente: '+e.message)}
 }
 function mostrarFacturaEmitida(i){const f=facturaDeVenta(i);if(f)return mostrarFacturaGenerica(f);facturarYEnviar(i)}
 function renderVentas(){
@@ -2564,12 +2615,11 @@ async function cobrarVenta(i){
  const entrada=prompt('Monto a cobrar',String(sugerido));if(entrada===null)return;
  const monto=Number(String(entrada).replace(',','.'));if(!Number.isFinite(monto)||monto<=0||monto>saldo)return alert('Ingresá un monto válido, hasta '+money(saldo)+'.');
  try{
-  const nuevoPagado=(Number(v.pagado)||0)+monto;
-  const nuevoSaldo=Math.max(0,saldo-monto);
-  await dbUpdate('ventas',i,{pagado:nuevoPagado,precio_cobrado:nuevoSaldo});
-  await agregarMovInterno('Entrada',conceptoCajaVenta(v),v.medio,monto,'Cobro venta #'+v.id+' - '+detalleVentaCaja(v)+' - Cliente: '+v.cliente);
-  await cargarSupabase(true);alert(nuevoSaldo>0?'Cobro registrado. Saldo pendiente: '+money(nuevoSaldo):'Venta cobrada completamente.');
- }catch(e){console.error(e);alert('No se pudo registrar el cobro: '+e.message);await cargarSupabase(true)}
+  const {data,error}=await supabaseClient.rpc('crm_cobrar_venta_v1',{p_venta_id:String(v.id),p_monto:monto});
+  if(error)throw error;
+  if(!data?.ok)throw new Error(data?.error||'Supabase no confirmó el cobro.');
+  await cargarSupabase(true);alert(Number(data.saldo)>0?'Cobro registrado. Saldo pendiente: '+money(Number(data.saldo)):'Venta cobrada completamente.');
+ }catch(e){console.error(e);alert('No se pudo registrar el cobro. No se modificó ni Ventas ni Caja.\n\n'+e.message);await cargarSupabase(true)}
 }
 
 /* --- COMPRAS & PROVEEDORES --- */
