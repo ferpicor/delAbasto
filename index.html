@@ -201,7 +201,24 @@ input,select,textarea{min-width:0}
     });
   }
 
-  document.addEventListener('DOMContentLoaded',()=>{
+  
+function aplicarAccesoDirectoMovil(){
+ const q=new URLSearchParams(location.search), acceso=(q.get('acceso')||'').toLowerCase();
+ if(!acceso)return;
+ const abrir=()=>{
+  if(acceso==='venta'||acceso==='ventas'){
+   showSection('ventas');
+   setTimeout(()=>{const b=[...document.querySelectorAll('#ventas button')].find(x=>/nueva venta/i.test(x.textContent||''));if(b)b.click()},250);
+  }else if(acceso==='compras'||acceso==='lista-compras'){
+   showSection('inicio');
+   setTimeout(()=>document.getElementById('comprasChecklistPanel')?.scrollIntoView({behavior:'smooth',block:'start'}),250);
+  }
+ };
+ setTimeout(abrir,700);
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+ aplicarAccesoDirectoMovil();
     prepararTablasMoviles();
     const obs=new MutationObserver(()=>prepararTablasMoviles());
     document.querySelectorAll('table tbody').forEach(tb=>obs.observe(tb,{childList:true}));
@@ -871,6 +888,59 @@ html body .recordatorio-texto{
 }
 </style>
 
+
+<style id="dashboard-listas-v68">
+html body .lista-operativa-panel{min-height:210px}
+html body .item-operativo{background:rgba(255,255,255,.025);border-color:var(--line-2);color:var(--tx);transition:.15s}
+html body .item-operativo:hover{background:rgba(56,189,248,.065);border-color:rgba(56,189,248,.28);filter:none!important}
+html body .item-operativo .small{color:var(--acc-tx)}
+</style>
+
+
+<style id="compras-checklist-mobile-v69">
+.compras-checklist{border-top:1px solid var(--line-2)}
+.compra-check-row{display:grid;grid-template-columns:28px 1fr;align-items:center;min-height:46px;border-bottom:1px solid var(--line-2);padding:4px 2px}
+.compra-check{width:19px;height:19px;accent-color:#34d399;cursor:pointer}
+.compra-check-text{background:transparent!important;border:0!important;color:var(--tx)!important;text-align:left!important;padding:8px 4px!important;min-height:0!important;font-size:.9rem!important;width:100%;filter:none!important}
+.compra-check-text:hover{text-decoration:underline}
+.compras-checklist-footer{border-top:1px solid var(--line-2)}
+@media(max-width:700px){
+ body:has(#comprasChecklistPanel) #comprasChecklistPanel{scroll-margin-top:12px}
+ #comprasChecklistPanel{padding:16px!important}
+ .compra-check-row{min-height:52px;grid-template-columns:34px 1fr}
+ .compra-check{width:22px;height:22px}
+ .compra-check-text{font-size:1rem!important;padding:10px 4px!important}
+}
+</style>
+
+
+<style id="compras-fecha-v70">
+.compra-check-text{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:14px!important}
+.compra-item-contenido{min-width:0;overflow-wrap:anywhere}
+.compra-item-fecha{flex:0 0 auto;font-family:var(--mono);font-size:.68rem;color:var(--tx-3);white-space:nowrap}
+@media(max-width:700px){
+ .compra-check-text{align-items:flex-start!important;flex-direction:column!important;gap:3px!important}
+ .compra-item-fecha{font-size:.70rem}
+}
+</style>
+
+
+<style id="compras-editor-alto-v71">
+.item-operativo-editor .item-operativo-textarea{
+  min-height:320px!important;
+  max-height:60vh!important;
+  resize:vertical!important;
+  line-height:1.55!important;
+  font-size:1rem!important;
+}
+@media(max-width:700px){
+ .item-operativo-editor .item-operativo-textarea{
+   min-height:42vh!important;
+   max-height:58vh!important;
+ }
+}
+</style>
+
 </head>
 <body class="font-sans text-slate-800">
 <div id="appSplash"><img class="splash-logo" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-nova-logo alt="Bicicletería del Abasto"></div>
@@ -921,6 +991,20 @@ html body .recordatorio-texto{
  <div class="grid lg:grid-cols-3 gap-4">
   <div class="card p-4"><h3 class="font-semibold mb-3">⚠️ Alertas</h3><div id="alertas" class="space-y-2 text-sm"></div></div>
   <div class="card p-4 lg:col-span-2"><h3 class="font-semibold mb-3">📈 Evolución de caja — últimos 14 días</h3><div class="h-64"><canvas id="chartDashboard"></canvas></div></div>
+ </div>
+ <div class="grid lg:grid-cols-2 gap-4">
+  <div class="card p-5 lista-operativa-panel">
+    <div class="flex justify-between items-center mb-3"><div><h3 class="font-semibold text-lg">📌 Pendientes</h3><p class="small mt-1">Temas importantes que quedan por resolver.</p></div><button onclick="nuevoItemOperativo('pendiente')" class="bg-blue-600 px-3 py-2 rounded-lg text-sm">➕ Agregar</button></div>
+    <div id="pendientesDash" class="space-y-2"></div>
+  </div>
+  <div id="comprasChecklistPanel" class="card p-5 lista-operativa-panel">
+    <div class="flex justify-between items-start gap-3 mb-3"><div><h3 class="font-semibold text-lg">🛒 Compras</h3><p class="small mt-1">Repuestos · Insumos · Faltantes</p></div><button onclick="nuevoItemOperativo('compra')" class="bg-emerald-600 px-3 py-2 rounded-lg text-sm shrink-0">＋ Agregar</button></div>
+    <div id="comprasDash" class="compras-checklist"></div>
+    <div class="compras-checklist-footer mt-3 pt-3 flex justify-between items-center gap-2">
+      <label class="flex items-center gap-2 text-sm cursor-pointer"><input id="comprasSelectTodo" type="checkbox" onchange="seleccionarTodasCompras(this.checked)"> Seleccionar todo</label>
+      <button id="eliminarComprasSeleccionadasBtn" onclick="eliminarComprasSeleccionadas()" class="text-rose-400 text-sm px-2 py-1 rounded hidden">🗑 Eliminar seleccionados</button>
+    </div>
+  </div>
  </div>
  <div id="recordatoriosPanelDash" class="card p-5 recordatorios-panel-destacado"><div class="flex justify-between items-center mb-4"><div><h3 class="font-semibold text-lg">🔔 Recordatorios próximos</h3><p class="small mt-1">Seguimientos y tareas próximas con clientes.</p></div><button onclick="abrirRecordatorio()" class="bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm">➕ Recordatorio</button></div><div id="recordatoriosDash" class="grid md:grid-cols-2 gap-3"></div></div>
 </section>
@@ -1329,7 +1413,7 @@ async function cargarSupabase(silencioso=false){
   if(resultados[2].status==='fulfilled')state.conceptos=conceptos.map(x=>({id:x.id,nombre:x.nombre||''})).filter(x=>x.nombre&&!['venta','ventas','reparaciones','reparación','reparacion','venta bicicletas'].includes(x.nombre.trim().toLowerCase()));
   if(resultados[3].status==='fulfilled')state.stock=stock.map(x=>({id:x.id,marca:x.marca||'',modelo:x.modelo||'',variante:[x.color,x.talle].filter(Boolean).join(' / '),nroSerie:x.nro_serie||'',precio:Number(x.precio)||0,costo:Number(x.costo)||0,cantidad:Number(x.stock)||0,estado:x.estado||'Disponible'}));
   if(resultados[4].status==='fulfilled')state.ots=taller.map(x=>{const cli=state.clientes.find(c=>String(c.id)===String(x.cliente_id));return ({id:x.id,fecha:x.fecha_ingreso||x.created_at||new Date().toISOString(),cliente:x.cliente||'',telefono:x.telefono||'',email:cli?.email||'',bici:x.bicicleta||'',trabajo:x.trabajo||'',presupuesto:Number(x.presupuesto)||0,sena:Number(x.sena)||0,pagado:Number(x.precio_pagado)||0,costo:Number(x.costo)||0,estado:x.estado||'En taller',montoCobrar:Number(x.precio_cobrado)||0,promesa:x.fecha_promesa||'',prioridad:x.prioridad||'Normal',fechaPrioridad:x.fecha_prioridad||'',clienteId:x.cliente_id||null})});
-  if(resultados[5].status==='fulfilled')state.ventas=ventas.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),cliente:x.cliente||'Consumidor final',telefono:x.telefono||'',producto:x.producto||'Venta general',total:Number(x.total)||0,costo:Number(x.costo)||0,ganancia:Number(x.ganancia ?? ((Number(x.total)||0)-(Number(x.costo)||0))),cantidad:Number(x.cantidad)||1,medio:x.medio||x.medio_pago||'Efectivo',notas:x.notas||'',clienteId:x.cliente_id||null,documento:x.cliente_documento||'',condicionIva:x.condicion_iva||'',direccion:x.cliente_direccion||'',email:x.cliente_email||'',nroSerie:x.nro_serie||'',marca:x.marca||'',modelo:x.modelo||'',sena:Number(x.sena)||0,pagado:Number(x.pagado)||0,montoCobrar:(x.precio_cobrado==null?null:Number(x.precio_cobrado)||0),facturaEstado:x.factura_estado||'',facturaTipo:x.factura_tipo||'',facturaNumero:x.factura_numero||'',facturaPuntoVenta:x.factura_punto_venta||'',cae:x.cae||'',caeVencimiento:x.cae_vencimiento||'',facturaFecha:x.factura_fecha||'',facturaCuenta:x.factura_cuenta||'',tipoVenta:x.tipoVenta||x.tipo_venta||''}));
+  if(resultados[5].status==='fulfilled')state.ventas=ventas.map(x=>{const cli=state.clientes.find(c=>String(c.id)===String(x.cliente_id));return ({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),cliente:x.cliente||'Consumidor final',telefono:x.telefono||cli?.telefono||'',producto:x.producto||'Venta general',total:Number(x.total)||0,costo:Number(x.costo)||0,ganancia:Number(x.ganancia ?? ((Number(x.total)||0)-(Number(x.costo)||0))),cantidad:Number(x.cantidad)||1,medio:x.medio||x.medio_pago||'Efectivo',notas:x.notas||'',clienteId:x.cliente_id||null,documento:x.cliente_documento||'',condicionIva:x.condicion_iva||'',nroSerie:x.nro_serie||'',marca:x.marca||'',modelo:x.modelo||'',sena:Number(x.sena)||0,pagado:Number(x.pagado)||0,montoCobrar:(x.precio_cobrado==null?null:Number(x.precio_cobrado)||0),facturaEstado:x.factura_estado||'',facturaTipo:x.factura_tipo||'',facturaNumero:x.factura_numero||'',facturaPuntoVenta:x.factura_punto_venta||'',cae:x.cae||'',caeVencimiento:x.cae_vencimiento||'',facturaFecha:x.factura_fecha||'',facturaCuenta:x.factura_cuenta||'',tipoVenta:x.tipoVenta||x.tipo_venta||'',email:x.cliente_email||cli?.email||'',direccion:x.cliente_direccion||cli?.direccion||''})});
   if(resultados[6].status==='fulfilled')state.compras=compras.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),proveedor:x.proveedor||'',producto:x.producto||'',cantidad:Number(x.cantidad)||0,costo:Number(x.costo)||0,total:Number(x.total)||0,medio:x.medio||x.medio_pago||'Otro'}));
   if(resultados[7].status==='fulfilled')state.proveedores=proveedores.map(x=>({id:x.id,nombre:x.nombre||'',contacto:x.contacto||'',fecha:x.created_at||new Date().toISOString()}));
   if(resultados[8].status==='fulfilled')state.arqueos=arqueos.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),teorico:Number(x.teorico)||0,real:Number(x.real)||0,diferencia:Number(x.diferencia)||0,obs:x.obs||x.observaciones||''}));
@@ -1729,7 +1813,11 @@ function facturasClienteCRM(c){
 }
 function descripcionVenta(v){
  const mm=[v?.marca,v?.modelo].map(x=>String(x||'').trim()).filter(Boolean).join(' ');
- return mm || String(v?.producto||'Venta general');
+ if(mm)return 'Bicicleta '+mm;
+ const prod=String(v?.producto||'').trim();
+ if(prod && prod.toLowerCase()!=='venta general')return prod;
+ if(String(v?.tipoVenta||'').toLowerCase()==='bicicleta'||v?.nroSerie)return 'Bicicleta';
+ return 'Venta';
 }
 function detalleVentaCaja(v){
  const d=descripcionVenta(v);
@@ -3136,7 +3224,7 @@ async function prepararFacturaVenta(i){
   // Antes de crear la factura pendiente, sincroniza la razón social/datos fiscales con CRM y Venta.
   const clienteId=await sincronizarClienteVentaConDatosFiscales(v);
   const cuenta=cuentaArcaSeleccionada('facCuenta');
-  const payload={origen_tipo:'venta',origen_id:String(v.id),cliente_id:clienteId!=null?clienteId:null,cliente_nombre:facNombre.value.trim()||'Consumidor final',cliente_telefono:facTel.value.trim(),cliente_direccion:facDireccion.value.trim()||null,doc_tipo:Number(facDocTipo.value),doc_nro:facDoc.value.trim(),condicion_iva_receptor:Number(facIva.value),cuenta_arca:cuenta.clave,pto_vta:cuenta.ptoVta,cbte_tipo:tipoCbteEsperado(cuenta.id,Number(facIva.value)),concepto:1,descripcion:facDescripcion.value.trim(),importe:Number(v.total)||0,moneda:'PES',cotizacion:1,estado:'pendiente'};
+  const payload={origen_tipo:'venta',origen_id:String(v.id),cliente_id:clienteId!=null?clienteId:null,cliente_nombre:facNombre.value.trim()||'Consumidor final',cliente_telefono:facTel.value.trim(),cliente_email:facEmail.value.trim()||null,cliente_direccion:facDireccion.value.trim()||null,doc_tipo:Number(facDocTipo.value),doc_nro:facDoc.value.trim(),condicion_iva_receptor:Number(facIva.value),cuenta_arca:cuenta.clave,pto_vta:cuenta.ptoVta,cbte_tipo:tipoCbteEsperado(cuenta.id,Number(facIva.value)),concepto:1,descripcion:facDescripcion.value.trim(),importe:Number(v.total)||0,moneda:'PES',cotizacion:1,estado:'pendiente'};
   await dbInsert('facturas',payload);
   cerrarModal();await cargarSupabase(true);
   alert('Datos fiscales sincronizados con CRM y Venta. Factura guardada como PENDIENTE; todavía no se emitió nada en ARCA.');
@@ -3435,6 +3523,55 @@ function renderCharts(ms,flujo,conceptos){
  const modo=document.getElementById('rTortaModo')?.value||'conceptos';const vals=cats.map(k=>modo==='entradas'?conceptos[k].e:modo==='salidas'?conceptos[k].s:conceptos[k].e+conceptos[k].s);const usados=cats.map((k,i)=>[k,vals[i]]).filter(x=>x[1]>0);if(chartTortaConceptos)chartTortaConceptos.destroy();const ct=document.getElementById('chartTortaConceptos');if(ct)chartTortaConceptos=new Chart(ct,{type:'pie',data:{labels:usados.map(x=>x[0]),datasets:[{label:'Monto',data:usados.map(x=>x[1])}]},options:{responsive:true,maintainAspectRatio:false}});
 }
 
+
+const LISTA_PENDIENTE='__PENDIENTE__', LISTA_COMPRA='__COMPRA__';
+function esItemOperativo(r){return r?.cliente===LISTA_PENDIENTE||r?.cliente===LISTA_COMPRA}
+function nuevoItemOperativo(tipo){
+ const titulo=tipo==='compra'?'Agregar compra':'Agregar pendiente';
+ abrirModal((tipo==='compra'?'🛒 ':'📌 ')+titulo,`<div class="space-y-3"><div><label class="small">Detalle</label><textarea id="itemOperativoTexto" rows="3" class="border p-2 rounded w-full" placeholder="${tipo==='compra'?'Ej: cámaras 29, cables de freno...':'Ej: llamar proveedor, revisar reclamo...'}"></textarea></div><button onclick="guardarItemOperativo('${tipo}')" class="bg-blue-600 px-4 py-2 rounded w-full font-semibold">Guardar</button></div>`);
+}
+async function guardarItemOperativo(tipo){
+ const texto=document.getElementById('itemOperativoTexto')?.value.trim();if(!texto)return alert('Escribí el detalle.');
+ try{await dbInsert('recordatorios',{fecha:fechaLocalHoy(),cliente:tipo==='compra'?LISTA_COMPRA:LISTA_PENDIENTE,texto});cerrarModal();await cargarSupabase(true)}
+ catch(e){alert('No se pudo guardar: '+e.message)}
+}
+function editarItemOperativo(id){
+ const r=state.recordatorios.find(x=>String(x.id)===String(id));if(!r)return;
+ abrirModal('✏️ Modificar item',`<div class="space-y-3 item-operativo-editor"><textarea id="itemOperativoEdit" rows="12" class="border p-3 rounded w-full item-operativo-textarea">${esc(r.texto)}</textarea><div class="grid grid-cols-2 gap-2"><button onclick="guardarEdicionItemOperativo('${r.id}')" class="bg-blue-600 px-4 py-2 rounded font-semibold">Guardar cambios</button><button onclick="eliminarItemOperativo('${r.id}')" class="bg-rose-700 px-4 py-2 rounded font-semibold">🗑️ Eliminar</button></div></div>`);
+}
+async function guardarEdicionItemOperativo(id){
+ const texto=document.getElementById('itemOperativoEdit')?.value.trim();if(!texto)return alert('El detalle no puede quedar vacío.');
+ try{await dbUpdate('recordatorios',id,{texto});cerrarModal();await cargarSupabase(true)}catch(e){alert('No se pudo modificar: '+e.message)}
+}
+async function eliminarItemOperativo(id){
+ if(!confirm('¿Eliminar este item de la lista?'))return;
+ try{await dbDelete('recordatorios',id);cerrarModal();await cargarSupabase(true)}catch(e){alert('No se pudo eliminar: '+e.message)}
+}
+function renderListaOperativa(tipo,contenedorId){
+ const tag=tipo==='compra'?LISTA_COMPRA:LISTA_PENDIENTE, el=document.getElementById(contenedorId);if(!el)return;
+ const items=state.recordatorios.filter(r=>r.cliente===tag).slice().sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')));
+ if(tipo==='compra'){
+  el.innerHTML=items.map(r=>`<div class="compra-check-row"><input type="checkbox" class="compra-check" data-id="${r.id}" onchange="actualizarComprasSeleccionadas()"><button type="button" onclick="editarItemOperativo('${r.id}')" class="compra-check-text" title="Modificar o eliminar"><span class="compra-item-contenido">${esc(r.texto)}</span><span class="compra-item-fecha">📅 ${esc(r.fecha||'Sin fecha')}</span></button></div>`).join('')||`<div class="text-slate-400 text-sm p-2">No hay compras pendientes.</div>`;
+  actualizarComprasSeleccionadas(); return;
+ }
+ el.innerHTML=items.map(r=>`<button type="button" onclick="editarItemOperativo('${r.id}')" class="item-operativo w-full text-left border rounded-lg p-3"><div class="flex justify-between gap-3 items-center"><span>${esc(r.texto)}</span><span class="small shrink-0">✏️ Editar</span></div></button>`).join('')||`<div class="text-slate-400 text-sm p-2">No hay pendientes cargados.</div>`;
+}
+function comprasChecks(){return [...document.querySelectorAll('#comprasDash .compra-check')]}
+function actualizarComprasSeleccionadas(){
+ const checks=comprasChecks(), marcadas=checks.filter(x=>x.checked);
+ const all=document.getElementById('comprasSelectTodo'), btn=document.getElementById('eliminarComprasSeleccionadasBtn');
+ if(all){all.checked=checks.length>0&&marcadas.length===checks.length;all.indeterminate=marcadas.length>0&&marcadas.length<checks.length}
+ if(btn)btn.classList.toggle('hidden',marcadas.length===0);
+}
+function seleccionarTodasCompras(v){comprasChecks().forEach(x=>x.checked=v);actualizarComprasSeleccionadas()}
+async function eliminarComprasSeleccionadas(){
+ const ids=comprasChecks().filter(x=>x.checked).map(x=>x.dataset.id);if(!ids.length)return;
+ if(!confirm(`¿Eliminar ${ids.length} item${ids.length===1?'':'s'} de la lista de compras?`))return;
+ try{for(const id of ids)await dbDelete('recordatorios',id);await cargarSupabase(true)}
+ catch(e){alert('No se pudieron eliminar todos los items: '+e.message)}
+}
+
+
 function dashboard(){
  const vs=filtrarVentas(),ms=filtrarMovPeriodo(),en=ms.filter(m=>m.tipo==='Entrada').reduce((s,m)=>s+m.monto,0),sa=ms.filter(m=>m.tipo==='Salida').reduce((s,m)=>s+m.monto,0);
  dVentas.textContent=money(vs.reduce((s,v)=>s+v.total,0));dCaja.textContent=money(en-sa);const elPend=document.getElementById('dTallerPendientes'),elEnt=document.getElementById('dTallerEntregadas'),elTot=document.getElementById('dTallerTotal'),elOld=document.getElementById('dTaller');
@@ -3444,7 +3581,8 @@ if(elTot)elTot.textContent=state.ots.length;
 if(elOld)elOld.textContent=state.ots.filter(o=>o.estado!=='Entregada').length;dClientes.textContent=state.clientes.length;
  const low=state.stock.filter(s=>s.cantidad<=2);
  alertas.innerHTML=(low.length?`<div class="bg-amber-50 p-2 rounded">📦 ${low.length} productos con stock bajo.</div>`:'')+(state.ots.filter(o=>o.estado==='Esperando repuestos').length?`<div class="bg-rose-50 p-2 rounded">🔧 Hay OT esperando repuestos.</div>`:'')+(state.arqueos.length&&Math.abs(state.arqueos[0].diferencia)>0?`<div class="bg-rose-50 p-2 rounded">💰 Último arqueo con diferencia.</div>`:'')||'<div class="text-slate-400">Sin alertas críticas.</div>';
- recordatoriosDash.innerHTML=state.recordatorios.slice().sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))).slice(0,10).map(r=>`<div class="recordatorio-dash-item border rounded-lg p-4"><div class="flex justify-between gap-3 items-start"><div class="min-w-0"><button type="button" onclick="abrirClienteRecordatorio('${r.id}')" class="recordatorio-cliente-link font-semibold text-left" title="Abrir ficha del cliente">👤 ${esc(r.cliente||'General')}</button><div class="recordatorio-fecha mt-1">📅 ${esc(r.fecha||'Sin fecha')}</div></div><div class="flex gap-2 shrink-0"><button onclick="whatsappRecordatorioService('${r.id}')" class="text-emerald-700 text-sm" title="Preparar WhatsApp">💬</button><button type="button" data-delete-table="recordatorios" data-delete-id="${r.id}" class="text-rose-600 text-sm delete-btn" title="Eliminar recordatorio">🗑️</button></div></div><div class="recordatorio-texto mt-3">${esc(r.texto)}</div></div>`).join('')||'<div class="text-slate-400">No hay recordatorios.</div>';
+ renderListaOperativa('pendiente','pendientesDash');renderListaOperativa('compra','comprasDash');
+ recordatoriosDash.innerHTML=state.recordatorios.filter(r=>!esItemOperativo(r)).slice().sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))).slice(0,10).map(r=>`<div class="recordatorio-dash-item border rounded-lg p-4"><div class="flex justify-between gap-3 items-start"><div class="min-w-0"><button type="button" onclick="abrirClienteRecordatorio('${r.id}')" class="recordatorio-cliente-link font-semibold text-left" title="Abrir ficha del cliente">👤 ${esc(r.cliente||'General')}</button><div class="recordatorio-fecha mt-1">📅 ${esc(r.fecha||'Sin fecha')}</div></div><div class="flex gap-2 shrink-0"><button onclick="whatsappRecordatorioService('${r.id}')" class="text-emerald-700 text-sm" title="Preparar WhatsApp">💬</button><button type="button" data-delete-table="recordatorios" data-delete-id="${r.id}" class="text-rose-600 text-sm delete-btn" title="Eliminar recordatorio">🗑️</button></div></div><div class="recordatorio-texto mt-3">${esc(r.texto)}</div></div>`).join('')||'<div class="text-slate-400">No hay recordatorios.</div>';
  
  let days={}; for(let i=13;i>=0;i--){let d=new Date();d.setDate(d.getDate()-i);days[isoDate(d)]=0}
  ms.forEach(m=>{const d=isoDate(m.fecha);if(days[d]!==undefined)days[d]+=m.tipo==='Entrada'?m.monto:-m.monto});
