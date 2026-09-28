@@ -955,7 +955,7 @@ html body .recordatorio-texto{
    <input id="vTelefono" class="border p-2 rounded-lg" placeholder="WhatsApp">
    <input id="vEmail" type="email" class="border p-2 rounded-lg" placeholder="Email">
    <input id="vDocumento" class="border p-2 rounded-lg" placeholder="CUIT / CUIL / DNI (opcional)">
-   <input id="vNroSerie" class="border p-2 rounded-lg" placeholder="Número de serie (opcional)"><select id="vStockOrigen" class="border p-2 rounded-lg" title="Stock a descontar"><option value="">— No descontar stock / automático —</option></select>
+   <input id="vNroSerie" class="border p-2 rounded-lg" placeholder="Número de serie (opcional)"><select id="vStockOrigen" onchange="elegirStockVenta()" class="border p-2 rounded-lg" title="Stock a descontar"><option value="">— No descontar stock / automático —</option></select>
    <div><label class="small text-slate-500 block mb-1">Marca de bicicleta</label><div class="flex gap-1"><select id="vMarca" onchange="cambiarMarcaVenta()" class="border p-2 rounded-lg flex-1"><option value="">— Elegir marca —</option></select><button type="button" onclick="abrirGestionMarcasModelos()" title="Gestionar marcas y modelos" class="bg-slate-700 text-white px-3 rounded-lg">⚙️</button></div><input id="vMarcaManual" class="hidden border p-2 rounded-lg w-full mt-1" placeholder="Escribir marca manualmente"></div>
    <div><label class="small text-slate-500 block mb-1">Modelo de bicicleta</label><select id="vModelo" onchange="cambiarModeloVenta()" class="border p-2 rounded-lg w-full"><option value="">— Elegir modelo —</option></select><input id="vModeloManual" class="hidden border p-2 rounded-lg w-full mt-1" placeholder="Escribir modelo manualmente"></div>
    <select id="vMedio" class="border p-2 rounded-lg"><option>Efectivo</option><option>Transferencia</option><option>Débito</option><option>Crédito</option><option>Mercado Pago</option><option>Otro</option></select>
@@ -1140,10 +1140,11 @@ html body .recordatorio-texto{
   <div class="card p-3"><span class="small">Margen bruto</span><div id="rMargen" class="text-xl font-bold text-blue-600">0%</div></div>
  </div>
  <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-  <div class="card p-3 border-l-4 border-l-blue-500"><span class="small">🚲 Venta · Bicicletas</span><div id="rResumenBicis" class="text-xl font-bold">0 ops · $0</div><div id="rResumenBicisUnidades" class="small text-slate-500">0 bicicletas</div></div>
-  <div class="card p-3 border-l-4 border-l-emerald-500"><span class="small">🛍️ Ventas Mostrador</span><div id="rResumenMostrador" class="text-xl font-bold">0 ops · $0</div><div class="small text-slate-500">Productos, accesorios y ventas no bicicleta</div></div>
-  <div class="card p-3 border-l-4 border-l-violet-500"><span class="small">🔧 Reparaciones</span><div id="rResumenReparaciones" class="text-xl font-bold">0 OT · $0</div><div class="small text-slate-500">Ingresos registrados en órdenes de taller</div></div>
+  <div class="card p-3 border-l-4 border-l-blue-500"><span class="small">🚲 Ventas Bicicletas</span><div id="rResumenBicis" class="text-xl font-bold">0 ops · $0</div><div id="rResumenBicisUnidades" class="small text-slate-500">0 bicicletas</div></div>
+  <div class="card p-3 border-l-4 border-l-emerald-500"><span class="small">🛍️ Ventas Mostrador</span><div id="rResumenMostrador" class="text-xl font-bold">0 ops · $0</div><div class="small text-slate-500">Cobrado en Caja con concepto Ventas Mostrador</div></div>
+  <div class="card p-3 border-l-4 border-l-violet-500"><span class="small">🔧 Taller</span><div id="rResumenReparaciones" class="text-xl font-bold">0 OT · $0</div><div class="small text-slate-500">Cobros de OT + Caja (Taller / Reparaciones)</div></div>
  </div>
+ <p class="small text-slate-500 -mt-1">Ingresos por rubro = dinero cobrado según Caja en el período (señas y cobros incluidos). Otras entradas de Caja fuera de estos rubros: <b id="rResumenOtros">$0</b></p>
  <div class="card p-3 bg-slate-50"><div class="flex justify-between gap-3"><span class="text-sm font-semibold">Facturación comercial total</span><div id="rFact" class="text-lg font-bold">$0</div></div><p class="small text-slate-500 mt-1">Este total no suma movimientos de Caja: Caja se analiza arriba como flujo de dinero.</p></div>
  <div class="grid lg:grid-cols-2 gap-4"><div class="card p-4"><h3 class="font-semibold mb-3">Entradas, salidas y saldo de Caja</h3><div class="h-72"><canvas id="chartFin"></canvas></div></div><div class="card p-4"><h3 class="font-semibold mb-3">Movimiento por concepto</h3><div class="h-72"><canvas id="chartConcept"></canvas></div></div></div>
  <div class="card p-4 overflow-x-auto"><h3 class="font-semibold mb-3">📅 Flujo de Caja agrupado</h3><table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2 text-left">Período</th><th class="p-2 text-right">Entradas</th><th class="p-2 text-right">Salidas</th><th class="p-2 text-right">Movido</th><th class="p-2 text-right">Saldo</th></tr></thead><tbody id="reporteFlujo"></tbody></table></div>
@@ -1278,6 +1279,19 @@ function esErrorJWTTemporal(e){
  const m=String(e?.message||e||'').toLowerCase();
  return m.includes('jwt issued at future')||m.includes('jwt expired')||m.includes('invalid jwt');
 }
+/* Conceptos del sistema para Reportes: Ventas Bicicletas · Ventas Mostrador · Taller.
+   Los nombres viejos se unifican al cargar, así los registros históricos también suman en el rubro correcto. */
+const CONCEPTO_BICIS='Ventas Bicicletas',CONCEPTO_MOSTRADOR='Ventas Mostrador',CONCEPTO_TALLER='Taller';
+const CONCEPTOS_SISTEMA=[CONCEPTO_BICIS,CONCEPTO_MOSTRADOR,CONCEPTO_TALLER];
+function normalizarConcepto(concepto,tipo,origenTipo){
+ const c=String(concepto||'').trim(), k=c.toLowerCase();
+ if(k==='ventas mostrador')return CONCEPTO_MOSTRADOR;
+ if(k==='taller'||k==='reparaciones'||k==='reparación'||k==='reparacion')return CONCEPTO_TALLER;
+ if(k==='venta'||k==='ventas bicicletas'||k==='venta bicicletas')return CONCEPTO_BICIS;
+ if(tipo==='Entrada'&&origenTipo==='taller')return CONCEPTO_TALLER;
+ if(tipo==='Entrada'&&origenTipo==='venta')return CONCEPTO_BICIS;
+ return c||'General';
+}
 async function refrescarSesionSegura(){
  try{
   const {data,error}=await supabaseClient.auth.refreshSession();
@@ -1310,9 +1324,9 @@ async function cargarSupabase(silencioso=false){
   const [caja,clientes,conceptos,stock,taller,ventas,compras,proveedores,arqueos,recordatorios,productosServicios,facturas,marcasModelos]=tablas.map((_,i)=>valor(i));
 
   // Cada tabla que sí respondió se actualiza aunque otra tenga un problema.
-  if(resultados[0].status==='fulfilled')state.movimientos=caja.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),tipo:x.tipo||'Entrada',concepto:x.concepto||x.categoria||'General',medio:x.medio_pago||x.medio||'Efectivo',monto:Number(x.monto)||0,descripcion:x.descripcion||'',cuit:x.cuit||'',origenTipo:x.origen_tipo||'',origenId:x.origen_id||'',clienteId:x.cliente_id||null}));
+  if(resultados[0].status==='fulfilled')state.movimientos=caja.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),tipo:x.tipo||'Entrada',concepto:normalizarConcepto(x.concepto||x.categoria,x.tipo||'Entrada',x.origen_tipo),conceptoOriginal:x.concepto||x.categoria||'',medio:x.medio_pago||x.medio||'Efectivo',monto:Number(x.monto)||0,descripcion:x.descripcion||'',cuit:x.cuit||'',origenTipo:x.origen_tipo||'',origenId:x.origen_id||'',clienteId:x.cliente_id||null}));
   if(resultados[1].status==='fulfilled')state.clientes=clientes.map(x=>({id:x.id,nombre:x.nombre||'',telefono:x.telefono||'',email:x.email||'',direccion:x.direccion||'',segmento:x.segmento||'Nuevo',notas:x.notas||'',documento:x.documento||'',condicionIva:x.condicion_iva||'',fecha:x.created_at||new Date().toISOString()}));
-  if(resultados[2].status==='fulfilled')state.conceptos=conceptos.map(x=>({id:x.id,nombre:x.nombre||''})).filter(x=>x.nombre);
+  if(resultados[2].status==='fulfilled')state.conceptos=conceptos.map(x=>({id:x.id,nombre:x.nombre||''})).filter(x=>x.nombre&&!['venta','ventas','reparaciones','reparación','reparacion','venta bicicletas'].includes(x.nombre.trim().toLowerCase()));
   if(resultados[3].status==='fulfilled')state.stock=stock.map(x=>({id:x.id,marca:x.marca||'',modelo:x.modelo||'',variante:[x.color,x.talle].filter(Boolean).join(' / '),nroSerie:x.nro_serie||'',precio:Number(x.precio)||0,costo:Number(x.costo)||0,cantidad:Number(x.stock)||0,estado:x.estado||'Disponible'}));
   if(resultados[4].status==='fulfilled')state.ots=taller.map(x=>{const cli=state.clientes.find(c=>String(c.id)===String(x.cliente_id));return ({id:x.id,fecha:x.fecha_ingreso||x.created_at||new Date().toISOString(),cliente:x.cliente||'',telefono:x.telefono||'',email:cli?.email||'',bici:x.bicicleta||'',trabajo:x.trabajo||'',presupuesto:Number(x.presupuesto)||0,sena:Number(x.sena)||0,pagado:Number(x.precio_pagado)||0,costo:Number(x.costo)||0,estado:x.estado||'En taller',montoCobrar:Number(x.precio_cobrado)||0,promesa:x.fecha_promesa||'',prioridad:x.prioridad||'Normal',fechaPrioridad:x.fecha_prioridad||'',clienteId:x.cliente_id||null})});
   if(resultados[5].status==='fulfilled')state.ventas=ventas.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),cliente:x.cliente||'Consumidor final',telefono:x.telefono||'',producto:x.producto||'Venta general',total:Number(x.total)||0,costo:Number(x.costo)||0,ganancia:Number(x.ganancia ?? ((Number(x.total)||0)-(Number(x.costo)||0))),cantidad:Number(x.cantidad)||1,medio:x.medio||x.medio_pago||'Efectivo',notas:x.notas||'',clienteId:x.cliente_id||null,documento:x.cliente_documento||'',condicionIva:x.condicion_iva||'',direccion:x.cliente_direccion||'',email:x.cliente_email||'',nroSerie:x.nro_serie||'',marca:x.marca||'',modelo:x.modelo||'',sena:Number(x.sena)||0,pagado:Number(x.pagado)||0,montoCobrar:(x.precio_cobrado==null?null:Number(x.precio_cobrado)||0),facturaEstado:x.factura_estado||'',facturaTipo:x.factura_tipo||'',facturaNumero:x.factura_numero||'',facturaPuntoVenta:x.factura_punto_venta||'',cae:x.cae||'',caeVencimiento:x.cae_vencimiento||'',facturaFecha:x.factura_fecha||'',facturaCuenta:x.factura_cuenta||'',tipoVenta:x.tipoVenta||x.tipo_venta||''}));
@@ -1391,7 +1405,7 @@ async function guardarOT(imprimirDespues=false){
   const row=await dbInsert('taller',{cliente:o.cliente,telefono:o.telefono,cliente_id:clienteId,bicicleta:o.bici,trabajo:o.trabajo,estado:o.estado,precio_pagado:0,fecha_ingreso:fechaHoraLocal(o.fechaIngreso),presupuesto:o.presupuesto,precio_cobrado:Math.max(0,o.presupuesto-o.sena),sena:o.sena,costo:o.costo,fecha_promesa:o.promesa});
   if(o.prioridad!=='Normal'||o.fechaPrioridad){try{await dbUpdate('taller',row.id,{prioridad:o.prioridad,fecha_prioridad:o.fechaPrioridad})}catch(err){console.warn('No se guardó prioridad:',err.message)}}
   try{
-   if(o.sena>0)await agregarMovInterno('Entrada','Reparaciones','Efectivo',o.sena,'Seña OT #'+row.id+' · ref:'+row.id,'taller',row.id,clienteId);
+   if(o.sena>0)await agregarMovInterno('Entrada',CONCEPTO_TALLER,'Efectivo',o.sena,'Seña OT #'+row.id+' · ref:'+row.id,'taller',row.id,clienteId);
   }catch(err){await dbDelete('taller',row.id).catch(()=>{});throw new Error('No se pudo registrar la seña en Caja; la OT fue revertida. '+err.message)}
   limpiarOT(); await cargarSupabase(true);
   if(imprimirDespues){
@@ -1476,6 +1490,12 @@ async function guardarEdicionOT(i){
   fecha_promesa:document.getElementById('editOtPromesa').value||null,
   estado:document.getElementById('editOtEstado').value
  };
+ if(!payload.cliente||!payload.bicicleta||!payload.trabajo)return alert('Completá cliente, bicicleta y trabajo.');
+ if(payload.presupuesto<0||payload.sena<0||payload.costo<0)return alert('Los importes no pueden ser negativos.');
+ if(payload.sena!==(Number(o.sena)||0))return alert('La seña ya está registrada en Caja y no se puede cambiar desde acá. Si hace falta, corregí el movimiento en Caja; para cobrar más, usá "A cobrar" y "Cobrar".');
+ const yaCobradoOT=(Number(o.sena)||0)+(Number(o.pagado)||0);
+ if(payload.presupuesto>0&&payload.presupuesto<yaCobradoOT)return alert('El presupuesto no puede quedar por debajo de lo ya cobrado ('+money(yaCobradoOT)+').');
+ if(payload.presupuesto!==(Number(o.presupuesto)||0)&&payload.presupuesto>0)payload.precio_cobrado=Math.max(0,payload.presupuesto-yaCobradoOT);
  try{await dbUpdate('taller',o.id,payload);if(o.clienteId){try{await dbUpdate('clientes',o.clienteId,{nombre:payload.cliente,telefono:payload.telefono,email:document.getElementById('editOtEmail').value.trim()||null})}catch(err){console.warn('OT guardada, pero no se pudo actualizar email del cliente:',err)}}cerrarModal();await cargarSupabase(true);alert('Orden actualizada y sincronizada.')}catch(e){alert('No se pudo actualizar la orden: '+e.message)}
 }
 
@@ -1593,7 +1613,7 @@ async function cobrarOT(i){
       No envía la columna inexistente `cliente`; el nombre queda en descripción. */
    await agregarMovInterno(
     'Entrada',
-    'Taller',
+    CONCEPTO_TALLER,
     o.medioCobro||'Efectivo',
     monto,
     'OT #'+String(o.id).slice(-6)+' - '+(o.cliente||'')+' - '+(o.bici||''),
@@ -1617,7 +1637,7 @@ async function cobrarOT(i){
 /* --- CAJA & CONCEPTOS --- */
 function actualizarSelectConceptos(){
  const sel=document.getElementById('mConcepto'); if(!sel)return;
- const lista=state.conceptos.map(x=>x.nombre);
+ const lista=[...CONCEPTOS_SISTEMA,...state.conceptos.map(x=>x.nombre).filter(n=>!CONCEPTOS_SISTEMA.some(c=>c.toLowerCase()===n.trim().toLowerCase()))];
  sel.innerHTML=(lista.length?lista:['General']).map(c=>`<option>${esc(c)}</option>`).join('');
 }
 function abrirGestionConceptos(){
@@ -1651,7 +1671,7 @@ async function guardarMovimiento(){
 function abrirMovimiento(){tab('caja');setTimeout(()=>mMonto.focus(),100)}
 function editarMov(i){
  const m=state.movimientos.find(x=>String(x.id)===String(i));if(!m)return;
- const conceptos=[...new Set([m.concepto,...state.conceptos.map(x=>x.nombre)].filter(Boolean))];
+ const conceptos=[...new Set([m.concepto,...CONCEPTOS_SISTEMA,...state.conceptos.map(x=>x.nombre)].filter(Boolean))];
  const opcionesConcepto=conceptos.map(x=>`<option value="${esc(x)}" ${x===m.concepto?'selected':''}>${esc(x)}</option>`).join('');
  const body=`<div class="space-y-3">
   <div><label class="small text-slate-500">Tipo</label><select id="emTipo" class="border p-2 rounded w-full"><option ${m.tipo==='Entrada'?'selected':''}>Entrada</option><option ${m.tipo==='Salida'?'selected':''}>Salida</option></select></div>
@@ -1667,7 +1687,8 @@ function editarMov(i){
 async function guardarEdMov(i){
  const m=state.movimientos.find(x=>String(x.id)===String(i));if(!m)return;
  const cuit=(emCuit.value||'').replace(/\D/g,'');if(cuit&&cuit.length!==11)return alert('El CUIT debe tener 11 dígitos.');
- const payload={tipo:emTipo.value,categoria:emConc.value,concepto:emConc.value,medio_pago:emMedio.value,monto:+emMonto.value||0,descripcion:emDesc.value,cuit:cuit||null};
+ if(!(+emMonto.value>0))return alert('El monto debe ser mayor a 0.');
+ const payload={tipo:emTipo.value,categoria:emConc.value,concepto:emConc.value,medio_pago:emMedio.value,monto:+emMonto.value,descripcion:emDesc.value,cuit:cuit||null};
  try{await dbUpdate('caja',m.id,payload);cerrarModal();await cargarSupabase(true)}catch(e){alert('No se pudo modificar el movimiento: '+e.message)}
 }
 function facturaDeCaja(id){return (state.facturas||[]).find(f=>f.origenTipo==='caja'&&String(f.origenId)===String(id))}
@@ -2108,6 +2129,7 @@ function venderStock(i){
 async function confirmarVentaStock(i){
  const x=state.stock.find(s=>String(s.id)===String(i));if(!x)return;
  const nombre=svNombre.value.trim(),documento=svDocumento.value.trim(),telefono=svTelefono.value.trim(),email=svEmail.value.trim(),direccion=svDireccion.value.trim(),condicionIva=svCondIva.value;
+ if(svCantidad.value!==''&&!(+svCantidad.value>0))return alert('La cantidad debe ser mayor a 0.');
  const cant=Math.max(1,+svCantidad.value||1),precio=Math.max(0,+svPrecio.value||0),medio=svMedio.value,notas=svNotas.value.trim();
  if(!nombre)return alert('Ingresá el nombre del comprador.');
  if(cant>x.cantidad)return alert('Stock insuficiente.');
@@ -2123,7 +2145,7 @@ async function confirmarVentaStock(i){
   const venta=await dbInsert('ventas',{fecha:fechaHoraLocal(),cliente:nombre,telefono,cliente_id:cliente.id,cliente_documento:documento||null,producto,total,costo,ganancia:total-costo,cantidad:cant,medio,notas:('Venta desde stock'+(notas?' · '+notas:'')),nro_serie:x.nroSerie||null,marca:x.marca||null,modelo:x.modelo||null});
   try{
    await dbUpdate('inventario_bicicletas',x.id,{stock:x.cantidad-cant});
-   await agregarMovInterno('Entrada','Venta',medio,total,'Venta #'+venta.id+' - '+producto+' - Cliente: '+nombre);
+   await agregarMovInterno('Entrada',CONCEPTO_BICIS,medio,total,'Venta #'+venta.id+' - '+producto+' - Cliente: '+nombre);
   }catch(err){
    await dbDelete('ventas',venta.id).catch(()=>{});
    await dbUpdate('inventario_bicicletas',x.id,{stock:x.cantidad}).catch(()=>{});
@@ -2211,6 +2233,21 @@ function cambiarMarcaVenta(){const m=vMarca.value;vMarcaManual.classList.toggle(
 function cambiarModeloVenta(){vModeloManual.classList.toggle('hidden',vModelo.value!=='__manual__');if(vModelo.value!=='__manual__')vModeloManual.value=''}
 function cambiarMarcaStock(){const m=sMarca.value;sMarcaManual.classList.toggle('hidden',m!=='__manual__');if(m!=='__manual__')sMarcaManual.value='';llenarSelectModelo('sModelo',m==='__manual__'?'':m);sModeloManual.classList.add('hidden');sModeloManual.value=''}
 function cambiarModeloStock(){sModeloManual.classList.toggle('hidden',sModelo.value!=='__manual__');if(sModelo.value!=='__manual__')sModeloManual.value=''}
+/* Al elegir una bici en "Stock a descontar" se completan marca, modelo, serie, precio y costo. */
+function elegirStockVenta(){
+ const x=state.stock.find(s=>String(s.id)===String(document.getElementById('vStockOrigen')?.value));if(!x)return;
+ const tieneOpcion=(sel,v)=>[...sel.options].some(o=>o.value===v);
+ if(x.marca&&tieneOpcion(vMarca,x.marca)){vMarca.value=x.marca;cambiarMarcaVenta()}
+ else if(x.marca){vMarca.value='__manual__';cambiarMarcaVenta();vMarcaManual.value=x.marca}
+ if(x.modelo&&tieneOpcion(vModelo,x.modelo)){vModelo.value=x.modelo;cambiarModeloVenta()}
+ else if(x.modelo){vModelo.value='__manual__';cambiarModeloVenta();vModeloManual.value=x.modelo}
+ if(x.nroSerie)vNroSerie.value=x.nroSerie;
+ if(x.precio>0)vPrecio.value=x.precio;
+ if(x.costo>0)vCosto.value=x.costo;
+ vProducto.value=[x.marca,x.modelo,x.variante].filter(Boolean).join(' ');
+ if(!x.nroSerie)vNroSerie.value='';
+ if(!(+vCantidad.value>0))vCantidad.value=1;
+}
 function valorMarcaVenta(){return (vMarca.value==='__manual__'?vMarcaManual.value:vMarca.value).trim()}
 function valorModeloVenta(){return (vModelo.value==='__manual__'?vModeloManual.value:vModelo.value).trim()}
 function valorMarcaStock(){return (sMarca.value==='__manual__'?sMarcaManual.value:sMarca.value).trim()}
@@ -2238,12 +2275,13 @@ function prepararAlertaServiceVenta(){
  if(appCfg.serviceAuto&&!chk.dataset.tocado){chk.checked=true;f.disabled=false;if(!f.value)f.value=sumarDiasLocal(new Date(),appCfg.serviceDias);if(txt&&!txt.value)txt.value=appCfg.tituloService}
 }
 function tipoVentaActual(){
+ if(document.getElementById('vStockOrigen')?.value)return 'Bicicleta';
  const p=state.productos.find(x=>String(x.id)===String(document.getElementById('vProductoSelect')?.value));
  if((p?.tipo||'')==='Bicicleta')return 'Bicicleta';
  if(valorMarcaVenta()||valorModeloVenta()||String(vNroSerie?.value||'').trim())return 'Bicicleta';
  return 'Mostrador';
 }
-function conceptoCajaVenta(v){return (v?.marca||v?.modelo||v?.nroSerie||v?.tipoVenta==='Bicicleta')?'Venta':'Ventas Mostrador'}
+function conceptoCajaVenta(v){return CONCEPTO_BICIS} // Todo lo que se registra en el módulo Ventas es venta de bicicletas
 
 function actualizarSelectsStockMovimientos(){
  const opts=(state.stock||[]).map(x=>`<option value="${esc(String(x.id))}">${esc([x.marca,x.modelo,x.variante,x.nroSerie].filter(Boolean).join(' · '))} · Stock ${x.cantidad}</option>`).join('');
@@ -2262,6 +2300,7 @@ function stockCoincidenteVenta(v){
 }
 
 async function guardarVenta(){
+ if(vCantidad.value!==''&&!(+vCantidad.value>0))return alert('La cantidad debe ser mayor a 0.');
  const cantidad=+vCantidad.value||1,total=(+vPrecio.value||0)*cantidad,costo=(+vCosto.value||0)*cantidad;if(total<=0)return alert('Precio inválido.');
  const sena=Math.max(0,+vSena.value||0);if(sena>total)return alert('La seña no puede ser mayor al total de la venta.');
  // Compatibilidad: seña 0 mantiene el comportamiento histórico = venta cobrada completa.
@@ -3191,7 +3230,7 @@ async function borrarProveedor(i){return eliminarRegistro('proveedores',i,'prove
 async function guardarCompra(){
  const provNombre=document.getElementById('pNombreSelect')?.value;
  const q=+pCantidad.value||1, c=+pCosto.value||0, total=q*c;
- if(!provNombre||total<=0)return alert('Selecciona proveedor, cantidad y costo válidos.');
+ if(!provNombre||q<=0||c<=0)return alert('Selecciona proveedor, cantidad y costo válidos (mayores a 0).');
  const producto=pProducto.value.trim()||'Insumos / Repuestos';
  const medio=pMedio.value;
  try{
@@ -3353,15 +3392,16 @@ function reportes(){
  // Taller usa importes efectivamente registrados en la OT: seña + precio_pagado.
  // No usa conceptos de Caja, por lo que no duplica los cobros que Caja ya muestra en el flujo.
  const ingresosTaller=otsPeriodo.reduce((s,o)=>s+(Number(o.sena)||0)+(Number(o.pagado)||0),0);
- const ventasBici=vs.filter(v=>!!(v.marca||v.modelo||v.nroSerie));
- const ventasMostrador=vs.filter(v=>!(v.marca||v.modelo||v.nroSerie));
- const montoBicis=ventasBici.reduce((s,v)=>s+(Number(v.total)||0),0), unidadesBicis=ventasBici.reduce((s,v)=>s+(Number(v.cantidad)||0),0);
- const montoMostrador=ventasMostrador.reduce((s,v)=>s+(Number(v.total)||0),0);
- const otsCobradas=otsPeriodo.filter(o=>(Number(o.sena)||0)+(Number(o.pagado)||0)>0);
- if(document.getElementById('rResumenBicis'))rResumenBicis.textContent=ventasBici.length+' ops · '+money(montoBicis);
- if(document.getElementById('rResumenBicisUnidades'))rResumenBicisUnidades.textContent=unidadesBicis+' bicicleta(s)';
- if(document.getElementById('rResumenMostrador'))rResumenMostrador.textContent=ventasMostrador.length+' ops · '+money(montoMostrador);
- if(document.getElementById('rResumenReparaciones'))rResumenReparaciones.textContent=otsCobradas.length+' OT · '+money(ingresosTaller);
+ // INGRESOS POR RUBRO: dinero efectivamente cobrado, según Caja (conceptos ya unificados).
+ const rubro=c=>{const l=ms.filter(m=>m.tipo==='Entrada'&&m.concepto===c);return {n:l.length,monto:l.reduce((s,m)=>s+m.monto,0)}};
+ const rBic=rubro(CONCEPTO_BICIS),rMos=rubro(CONCEPTO_MOSTRADOR),rTal=rubro(CONCEPTO_TALLER);
+ const unidadesBicis=vs.reduce((s,v)=>s+(Number(v.cantidad)||0),0);
+ const otrosIngresos=ms.filter(m=>m.tipo==='Entrada'&&!CONCEPTOS_SISTEMA.includes(m.concepto)).reduce((s,m)=>s+m.monto,0);
+ if(document.getElementById('rResumenBicis'))rResumenBicis.textContent=rBic.n+' mov. · '+money(rBic.monto);
+ if(document.getElementById('rResumenBicisUnidades'))rResumenBicisUnidades.textContent=unidadesBicis+' bicicleta(s) vendida(s) en el período';
+ if(document.getElementById('rResumenMostrador'))rResumenMostrador.textContent=rMos.n+' mov. · '+money(rMos.monto);
+ if(document.getElementById('rResumenReparaciones'))rResumenReparaciones.textContent=rTal.n+' mov. · '+money(rTal.monto);
+ if(document.getElementById('rResumenOtros'))rResumenOtros.textContent=money(otrosIngresos);
  const costoTaller=otsPeriodo.reduce((s,o)=>s+(Number(o.costo)||0),0);
  const fact=ventasProductos+ingresosTaller;
  const cost=costoVentas+costoTaller;
