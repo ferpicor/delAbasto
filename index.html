@@ -754,6 +754,123 @@ kbd{font-family:var(--mono);font-size:.66rem;padding:2px 6px;border-radius:6px;b
 }
 
 </style>
+
+
+
+
+<style id="taller-estandar-real-v64">
+@media (min-width:701px){
+  /* Una sola escala para Taller */
+  html body #taller table{
+    width:100%!important;
+    table-layout:auto!important;
+    font-size:13px!important;
+  }
+  html body #taller table thead th{
+    font-size:10px!important;
+    line-height:14px!important;
+    padding:8px 6px!important;
+  }
+  html body #taller table tbody tr{
+    height:72px!important;
+    min-height:72px!important;
+  }
+  html body #taller #tbodyTaller tr,
+  html body #taller #tallerBody tr,
+  html body #taller table tbody tr.fila-taller{
+    height:72px!important;
+    min-height:72px!important;
+    border-bottom:3px solid var(--bg)!important;
+  }
+  html body #taller table tbody td{
+    padding:8px 6px!important;
+    font-size:13px!important;
+    line-height:17px!important;
+    vertical-align:middle!important;
+  }
+  html body #taller table td .small,
+  html body #taller table td span.small{
+    font-size:11px!important;
+    line-height:14px!important;
+  }
+  html body #taller table input,
+  html body #taller table select{
+    height:34px!important;
+    min-height:34px!important;
+    font-size:13px!important;
+    padding:5px 8px!important;
+  }
+  html body #taller table button,
+  html body #taller table a{
+    min-height:30px!important;
+    font-size:12px!important;
+    line-height:16px!important;
+    padding:5px 8px!important;
+  }
+  /* Estado / saldo / cobrar / medio */
+  html body #taller table th:nth-child(8),
+  html body #taller table td:nth-child(8){min-width:145px!important;width:145px!important}
+  html body #taller table th:nth-child(9),
+  html body #taller table td:nth-child(9){min-width:70px!important;width:70px!important}
+  html body #taller table th:nth-child(10),
+  html body #taller table td:nth-child(10){min-width:82px!important;width:82px!important}
+  html body #taller table th:nth-child(11),
+  html body #taller table td:nth-child(11){min-width:112px!important;width:112px!important}
+  html body #taller table td:nth-child(10) input{width:76px!important}
+  html body #taller table td:nth-child(11) select{width:108px!important}
+  /* Acciones: ancho suficiente y dos filas ordenadas */
+  html body #taller table th:nth-child(12),
+  html body #taller table td:nth-child(12){
+    min-width:132px!important;
+    width:132px!important;
+  }
+  html body #taller table td:nth-child(12){
+    display:flex!important;
+    flex-wrap:wrap!important;
+    align-items:center!important;
+    align-content:center!important;
+    gap:4px!important;
+  }
+}
+</style>
+
+
+<style id="dashboard-recordatorios-v65">
+html body #recordatoriosPanelDash{
+  border-color:rgba(167,139,250,.30)!important;
+  background:
+    radial-gradient(650px 180px at 0 0,rgba(167,139,250,.12),transparent 68%),
+    linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.01)),
+    var(--panel)!important;
+  box-shadow:0 0 0 1px rgba(167,139,250,.06) inset,0 16px 40px -24px rgba(0,0,0,.9)!important;
+}
+html body #recordatoriosPanelDash h3{font-size:1.08rem!important;color:var(--tx-strong)!important}
+html body .recordatorio-dash-item{
+  min-height:112px;
+  border-color:rgba(167,139,250,.20)!important;
+  background:rgba(167,139,250,.045)!important;
+}
+html body .recordatorio-dash-item:hover{background:rgba(167,139,250,.075)!important}
+html body .recordatorio-cliente-link{
+  color:var(--acc-tx)!important;
+  font-size:.92rem!important;
+  padding:0!important;
+  min-height:0!important;
+  text-decoration:none;
+}
+html body .recordatorio-cliente-link:hover{text-decoration:underline}
+html body .recordatorio-fecha{
+  color:var(--violet-tx);
+  font-family:var(--mono);
+  font-size:.70rem;
+}
+html body .recordatorio-texto{
+  color:var(--tx);
+  font-size:.84rem;
+  line-height:1.4;
+}
+</style>
+
 </head>
 <body class="font-sans text-slate-800">
 <div id="appSplash"><img class="splash-logo" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-nova-logo alt="Bicicletería del Abasto"></div>
@@ -805,7 +922,7 @@ kbd{font-family:var(--mono);font-size:.66rem;padding:2px 6px;border-radius:6px;b
   <div class="card p-4"><h3 class="font-semibold mb-3">⚠️ Alertas</h3><div id="alertas" class="space-y-2 text-sm"></div></div>
   <div class="card p-4 lg:col-span-2"><h3 class="font-semibold mb-3">📈 Evolución de caja — últimos 14 días</h3><div class="h-64"><canvas id="chartDashboard"></canvas></div></div>
  </div>
- <div class="card p-4"><div class="flex justify-between items-center mb-3"><h3 class="font-semibold">🔔 Recordatorios próximos</h3><button onclick="abrirRecordatorio()" class="bg-indigo-600 text-white px-3 py-1 rounded-lg text-sm">➕ Recordatorio</button></div><div id="recordatoriosDash" class="grid md:grid-cols-3 gap-3"></div></div>
+ <div id="recordatoriosPanelDash" class="card p-5 recordatorios-panel-destacado"><div class="flex justify-between items-center mb-4"><div><h3 class="font-semibold text-lg">🔔 Recordatorios próximos</h3><p class="small mt-1">Seguimientos y tareas próximas con clientes.</p></div><button onclick="abrirRecordatorio()" class="bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm">➕ Recordatorio</button></div><div id="recordatoriosDash" class="grid md:grid-cols-2 gap-3"></div></div>
 </section>
 
 <section id="taller" class="hidden space-y-5">
@@ -813,6 +930,7 @@ kbd{font-family:var(--mono);font-size:.66rem;padding:2px 6px;border-radius:6px;b
   <div class="grid md:grid-cols-3 gap-3">
    <input id="otCliente" class="border p-2 rounded-lg" placeholder="Cliente">
    <input id="otTelefono" class="border p-2 rounded-lg" placeholder="WhatsApp">
+   <input id="otEmail" type="email" class="border p-2 rounded-lg" placeholder="Email">
    <input id="otBici" class="border p-2 rounded-lg" placeholder="Bicicleta">
    <input id="otTrabajo" class="border p-2 rounded-lg md:col-span-2" placeholder="Trabajo solicitado">
    <input id="otPresupuesto" type="number" class="border p-2 rounded-lg" placeholder="Presupuesto">
@@ -827,7 +945,7 @@ kbd{font-family:var(--mono);font-size:.66rem;padding:2px 6px;border-radius:6px;b
   <div class="flex flex-wrap gap-2 mt-4"><button onclick="guardarOT(false)" class="bg-blue-600 text-white px-4 py-2 rounded-lg">💾 Guardar OT</button><button onclick="guardarOT(true)" class="bg-violet-600 text-white px-4 py-2 rounded-lg">🖨️ Guardar e imprimir 2 copias</button><button onclick="limpiarOT()" class="bg-slate-200 px-4 py-2 rounded-lg">Limpiar</button></div>
  </div>
  <div class="card p-4 overflow-x-auto"><div class="flex justify-between items-center mb-3"><h3 class="font-semibold">Órdenes de trabajo</h3><input id="buscarOT" oninput="renderOT()" class="border p-2 rounded-lg text-sm" placeholder="Buscar cliente/bici/trabajo"></div>
- <table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2">OT</th><th class="p-2">Fecha ingreso</th><th class="p-2">Cliente</th><th class="p-2">Bici / trabajo</th><th class="p-2">Presupuesto</th><th class="p-2">Seña</th><th class="p-2">Pagado</th><th class="p-2">Estado</th><th class="p-2">Saldo</th><th class="p-2">A cobrar</th><th class="p-2">Acciones</th></tr></thead><tbody id="tablaOT"></tbody></table></div>
+ <table class="w-full text-sm tabla-ot-compacta"><thead><tr class="bg-slate-50"><th class="p-2">OT</th><th class="p-2">Fecha ingreso</th><th class="p-2">Cliente</th><th class="p-2">Bici / trabajo</th><th class="p-2">Presupuesto</th><th class="p-2">Seña</th><th class="p-2">Pagado</th><th class="p-2">Estado</th><th class="p-2">Saldo</th><th class="p-2">A cobrar</th><th class="p-2">Medio de pago</th><th class="p-2">Acciones</th></tr></thead><tbody id="tablaOT"></tbody></table></div>
 </section>
 
 <section id="ventas" class="hidden space-y-5">
@@ -835,6 +953,7 @@ kbd{font-family:var(--mono);font-size:.66rem;padding:2px 6px;border-radius:6px;b
   <div class="grid md:grid-cols-4 gap-3">
    <input id="vCliente" class="border p-2 rounded-lg" placeholder="Cliente">
    <input id="vTelefono" class="border p-2 rounded-lg" placeholder="WhatsApp">
+   <input id="vEmail" type="email" class="border p-2 rounded-lg" placeholder="Email">
    <input id="vDocumento" class="border p-2 rounded-lg" placeholder="CUIT / CUIL / DNI (opcional)">
    <input id="vNroSerie" class="border p-2 rounded-lg" placeholder="Número de serie (opcional)"><select id="vStockOrigen" class="border p-2 rounded-lg" title="Stock a descontar"><option value="">— No descontar stock / automático —</option></select>
    <div><label class="small text-slate-500 block mb-1">Marca de bicicleta</label><div class="flex gap-1"><select id="vMarca" onchange="cambiarMarcaVenta()" class="border p-2 rounded-lg flex-1"><option value="">— Elegir marca —</option></select><button type="button" onclick="abrirGestionMarcasModelos()" title="Gestionar marcas y modelos" class="bg-slate-700 text-white px-3 rounded-lg">⚙️</button></div><input id="vMarcaManual" class="hidden border p-2 rounded-lg w-full mt-1" placeholder="Escribir marca manualmente"></div>
@@ -951,7 +1070,9 @@ kbd{font-family:var(--mono);font-size:.66rem;padding:2px 6px;border-radius:6px;b
   <div class="card p-5 space-y-3"><h3 class="font-semibold">📧 Email / Gmail</h3>
    <input id="cfgEmailRemitente" type="email" class="border p-2 rounded w-full" placeholder="Email remitente">
    <label class="flex gap-2 items-center"><input id="cfgEmailFacturaAuto" type="checkbox"> Enviar factura automáticamente por email cuando la integración Gmail esté activa</label>
-   <p class="small text-slate-500">La interfaz queda preparada. El envío directo desde el CRM requerirá una Edge Function segura con OAuth de Gmail; no se guardará la contraseña de Gmail en este archivo.</p>
+   <div class="rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-sm"><b>✅ Gmail API configurada</b><br>El CRM puede enviar correos mediante la Edge Function protegida <code>gmail-send</code>.</div>
+   <div class="grid grid-cols-2 gap-2"><button type="button" onclick="probarGmailCRM()" class="bg-cyan-700 text-white px-3 py-2 rounded-lg">✉️ Probar Gmail</button><button type="button" onclick="reconectarGmailCRM()" class="bg-slate-700 text-white px-3 py-2 rounded-lg">🔗 Reconectar Gmail</button></div>
+   <p class="small text-slate-500">La contraseña y los tokens de Gmail no se guardan en este archivo. La autorización permanece del lado seguro de Supabase.</p>
   </div>
   <div class="card p-5 space-y-3"><h3 class="font-semibold">💬 Mensajes de WhatsApp</h3>
    <label class="small text-slate-500">Bicicleta lista</label><textarea id="cfgMsgBiciLista" class="border p-2 rounded w-full h-24"></textarea>
@@ -1193,7 +1314,7 @@ async function cargarSupabase(silencioso=false){
   if(resultados[1].status==='fulfilled')state.clientes=clientes.map(x=>({id:x.id,nombre:x.nombre||'',telefono:x.telefono||'',email:x.email||'',direccion:x.direccion||'',segmento:x.segmento||'Nuevo',notas:x.notas||'',documento:x.documento||'',condicionIva:x.condicion_iva||'',fecha:x.created_at||new Date().toISOString()}));
   if(resultados[2].status==='fulfilled')state.conceptos=conceptos.map(x=>({id:x.id,nombre:x.nombre||''})).filter(x=>x.nombre);
   if(resultados[3].status==='fulfilled')state.stock=stock.map(x=>({id:x.id,marca:x.marca||'',modelo:x.modelo||'',variante:[x.color,x.talle].filter(Boolean).join(' / '),nroSerie:x.nro_serie||'',precio:Number(x.precio)||0,costo:Number(x.costo)||0,cantidad:Number(x.stock)||0,estado:x.estado||'Disponible'}));
-  if(resultados[4].status==='fulfilled')state.ots=taller.map(x=>({id:x.id,fecha:x.fecha_ingreso||x.created_at||new Date().toISOString(),cliente:x.cliente||'',telefono:x.telefono||'',bici:x.bicicleta||'',trabajo:x.trabajo||'',presupuesto:Number(x.presupuesto)||0,sena:Number(x.sena)||0,pagado:Number(x.precio_pagado)||0,costo:Number(x.costo)||0,estado:x.estado||'En taller',montoCobrar:Number(x.precio_cobrado)||0,promesa:x.fecha_promesa||'',prioridad:x.prioridad||'Normal',fechaPrioridad:x.fecha_prioridad||'',clienteId:x.cliente_id||null}));
+  if(resultados[4].status==='fulfilled')state.ots=taller.map(x=>{const cli=state.clientes.find(c=>String(c.id)===String(x.cliente_id));return ({id:x.id,fecha:x.fecha_ingreso||x.created_at||new Date().toISOString(),cliente:x.cliente||'',telefono:x.telefono||'',email:cli?.email||'',bici:x.bicicleta||'',trabajo:x.trabajo||'',presupuesto:Number(x.presupuesto)||0,sena:Number(x.sena)||0,pagado:Number(x.precio_pagado)||0,costo:Number(x.costo)||0,estado:x.estado||'En taller',montoCobrar:Number(x.precio_cobrado)||0,promesa:x.fecha_promesa||'',prioridad:x.prioridad||'Normal',fechaPrioridad:x.fecha_prioridad||'',clienteId:x.cliente_id||null})});
   if(resultados[5].status==='fulfilled')state.ventas=ventas.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),cliente:x.cliente||'Consumidor final',telefono:x.telefono||'',producto:x.producto||'Venta general',total:Number(x.total)||0,costo:Number(x.costo)||0,ganancia:Number(x.ganancia ?? ((Number(x.total)||0)-(Number(x.costo)||0))),cantidad:Number(x.cantidad)||1,medio:x.medio||x.medio_pago||'Efectivo',notas:x.notas||'',clienteId:x.cliente_id||null,documento:x.cliente_documento||'',condicionIva:x.condicion_iva||'',direccion:x.cliente_direccion||'',email:x.cliente_email||'',nroSerie:x.nro_serie||'',marca:x.marca||'',modelo:x.modelo||'',sena:Number(x.sena)||0,pagado:Number(x.pagado)||0,montoCobrar:(x.precio_cobrado==null?null:Number(x.precio_cobrado)||0),facturaEstado:x.factura_estado||'',facturaTipo:x.factura_tipo||'',facturaNumero:x.factura_numero||'',facturaPuntoVenta:x.factura_punto_venta||'',cae:x.cae||'',caeVencimiento:x.cae_vencimiento||'',facturaFecha:x.factura_fecha||'',facturaCuenta:x.factura_cuenta||'',tipoVenta:x.tipoVenta||x.tipo_venta||''}));
   if(resultados[6].status==='fulfilled')state.compras=compras.map(x=>({id:x.id,fecha:x.fecha||x.created_at||new Date().toISOString(),proveedor:x.proveedor||'',producto:x.producto||'',cantidad:Number(x.cantidad)||0,costo:Number(x.costo)||0,total:Number(x.total)||0,medio:x.medio||x.medio_pago||'Otro'}));
   if(resultados[7].status==='fulfilled')state.proveedores=proveedores.map(x=>({id:x.id,nombre:x.nombre||'',contacto:x.contacto||'',fecha:x.created_at||new Date().toISOString()}));
@@ -1254,13 +1375,16 @@ function cerrarModal(){document.getElementById('modal').classList.add('hidden');
 /* --- TALLER --- */
 /* 2026-09-23: la columna Presupuesto muestra también el total cobrado de la OT sin alterar el presupuesto original. */
 async function guardarOT(imprimirDespues=false){
- const o={cliente:otCliente.value.trim(),telefono:otTelefono.value.trim(),bici:otBici.value.trim(),trabajo:otTrabajo.value.trim(),presupuesto:+otPresupuesto.value||0,sena:+otSena.value||0,costo:+otCosto.value||0,estado:otEstado.value,fechaIngreso:otFechaIngreso.value||fechaLocalHoy(),promesa:otFechaPromesa.value||null,prioridad:otPrioridad.value||'Normal',fechaPrioridad:otFechaPrioridad.value||null};
+ const o={cliente:otCliente.value.trim(),telefono:otTelefono.value.trim(),email:otEmail.value.trim(),bici:otBici.value.trim(),trabajo:otTrabajo.value.trim(),presupuesto:+otPresupuesto.value||0,sena:+otSena.value||0,costo:+otCosto.value||0,estado:otEstado.value,fechaIngreso:otFechaIngreso.value||fechaLocalHoy(),promesa:otFechaPromesa.value||null,prioridad:otPrioridad.value||'Normal',fechaPrioridad:otFechaPrioridad.value||null};
  if(!o.cliente||!o.bici||!o.trabajo)return alert('Completa cliente, bicicleta y trabajo.');
  if(o.sena>o.presupuesto&&o.presupuesto>0)return alert('La seña no puede superar el presupuesto.');
  try{
   let cliente=state.clientes.find(x=>o.telefono&&normalizarTelefono(x.telefono)===normalizarTelefono(o.telefono));
-  if(!cliente&&o.telefono){
-   try{cliente=await dbInsert('clientes',{nombre:o.cliente,telefono:o.telefono,email:null,direccion:null,segmento:'Nuevo',notas:'Cliente de taller'})}
+  if(!cliente&&o.email)cliente=state.clientes.find(x=>String(x.email||'').toLowerCase()===o.email.toLowerCase());
+  if(cliente){
+   try{await dbUpdate('clientes',cliente.id,{nombre:o.cliente,telefono:o.telefono||cliente.telefono,email:o.email||cliente.email||null})}catch(err){console.warn('No se pudo actualizar el cliente automáticamente:',err)}
+  }else if(o.telefono||o.email){
+   try{cliente=await dbInsert('clientes',{nombre:o.cliente,telefono:o.telefono,email:o.email||null,direccion:null,segmento:'Nuevo',notas:'Cliente de taller'})}
    catch(err){console.warn('No se pudo crear el cliente automáticamente:',err)}
   }
   const clienteId=cliente?.id||null;
@@ -1277,7 +1401,7 @@ async function guardarOT(imprimirDespues=false){
   }
  }catch(e){console.error(e);alert('No se pudo guardar la OT en Supabase: '+e.message)}
 }
-function limpiarOT(){['otCliente','otTelefono','otBici','otTrabajo','otPresupuesto','otSena','otCosto','otFechaPromesa'].forEach(x=>document.getElementById(x).value='');otEstado.value='En taller';otFechaIngreso.value=fechaLocalHoy();otPrioridad.value='Normal';otFechaPrioridad.value=''}
+function limpiarOT(){['otCliente','otTelefono','otEmail','otBici','otTrabajo','otPresupuesto','otSena','otCosto','otFechaPromesa'].forEach(x=>document.getElementById(x).value='');otEstado.value='En taller';otFechaIngreso.value=fechaLocalHoy();otPrioridad.value='Normal';otFechaPrioridad.value=''}
 function renderOT(){
  const q=(document.getElementById('buscarOT')?.value||'').toLowerCase();
  const rows=state.ots.filter(o=>(o.cliente+' '+o.bici+' '+o.trabajo).toLowerCase().includes(q));
@@ -1287,13 +1411,17 @@ function renderOT(){
   const montoCobrar=(o.montoCobrar!=null?o.montoCobrar:saldo);
   const colorFila=o.estado==='Entregada'?'bg-green-200':'bg-red-200';
    const prioridadBadge=(o.prioridad&&o.prioridad!=='Normal')?`<div class="mt-1"><span class="px-2 py-0.5 rounded-full text-xs font-semibold ${o.prioridad==='Urgente'?'bg-rose-200 text-rose-800':'bg-amber-200 text-amber-800'}">⚡ ${esc(o.prioridad)}${o.fechaPrioridad?' · '+esc(o.fechaPrioridad):''}</span></div>`:'';
-   return `<tr class="border-b ${colorFila}"><td class="p-2 font-semibold">#${String(o.id).slice(-6)}${prioridadBadge}</td><td class="p-2 small whitespace-nowrap">${fecha(o.fecha)}</td><td class="p-2">${esc(o.cliente)}<br><span class="small">${esc(o.telefono)}</span></td><td class="p-2">${esc(o.bici)}<br><span class="small">${esc(o.trabajo)}</span></td><td class="p-2 font-semibold">${money(o.presupuesto)}</td><td class="p-2">${money(o.sena)}</td><td class="p-2 font-semibold ${(Number(o.pagado)||0)>0?'text-emerald-700':'text-slate-400'}">${money(Number(o.pagado)||0)}</td><td class="p-2"><select onchange="cambiarOT('${o.id}',this.value)" class="border rounded p-1"><option ${o.estado==='En taller'?'selected':''}>En taller</option><option ${o.estado==='En proceso'?'selected':''}>En proceso</option><option ${o.estado==='Esperando repuestos'?'selected':''}>Esperando repuestos</option><option ${o.estado==='Lista'?'selected':''}>Lista</option><option ${o.estado==='Entregada'?'selected':''}>Entregada</option></select></td><td class="p-2 font-semibold">${money(saldo)}</td><td class="p-2"><input type="number" class="border rounded p-1 w-24 ${lista?'':'bg-slate-100 text-slate-400'}" ${lista?'':'disabled'} value="${montoCobrar}" title="${lista?'Monto a cobrar al entregar':'Se habilita cuando la bici está Lista'}" onchange="setMontoCobrar('${o.id}',this.value)"></td><td class="p-2 flex gap-1 flex-wrap"><button onclick="editarOT('${o.id}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs" title="Modificar datos">✏️</button><button onclick="otWhatsApp('${o.id}')" class="bg-green-600 text-white px-2 py-1 rounded text-xs" title="Enviar WhatsApp al cliente">💬</button><button onclick="reciboOT('${o.id}')" class="bg-purple-600 text-white px-2 py-1 rounded text-xs" title="Ver comprobante / WhatsApp">🧾</button><button onclick="imprimirReciboOT('${o.id}')" class="bg-slate-800 text-white px-2 py-1 rounded text-xs" title="Imprimir 2 copias para impresora térmica">🖨️</button><button onclick="cobrarOT('${o.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">Cobrar</button><button type="button" data-delete-table="taller" data-delete-id="${o.id}" class="text-rose-600 delete-btn" title="Eliminar">🗑️</button></td></tr>`
- }).join('')||'<tr><td colspan="11" class="p-4 text-center text-slate-400">Sin órdenes.</td></tr>';
+   return `<tr class="border-b ${colorFila}"><td class="p-2 font-semibold">#${String(o.id).slice(-6)}${prioridadBadge}</td><td class="p-2 small whitespace-nowrap">${fecha(o.fecha)}</td><td class="p-2">${esc(o.cliente)}<br><span class="small">${esc(o.telefono)}</span></td><td class="p-2">${esc(o.bici)}<br><span class="small">${esc(o.trabajo)}</span></td><td class="p-2 font-semibold">${money(o.presupuesto)}</td><td class="p-2">${money(o.sena)}</td><td class="p-2 font-semibold ${(Number(o.pagado)||0)>0?'text-emerald-700':'text-slate-400'}">${money(Number(o.pagado)||0)}</td><td class="p-2"><select onchange="cambiarOT('${o.id}',this.value)" class="border rounded p-1"><option ${o.estado==='En taller'?'selected':''}>En taller</option><option ${o.estado==='En proceso'?'selected':''}>En proceso</option><option ${o.estado==='Esperando repuestos'?'selected':''}>Esperando repuestos</option><option ${o.estado==='Lista'?'selected':''}>Lista</option><option ${o.estado==='Entregada'?'selected':''}>Entregada</option></select></td><td class="p-2 font-semibold">${money(saldo)}</td><td class="p-2"><input type="number" class="border rounded p-1 w-24 ${lista?'':'bg-slate-100 text-slate-400'}" ${lista?'':'disabled'} value="${montoCobrar}" title="${lista?'Monto a cobrar al entregar':'Se habilita cuando la bici está Lista'}" onchange="setMontoCobrar('${o.id}',this.value)"></td><td class="p-2"><select class="border rounded p-1 text-xs" ${lista?'':'disabled'} onchange="setMedioCobroOT('${o.id}',this.value)"><option ${(!o.medioCobro||o.medioCobro==='Efectivo')?'selected':''}>Efectivo</option><option ${o.medioCobro==='Transferencia'?'selected':''}>Transferencia</option><option ${o.medioCobro==='Débito'?'selected':''}>Débito</option><option ${o.medioCobro==='Crédito'?'selected':''}>Crédito</option><option ${o.medioCobro==='Mercado Pago'?'selected':''}>Mercado Pago</option><option ${o.medioCobro==='Otro'?'selected':''}>Otro</option></select></td><td class="p-2 ot-acciones"><button onclick="editarOT('${o.id}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs" title="Modificar datos">✏️</button><button onclick="otWhatsApp('${o.id}')" class="bg-green-600 text-white px-2 py-1 rounded text-xs" title="Enviar WhatsApp al cliente">💬</button><button onclick="reciboOT('${o.id}')" class="bg-purple-600 text-white px-2 py-1 rounded text-xs" title="Ver comprobante / WhatsApp">🧾</button><button onclick="imprimirReciboOT('${o.id}')" class="bg-slate-800 text-white px-2 py-1 rounded text-xs" title="Imprimir 2 copias para impresora térmica">🖨️</button><button onclick="cobrarOT('${o.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">Cobrar</button><button type="button" data-delete-table="taller" data-delete-id="${o.id}" class="text-rose-600 delete-btn" title="Eliminar">🗑️</button></td></tr>`
+ }).join('')||'<tr><td colspan="12" class="p-4 text-center text-slate-400">Sin órdenes.</td></tr>';
 }
 async function setMontoCobrar(i,v){
  const o=state.ots.find(x=>String(x.id)===String(i));if(!o)return;
  const valor=Math.max(0,+v||0);o.montoCobrar=valor;
  try{await dbUpdate('taller',o.id,{precio_cobrado:valor})}catch(e){alert('No se pudo actualizar el importe: '+e.message);await cargarSupabase(true)}
+}
+function setMedioCobroOT(i,medio){
+ const o=state.ots.find(x=>String(x.id)===String(i)); if(!o)return;
+ o.medioCobro=medio||'Efectivo';
 }
 async function cambiarOT(i,e){
  const o=state.ots.find(x=>String(x.id)===String(i));if(!o)return;
@@ -1322,6 +1450,7 @@ function editarOT(i){
  const body=`<div class="space-y-3">
   <div><label class="small text-slate-500">Cliente</label><input id="editOtCliente" class="border p-2 rounded w-full" value="${esc(o.cliente)}"></div>
   <div><label class="small text-slate-500">Teléfono / WhatsApp</label><input id="editOtTel" class="border p-2 rounded w-full" value="${esc(o.telefono)}"></div>
+  <div><label class="small text-slate-500">Email</label><input id="editOtEmail" type="email" class="border p-2 rounded w-full" value="${esc(o.email||'')}"></div>
   <div><label class="small text-slate-500">Bicicleta</label><input id="editOtBici" class="border p-2 rounded w-full" value="${esc(o.bici)}"></div>
   <div><label class="small text-slate-500">Trabajo solicitado</label><input id="editOtTrabajo" class="border p-2 rounded w-full" value="${esc(o.trabajo)}"></div>
   <div class="grid grid-cols-2 gap-2">
@@ -1347,7 +1476,7 @@ async function guardarEdicionOT(i){
   fecha_promesa:document.getElementById('editOtPromesa').value||null,
   estado:document.getElementById('editOtEstado').value
  };
- try{await dbUpdate('taller',o.id,payload);cerrarModal();await cargarSupabase(true);alert('Orden actualizada y sincronizada.')}catch(e){alert('No se pudo actualizar la orden: '+e.message)}
+ try{await dbUpdate('taller',o.id,payload);if(o.clienteId){try{await dbUpdate('clientes',o.clienteId,{nombre:payload.cliente,telefono:payload.telefono,email:document.getElementById('editOtEmail').value.trim()||null})}catch(err){console.warn('OT guardada, pero no se pudo actualizar email del cliente:',err)}}cerrarModal();await cargarSupabase(true);alert('Orden actualizada y sincronizada.')}catch(e){alert('No se pudo actualizar la orden: '+e.message)}
 }
 
 
@@ -1436,32 +1565,53 @@ function reciboOT(i){
  abrirModal('Comprobante de Orden #' + String(o.id).slice(-6), body);
 }
 
-function cobrarOT(i){
+async function cobrarOT(i){
  const o=state.ots.find(x=>String(x.id)===String(i));
  if(!o)return alert('No se encontró la orden de trabajo.');
- const saldo=Math.max(0,(Number(o.presupuesto)||0)-(Number(o.sena)||0)-(Number(o.pagado)||0));
- if(saldo<=0)return alert('Esta reparación ya está pagada.');
- const lista=(o.estado==='Lista'||o.estado==='Entregada');
- const sugerido=lista&&Number(o.montoCobrar)>0?Math.min(saldo,Number(o.montoCobrar)):saldo;
- abrirModal('💵 Cobrar reparación',`<div class="space-y-3">
-  <div class="bg-slate-50 border rounded p-3 text-sm"><b>OT #${esc(String(o.id).slice(-6))}</b><br>${esc(o.cliente)} · ${esc(o.bici)}<br>Saldo pendiente: <b>${money(saldo)}</b></div>
-  <div><label class="small text-slate-500">Monto a cobrar</label><input id="cobroOtMonto" type="number" min="0" max="${saldo}" class="border p-2 rounded w-full" value="${sugerido}"></div>
-  <div><label class="small text-slate-500">Medio de pago</label><select id="cobroOtMedio" class="border p-2 rounded w-full"><option>Efectivo</option><option>Transferencia</option><option>Débito</option><option>Crédito</option><option>Mercado Pago</option><option>Otro</option></select></div>
-  <button onclick="confirmarCobroOT('${esc(String(o.id))}')" class="bg-emerald-600 text-white px-4 py-2 rounded w-full font-semibold">Confirmar cobro</button>
- </div>`);
-}
-async function confirmarCobroOT(i){
- const o=state.ots.find(x=>String(x.id)===String(i));if(!o)return;
- const saldo=Math.max(0,(Number(o.presupuesto)||0)-(Number(o.sena)||0)-(Number(o.pagado)||0));
- const m=Number(document.getElementById('cobroOtMonto')?.value||0);
- const medio=document.getElementById('cobroOtMedio')?.value||'Efectivo';
- if(!Number.isFinite(m)||m<=0||m>saldo)return alert('Ingresá un monto válido, hasta '+money(saldo)+'.');
+ if(!(o.estado==='Lista'||o.estado==='Entregada'))return alert('Primero marcá la bicicleta como Lista o Entregada.');
+ const presupuesto=Number(o.presupuesto)||0;
+ const sena=Number(o.sena)||0;
+ const pagado=Number(o.pagado)||0;
+ const monto=Number(o.montoCobrar)||0;
+ if(!Number.isFinite(monto)||monto<=0)return alert('Ingresá primero el monto en la columna A cobrar.');
+ /* Si hay presupuesto, controlamos contra su saldo. Si no hay presupuesto,
+    A cobrar funciona como importe libre: permite cobrar igualmente. */
+ const tienePresupuesto=presupuesto>0;
+ const saldo=tienePresupuesto?Math.max(0,presupuesto-sena-pagado):monto;
+ if(tienePresupuesto && saldo<=0)return alert('Esta reparación ya está pagada.');
+ if(tienePresupuesto && monto>saldo+0.000001)return alert('El monto a cobrar no puede superar el saldo pendiente ('+money(saldo)+').');
  try{
-  const {data,error}=await supabaseClient.rpc('crm_cobrar_ot_v1',{p_ot_id:String(o.id),p_monto:m,p_medio:medio});
-  if(error)throw error;if(!data?.ok)throw new Error(data?.error||'Supabase no confirmó el cobro.');
-  cerrarModal();await cargarSupabase(true);
-  alert(Number(data.saldo)>0?'Cobro registrado por '+medio+'. Saldo pendiente: '+money(Number(data.saldo)):'Cobro registrado por '+medio+'. Orden entregada.');
- }catch(e){console.error(e);alert('No se pudo registrar el cobro. No se modificó ni Taller ni Caja.\n\n'+e.message);await cargarSupabase(true)}
+  /* Cobro directo, como en la versión anterior: A cobrar -> Pagado.
+     No usa el RPC crm_cobrar_ot_v1 porque algunas instalaciones interpretan
+     precio_cobrado como dinero ya pagado y rechazan el mismo importe como excedente. */
+  const nuevoPagado=pagado+monto;
+  const nuevoSaldo=tienePresupuesto?Math.max(0,presupuesto-sena-nuevoPagado):0;
+  const nuevoEstado=(tienePresupuesto && nuevoSaldo<=0)?'Entregada':o.estado;
+  await dbUpdate('taller',o.id,{precio_pagado:nuevoPagado,precio_cobrado:nuevoSaldo,estado:nuevoEstado});
+  try{
+   /* Usa el mismo formato de Caja que el resto del sistema.
+      No envía la columna inexistente `cliente`; el nombre queda en descripción. */
+   await agregarMovInterno(
+    'Entrada',
+    'Taller',
+    o.medioCobro||'Efectivo',
+    monto,
+    'OT #'+String(o.id).slice(-6)+' - '+(o.cliente||'')+' - '+(o.bici||''),
+    'taller',
+    o.id,
+    o.clienteId||null
+   );
+  }catch(cajaErr){
+   /* Si Caja falla, revertimos Taller para no dejar un cobro a medias. */
+   try{await dbUpdate('taller',o.id,{precio_pagado:pagado,precio_cobrado:monto,estado:o.estado})}catch(_e){}
+   throw new Error('No se pudo registrar el ingreso en Caja: '+cajaErr.message);
+  }
+  await cargarSupabase(true);
+ }catch(e){
+  console.error(e);
+  alert('No se pudo registrar el cobro. No se modificó ni Taller ni Caja.\n\n'+e.message);
+  await cargarSupabase(true);
+ }
 }
 
 /* --- CAJA & CONCEPTOS --- */
@@ -1675,11 +1825,65 @@ function imprimirFichaCompra(id){
  const c=state.compras.find(x=>String(x.id)===String(id));if(!c)return;
  abrirImpresionFicha('Ficha de compra a proveedor',`<div class="box"><div class="row"><b>Fecha</b><span>${fecha(c.fecha)}</span></div><div class="row"><b>Proveedor</b><span>${esc(c.proveedor)}</span></div><div class="row"><b>Producto</b><span>${esc(c.producto)}</span></div><div class="row"><b>Cantidad</b><span>${c.cantidad}</span></div><div class="row"><b>Costo unitario</b><span>${money(c.costo)}</span></div><div class="row"><b>Total</b><span class="money">${money(c.total)}</span></div><div class="row"><b>Medio</b><span>${esc(c.medio)}</span></div></div>`);
 }
+function emailClientePorId(id){
+ const c=state.clientes.find(x=>String(x.id)===String(id));return String(c?.email||'').trim();
+}
+async function invocarGmail(payload){
+ const {data,error}=await supabaseClient.functions.invoke('gmail-send',{body:payload});
+ if(error)throw new Error(error.message||'No se pudo invocar gmail-send.');
+ if(!data?.ok)throw new Error(data?.error||'Gmail rechazó el envío.');
+ return data;
+}
+function reconectarGmailCRM(){
+ window.open('https://twezzstssnjrrnrzwdkv.supabase.co/functions/v1/gmail-oauth-start','_blank');
+}
+function probarGmailCRM(){
+ const inicial=String(document.getElementById('cfgEmailRemitente')?.value||appCfg.emailRemitente||'').trim();
+ abrirModal('✉️ Probar Gmail',`<div class="space-y-3"><p class="text-sm">Enviá un correo de prueba usando la cuenta Gmail conectada.</p><input id="gmailPruebaPara" type="email" class="border p-2 rounded w-full" placeholder="destinatario@email.com" value="${esc(inicial)}"><button id="btnGmailPrueba" onclick="confirmarPruebaGmail()" class="bg-cyan-700 text-white px-4 py-2 rounded w-full font-semibold">Enviar prueba</button></div>`);
+}
+async function confirmarPruebaGmail(){
+ const to=String(document.getElementById('gmailPruebaPara')?.value||'').trim();if(!to)return alert('Ingresá un email.');
+ const b=document.getElementById('btnGmailPrueba');if(b){b.disabled=true;b.textContent='⏳ Enviando...'}
+ try{await invocarGmail({to,subject:'Prueba Gmail - Bicicletas del Abasto',message:'Este es un correo de prueba enviado directamente desde el CRM.\\n\\n'+appCfg.firma});alert('Email enviado correctamente.');cerrarModal()}catch(e){alert('No se pudo enviar: '+(e?.message||e));if(b){b.disabled=false;b.textContent='Enviar prueba'}}
+}
 function enviarFichaClienteEmail(id){
- const c=state.clientes.find(x=>String(x.id)===String(id));if(!c)return;if(!c.email)return alert('El cliente no tiene email cargado.');
- const d=datosClienteCRM(c),asunto='Ficha - Bicicletería del Abasto';
- const cuerpo=`Hola ${c.nombre},%0D%0A%0D%0ATe enviamos el resumen de tu ficha.%0D%0ATotal pagado: ${money(d.pagado)}%0D%0ASaldo pendiente: ${money(d.deuda)}%0D%0A%0D%0ABicicletería del Abasto%0D%0AEntre Ríos 1887, Rosario%0D%0AWhatsApp 3416508671`;
- window.location.href=`mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent(asunto)}&body=${cuerpo}`;
+ const c=state.clientes.find(x=>String(x.id)===String(id));if(!c)return;
+ const d=datosClienteCRM(c),email=String(c.email||'').trim();
+ const asunto=`Ficha de cliente - ${c.nombre||'Bicicletas del Abasto'}`;
+ const cuerpo=`Hola ${c.nombre||''},\n\nTe enviamos el resumen de tu ficha.\n\nTotal pagado: ${money(d.pagado)}\nSaldo pendiente: ${money(d.deuda)}\nBicicletas registradas: ${d.bicis.length}\nÓrdenes de taller: ${d.ots.length}\n\n${appCfg.firma}`;
+ abrirEnvioGmail({titulo:'Enviar ficha de cliente',to:email,subject:asunto,message:cuerpo});
+}
+function abrirEnvioGmail({titulo='Enviar por Gmail',to='',subject='',message='',facturaId=null}){
+ abrirModal('✉️ '+titulo,`<div class="space-y-3"><div><label class="small text-slate-500">Para</label><input id="gmailPara" type="email" class="border p-2 rounded w-full" value="${esc(to)}"></div><div><label class="small text-slate-500">Asunto</label><input id="gmailAsunto" class="border p-2 rounded w-full" value="${esc(subject)}"></div><div><label class="small text-slate-500">Mensaje</label><textarea id="gmailMensaje" rows="8" class="border p-2 rounded w-full">${esc(message)}</textarea></div>${facturaId?'<div class="rounded border bg-blue-50 p-2 text-sm">📎 Se adjuntará automáticamente el PDF de la factura.</div>':''}<button id="btnEnviarGmailCRM" onclick="confirmarEnvioGmail(${facturaId?`'${esc(String(facturaId))}'`:'null'})" class="bg-cyan-700 text-white px-4 py-2 rounded w-full font-semibold">✉️ Enviar por Gmail</button></div>`);
+}
+async function confirmarEnvioGmail(facturaId=null){
+ const to=String(document.getElementById('gmailPara')?.value||'').trim(),subject=String(document.getElementById('gmailAsunto')?.value||'').trim(),message=String(document.getElementById('gmailMensaje')?.value||'');
+ if(!to)return alert('Ingresá el email del destinatario.');if(!subject)return alert('Ingresá un asunto.');
+ const btn=document.getElementById('btnEnviarGmailCRM');if(btn){btn.disabled=true;btn.textContent='⏳ Enviando...'}
+ try{
+  const payload={to,subject,message};
+  if(facturaId){
+   const f=(state.facturas||[]).find(x=>String(x.id)===String(facturaId));if(!f?.cae)throw new Error('La factura no está autorizada.');
+   const {blob,filename}=await generarArchivoFacturaPDF(f);
+   payload.attachment_base64=await blobABase64(blob);payload.attachment_name=filename;
+  }
+  await invocarGmail(payload);
+  if(facturaId)marcarFacturaEmailEnviada(facturaId,to);
+  alert('Email enviado correctamente por Gmail.');cerrarModal();
+ }catch(e){console.error(e);alert('No se pudo enviar el email: '+(e?.message||e));if(btn){btn.disabled=false;btn.textContent='✉️ Enviar por Gmail'}}
+}
+function marcarFacturaEmailEnviada(id,to){
+ try{const x=JSON.parse(localStorage.getItem('abasto_gmail_envios')||'{}');x[String(id)]={to,fecha:new Date().toISOString()};localStorage.setItem('abasto_gmail_envios',JSON.stringify(x))}catch(_){}
+}
+function facturaEmailYaEnviada(id){
+ try{return JSON.parse(localStorage.getItem('abasto_gmail_envios')||'{}')[String(id)]||null}catch(_){return null}
+}
+function abrirClienteRecordatorio(id){
+ const r=state.recordatorios.find(x=>String(x.id)===String(id));if(!r)return;
+ const nombre=String(r.cliente||'').trim().toLowerCase();
+ const c=state.clientes.find(x=>String(x.nombre||'').trim().toLowerCase()===nombre);
+ if(!c)return alert('No se encontró una ficha CRM vinculada a este recordatorio.');
+ historialCliente(c.id);
 }
 function whatsappRecordatorioService(id){
  const r=state.recordatorios.find(x=>String(x.id)===String(id));if(!r)return;
@@ -2064,17 +2268,19 @@ async function guardarVenta(){
  const pagoInicial=sena>0?sena:total;
  const saldo=Math.max(0,total-pagoInicial);
  const documento=vDocumento.value.trim();
+ const email=vEmail.value.trim();
  const tipoVenta=tipoVentaActual();
- const v={fecha:fechaHoraLocal(),tipoVenta,cliente:vCliente.value.trim()||'Consumidor final',telefono:vTelefono.value.trim(),cliente_documento:documento||null,marca:valorMarcaVenta()||null,modelo:valorModeloVenta()||null,producto:vProducto.value.trim()||'Venta general',total,costo,ganancia:total-costo,cantidad,medio:vMedio.value,notas:vNotas.value.trim(),nro_serie:vNroSerie.value.trim()||null,sena:sena,pagado:sena>0?0:total,precio_cobrado:saldo};
+ const v={fecha:fechaHoraLocal(),tipoVenta,cliente:vCliente.value.trim()||'Consumidor final',telefono:vTelefono.value.trim(),cliente_email:email||null,cliente_documento:documento||null,marca:valorMarcaVenta()||null,modelo:valorModeloVenta()||null,producto:vProducto.value.trim()||'Venta general',total,costo,ganancia:total-costo,cantidad,medio:vMedio.value,notas:vNotas.value.trim(),nro_serie:vNroSerie.value.trim()||null,sena:sena,pagado:sena>0?0:total,precio_cobrado:saldo};
  try{
   let cliente=null;
   if(documento)cliente=state.clientes.find(x=>String(x.documento||'').replace(/\D/g,'')===documento.replace(/\D/g,''));
-  if(!cliente&&v.telefono)cliente=state.clientes.find(x=>x.telefono===v.telefono);
+  if(!cliente&&v.telefono)cliente=state.clientes.find(x=>normalizarTelefono(x.telefono)===normalizarTelefono(v.telefono));
+  if(!cliente&&email)cliente=state.clientes.find(x=>String(x.email||'').toLowerCase()===email.toLowerCase());
   if(cliente){
    v.cliente_id=cliente.id;
-   try{await dbUpdate('clientes',cliente.id,{nombre:v.cliente,telefono:v.telefono||cliente.telefono,documento:documento||cliente.documento||null})}catch(err){console.warn('No se pudo actualizar el cliente:',err)}
+   try{await dbUpdate('clientes',cliente.id,{nombre:v.cliente,telefono:v.telefono||cliente.telefono,documento:documento||cliente.documento||null,email:email||cliente.email||null})}catch(err){console.warn('No se pudo actualizar el cliente:',err)}
   }else if(v.cliente!=='Consumidor final'&&(v.telefono||documento)){
-   try{cliente=await dbInsert('clientes',{nombre:v.cliente,telefono:v.telefono,email:null,direccion:null,documento:documento||null,segmento:'Nuevo',notas:'Cliente de venta'});v.cliente_id=cliente.id}catch(err){console.warn('La venta continuará, pero no se pudo crear el cliente:',err)}
+   try{cliente=await dbInsert('clientes',{nombre:v.cliente,telefono:v.telefono,email:email||null,direccion:null,documento:documento||null,segmento:'Nuevo',notas:'Cliente de venta'});v.cliente_id=cliente.id}catch(err){console.warn('La venta continuará, pero no se pudo crear el cliente:',err)}
   }
   const stockItem=tipoVenta==='Bicicleta'?stockCoincidenteVenta(v):null;
   if(tipoVenta==='Bicicleta'&&stockItem&&Number(stockItem.cantidad)<cantidad)throw new Error('Stock insuficiente para '+[stockItem.marca,stockItem.modelo].filter(Boolean).join(' ')+'.');
@@ -2091,7 +2297,7 @@ async function guardarVenta(){
   const crearService=tipoVenta==='Bicicleta'&&document.getElementById('vCrearService')?.checked;
   const fechaService=document.getElementById('vFechaService')?.value||'';
   const textoService=document.getElementById('vTextoService')?.value.trim()||appCfg.tituloService||'Recordar al cliente el service de su bicicleta';
-  ['vCliente','vTelefono','vDocumento','vMarca','vModelo','vProducto','vCosto','vPrecio','vNotas','vNroSerie','vMargen','vMarcaManual','vModeloManual'].forEach(x=>document.getElementById(x).value='');vMarcaManual.classList.add('hidden');vModeloManual.classList.add('hidden');vSena.value=0;vCantidad.value=1;vProductoSelect.value='';if(document.getElementById('vStockOrigen'))document.getElementById('vStockOrigen').value='';actualizarResumenPagoVenta();
+  ['vCliente','vTelefono','vEmail','vDocumento','vMarca','vModelo','vProducto','vCosto','vPrecio','vNotas','vNroSerie','vMargen','vMarcaManual','vModeloManual'].forEach(x=>document.getElementById(x).value='');vMarcaManual.classList.add('hidden');vModeloManual.classList.add('hidden');vSena.value=0;vCantidad.value=1;vProductoSelect.value='';if(document.getElementById('vStockOrigen'))document.getElementById('vStockOrigen').value='';actualizarResumenPagoVenta();
   if(crearService&&fechaService){
    try{await dbInsert('recordatorios',{fecha:fechaService,cliente:v.cliente,texto:textoService+' · '+descripcionVenta(v)+(v.nro_serie?' · Serie '+v.nro_serie:'')})}catch(er){console.warn('Venta guardada, pero no se pudo crear la alerta de service:',er)}
   }
@@ -2369,7 +2575,7 @@ async function confirmarEmisionReal(facturaId){
    }
    await cargarSupabase(true);
    const f=(state.facturas||[]).find(x=>String(x.id)===String(facturaId));
-   if(f)return mostrarFacturaGenerica(f);
+   if(f){await enviarFacturaGmailAutomatico(f);return mostrarFacturaGenerica(f);}
    abrirModal('✅ Factura autorizada',`<div class="space-y-3"><div class="bg-emerald-50 border border-emerald-200 rounded p-3 text-sm"><b>${esc(data.tipoComprobanteDescripcion||nombreCbte(data.tipoComprobante))}:</b> ${String(Number(data.puntoVenta||4)).padStart(4,'0')}-${String(Number(data.comprobanteNumero||0)).padStart(8,'0')}<br><b>CAE:</b> <span class="font-mono">${esc(data.cae)}</span><br><b>Vencimiento CAE:</b> ${esc(data.caeVencimiento||'-')}</div><button onclick="cerrarModal()" class="bg-slate-800 text-white px-4 py-2 rounded w-full">Cerrar</button></div>`);
  }catch(e){
    console.error(e);
@@ -2512,7 +2718,7 @@ function ajustarVistaFactura(){
 function verComprobanteFactura(facturaId){
  const f=(state.facturas||[]).find(x=>String(x.id)===String(facturaId));
  if(!f?.cae)return alert('La factura todavía no está autorizada.');
- abrirModal('📄 Comprobante',`<div class="space-y-3"><div id="vistaFacturaScroll" style="max-height:72vh;overflow-y:auto;overflow-x:hidden;background:#e5e7eb;padding:12px"><div id="vistaFacturaWrap"><div id="vistaFactura">${facturaHojaHTML(f,'ORIGINAL')}</div></div></div><div class="grid grid-cols-1 sm:grid-cols-3 gap-2"><button onclick="descargarPDFFactura('${esc(String(f.id))}')" class="bg-blue-700 text-white px-3 py-2 rounded font-semibold">⬇️ Descargar PDF</button><button onclick="enviarFacturaWhatsApp('${esc(String(f.id))}')" class="bg-emerald-700 text-white px-3 py-2 rounded font-semibold">📱 WhatsApp</button><button onclick="enviarFacturaEmail('${esc(String(f.id))}')" class="bg-cyan-700 text-white px-3 py-2 rounded font-semibold">✉️ Email</button><button onclick="cerrarModal()" class="bg-slate-800 text-white px-3 py-2 rounded">Cerrar</button></div></div>`);
+ abrirModal('📄 Comprobante',`<div class="space-y-3"><div id="vistaFacturaScroll" style="max-height:72vh;overflow-y:auto;overflow-x:hidden;background:#e5e7eb;padding:12px"><div id="vistaFacturaWrap"><div id="vistaFactura">${facturaHojaHTML(f,'ORIGINAL')}</div></div></div><div class="grid grid-cols-1 sm:grid-cols-3 gap-2"><button onclick="descargarPDFFactura('${esc(String(f.id))}')" class="bg-blue-700 text-white px-3 py-2 rounded font-semibold">⬇️ Descargar PDF</button><button onclick="enviarFacturaWhatsApp('${esc(String(f.id))}')" class="bg-emerald-700 text-white px-3 py-2 rounded font-semibold">📱 WhatsApp</button><button onclick="enviarFacturaEmail('${esc(String(f.id))}')" class="bg-cyan-700 text-white px-3 py-2 rounded font-semibold">✉️ Gmail</button><button onclick="cerrarModal()" class="bg-slate-800 text-white px-3 py-2 rounded">Cerrar</button></div></div>`);
  setTimeout(()=>{prepararQRs(document.getElementById('vistaFactura'));ajustarVistaFactura();},80);
 }
 async function blobPDFFactura(f){
@@ -2703,13 +2909,28 @@ async function guardarEdicionFacturaPendiente(facturaId){
 
 function enviarFacturaEmail(id){
  const f=(state.facturas||[]).find(x=>String(x.id)===String(id));if(!f)return;
- const email=String(f.email||'').trim();if(!email)return alert('La factura no tiene email del cliente cargado.');
- const nro=f.cae?facturaNumeroCRM(f):'pendiente';
- const asunto=`Factura ${nombreCbte(f.tipo)} ${nro} - Bicicletería del Abasto`;
- const cuerpo=`Hola ${f.cliente||''},%0D%0A%0D%0ATe enviamos tu factura de Bicicletería del Abasto.%0D%0ATotal: ${money(f.importe)}%0D%0AComprobante: ${nombreCbte(f.tipo)} ${nro}%0D%0A%0D%0AEntre Ríos 1887, Rosario%0D%0AWhatsApp 3416508671%0D%0A%0D%0AAdjuntá el PDF descargado desde el sistema.`;
- window.location.href=`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(asunto)}&body=${cuerpo}`;
+ if(!f.cae)return alert('La factura todavía no está autorizada.');
+ const email=String(f.email||f.cliente_email||'').trim();
+ const nro=facturaNumeroCRM(f);
+ const cliente=f.cliente||f.cliente_nombre||'';
+ const asunto=valorPlantilla(appCfg.asuntoFactura,{cliente,nro,factura:nombreCbte(f.tipo)})||`Factura ${nombreCbte(f.tipo)} ${nro} - Bicicletería del Abasto`;
+ const cuerpo=valorPlantilla(appCfg.emailFactura,{cliente,nro,total:money(f.importe),factura:nombreCbte(f.tipo)})+'\\n\\n'+appCfg.firma;
+ abrirEnvioGmail({titulo:'Enviar factura por Gmail',to:email,subject:asunto,message:cuerpo,facturaId:id});
 }
-function mostrarFacturaGenerica(f){abrirModal(f.cae?'✅ Factura autorizada':'🧾 Factura pendiente',`<div class="space-y-3"><div class="${f.cae?'bg-emerald-50 border-emerald-200':'bg-amber-50 border-amber-200'} border rounded p-3 text-sm"><b>Estado:</b> ${esc(f.estado)}<br><b>${esc(nombreCbte(f.tipo))}:</b> ${f.cae?esc(String(f.ptoVta).padStart(4,'0')+'-'+String(f.numero).padStart(8,'0')):'Pendiente de emisión'}<br><b>Cliente:</b> ${esc(f.cliente)}<br><b>WhatsApp:</b> ${esc(f.telefono||'No cargado')}<br><b>${esc(nombreDocTipo(f.docTipo))}:</b> ${esc(f.documento||'-')}<br><b>Condición IVA:</b> ${esc(nombreCondicionIVA(f.condicionIva))}<br>${Number(f.tipo)===1?`<b>Neto gravado:</b> ${money(desgloseIVAVisual(f).neto)}<br><b>IVA 21%:</b> ${money(desgloseIVAVisual(f).iva)}<br>`:''}<b>Total:</b> ${money(f.importe)}${f.cae?`<br><b>CAE:</b> <span class="font-mono">${esc(f.cae)}</span>`:''}</div>${f.cae&&f.estado==='autorizada'?`<div class="grid grid-cols-1 sm:grid-cols-3 gap-2"><button onclick="verComprobanteFactura('${esc(String(f.id))}')" class="bg-blue-700 text-white px-3 py-2 rounded font-semibold">📄 Ver comprobante</button><button onclick="descargarPDFFactura('${esc(String(f.id))}')" class="bg-indigo-700 text-white px-3 py-2 rounded font-semibold">⬇️ PDF</button><button onclick="enviarFacturaWhatsApp('${esc(String(f.id))}')" class="bg-emerald-700 text-white px-3 py-2 rounded font-semibold">📱 WhatsApp</button></div><button onclick="consultarFacturaEnARCA('${esc(String(f.id))}')" class="bg-cyan-700 text-white px-4 py-2 rounded w-full font-semibold">🔎 Consultar esta factura en ARCA</button>`:''}${!f.cae&&f.estado==='pendiente'?`<div class="grid grid-cols-2 gap-2"><button onclick="editarFacturaPendiente('${esc(String(f.id))}')" class="bg-amber-600 text-white px-4 py-2 rounded w-full font-semibold">✏️ Modificar datos</button><button onclick="emitirFacturaPendienteARCA('${esc(String(f.id))}')" class="bg-red-700 text-white px-4 py-2 rounded w-full font-semibold">🔐 Emitir comprobante REAL</button></div>`:''}<button onclick="cerrarModal()" class="bg-slate-800 text-white px-4 py-2 rounded w-full">Cerrar</button></div>`)}
+async function enviarFacturaGmailAutomatico(f){
+ if(!appCfg.emailFacturaAuto||!f?.cae)return;
+ const email=String(f.email||f.cliente_email||'').trim();if(!email||facturaEmailYaEnviada(f.id))return;
+ const cliente=f.cliente||f.cliente_nombre||'',nro=facturaNumeroCRM(f);
+ const subject=valorPlantilla(appCfg.asuntoFactura,{cliente,nro,factura:nombreCbte(f.tipo)})||`Factura ${nombreCbte(f.tipo)} ${nro}`;
+ const message=valorPlantilla(appCfg.emailFactura,{cliente,nro,total:money(f.importe),factura:nombreCbte(f.tipo)})+'\\n\\n'+appCfg.firma;
+ try{
+  const {blob,filename}=await generarArchivoFacturaPDF(f);
+  await invocarGmail({to:email,subject,message,attachment_base64:await blobABase64(blob),attachment_name:filename});
+  marcarFacturaEmailEnviada(f.id,email);
+  console.info('Factura enviada automáticamente por Gmail a',email);
+ }catch(e){console.error('No se pudo enviar automáticamente la factura por Gmail:',e)}
+}
+function mostrarFacturaGenerica(f){abrirModal(f.cae?'✅ Factura autorizada':'🧾 Factura pendiente',`<div class="space-y-3"><div class="${f.cae?'bg-emerald-50 border-emerald-200':'bg-amber-50 border-amber-200'} border rounded p-3 text-sm"><b>Estado:</b> ${esc(f.estado)}<br><b>${esc(nombreCbte(f.tipo))}:</b> ${f.cae?esc(String(f.ptoVta).padStart(4,'0')+'-'+String(f.numero).padStart(8,'0')):'Pendiente de emisión'}<br><b>Cliente:</b> ${esc(f.cliente)}<br><b>WhatsApp:</b> ${esc(f.telefono||'No cargado')}<br><b>${esc(nombreDocTipo(f.docTipo))}:</b> ${esc(f.documento||'-')}<br><b>Condición IVA:</b> ${esc(nombreCondicionIVA(f.condicionIva))}<br>${Number(f.tipo)===1?`<b>Neto gravado:</b> ${money(desgloseIVAVisual(f).neto)}<br><b>IVA 21%:</b> ${money(desgloseIVAVisual(f).iva)}<br>`:''}<b>Total:</b> ${money(f.importe)}${f.cae?`<br><b>CAE:</b> <span class="font-mono">${esc(f.cae)}</span>`:''}</div>${f.cae&&f.estado==='autorizada'?`<div class="grid grid-cols-1 sm:grid-cols-4 gap-2"><button onclick="verComprobanteFactura('${esc(String(f.id))}')" class="bg-blue-700 text-white px-3 py-2 rounded font-semibold">📄 Ver comprobante</button><button onclick="descargarPDFFactura('${esc(String(f.id))}')" class="bg-indigo-700 text-white px-3 py-2 rounded font-semibold">⬇️ PDF</button><button onclick="enviarFacturaWhatsApp('${esc(String(f.id))}')" class="bg-emerald-700 text-white px-3 py-2 rounded font-semibold">📱 WhatsApp</button><button onclick="enviarFacturaEmail('${esc(String(f.id))}')" class="bg-cyan-700 text-white px-3 py-2 rounded font-semibold">✉️ Gmail</button></div><button onclick="consultarFacturaEnARCA('${esc(String(f.id))}')" class="bg-cyan-700 text-white px-4 py-2 rounded w-full font-semibold">🔎 Consultar esta factura en ARCA</button>`:''}${!f.cae&&f.estado==='pendiente'?`<div class="grid grid-cols-2 gap-2"><button onclick="editarFacturaPendiente('${esc(String(f.id))}')" class="bg-amber-600 text-white px-4 py-2 rounded w-full font-semibold">✏️ Modificar datos</button><button onclick="emitirFacturaPendienteARCA('${esc(String(f.id))}')" class="bg-red-700 text-white px-4 py-2 rounded w-full font-semibold">🔐 Emitir comprobante REAL</button></div>`:''}<button onclick="cerrarModal()" class="bg-slate-800 text-white px-4 py-2 rounded w-full">Cerrar</button></div>`)}
 function mostrarFacturaCaja(i){const f=facturaRelacionadaCaja(state.movimientos.find(x=>String(x.id)===String(i))||{});if(f)mostrarFacturaGenerica(f)}
 
 function datosFacturaVenta(v){
@@ -3183,7 +3404,7 @@ if(elTot)elTot.textContent=state.ots.length;
 if(elOld)elOld.textContent=state.ots.filter(o=>o.estado!=='Entregada').length;dClientes.textContent=state.clientes.length;
  const low=state.stock.filter(s=>s.cantidad<=2);
  alertas.innerHTML=(low.length?`<div class="bg-amber-50 p-2 rounded">📦 ${low.length} productos con stock bajo.</div>`:'')+(state.ots.filter(o=>o.estado==='Esperando repuestos').length?`<div class="bg-rose-50 p-2 rounded">🔧 Hay OT esperando repuestos.</div>`:'')+(state.arqueos.length&&Math.abs(state.arqueos[0].diferencia)>0?`<div class="bg-rose-50 p-2 rounded">💰 Último arqueo con diferencia.</div>`:'')||'<div class="text-slate-400">Sin alertas críticas.</div>';
- recordatoriosDash.innerHTML=state.recordatorios.slice().sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))).slice(0,10).map(r=>`<div class="border rounded p-3"><div class="flex justify-between gap-2"><b>${esc(r.cliente||'General')}</b><div class="flex gap-2"><button onclick="whatsappRecordatorioService('${r.id}')" class="text-emerald-700 text-xs" title="Preparar WhatsApp">💬</button><button type="button" data-delete-table="recordatorios" data-delete-id="${r.id}" class="text-rose-600 text-xs delete-btn" title="Eliminar recordatorio">🗑️</button></div></div><span class="small">${esc(r.texto)} · ${esc(r.fecha||'Sin fecha')}</span></div>`).join('')||'<div class="text-slate-400">No hay recordatorios.</div>';
+ recordatoriosDash.innerHTML=state.recordatorios.slice().sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))).slice(0,10).map(r=>`<div class="recordatorio-dash-item border rounded-lg p-4"><div class="flex justify-between gap-3 items-start"><div class="min-w-0"><button type="button" onclick="abrirClienteRecordatorio('${r.id}')" class="recordatorio-cliente-link font-semibold text-left" title="Abrir ficha del cliente">👤 ${esc(r.cliente||'General')}</button><div class="recordatorio-fecha mt-1">📅 ${esc(r.fecha||'Sin fecha')}</div></div><div class="flex gap-2 shrink-0"><button onclick="whatsappRecordatorioService('${r.id}')" class="text-emerald-700 text-sm" title="Preparar WhatsApp">💬</button><button type="button" data-delete-table="recordatorios" data-delete-id="${r.id}" class="text-rose-600 text-sm delete-btn" title="Eliminar recordatorio">🗑️</button></div></div><div class="recordatorio-texto mt-3">${esc(r.texto)}</div></div>`).join('')||'<div class="text-slate-400">No hay recordatorios.</div>';
  
  let days={}; for(let i=13;i>=0;i--){let d=new Date();d.setDate(d.getDate()-i);days[isoDate(d)]=0}
  ms.forEach(m=>{const d=isoDate(m.fecha);if(days[d]!==undefined)days[d]+=m.tipo==='Entrada'?m.monto:-m.monto});
