@@ -949,7 +949,6 @@ html body .item-operativo .small{color:var(--acc-tx)}
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Del Abasto">
 <link rel="apple-touch-icon" href="./icon-192.png">
-
 </head>
 <body class="font-sans text-slate-800">
 <div id="appSplash"><img class="splash-logo" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-nova-logo alt="Bicicletería del Abasto"></div>
@@ -1657,13 +1656,7 @@ function imprimirReciboOT(i){
  .firma{margin-top:7mm}.gracias{font-weight:700;margin-top:5mm}
  @media screen{body{background:#eee}.ticket{background:#fff;margin:8px auto;box-shadow:0 1px 8px #aaa}}
  @media print{body{background:#fff}.ticket{box-shadow:none;margin:0 auto}}
- </style></head><body>${contenido}<script>window.onload=()=>{setTimeout(()=>window.print(),250)}<\/script><script>
-if('serviceWorker' in navigator){
- window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
-}
-</script>
-
-</body></html>`);
+ </style></head><body>${contenido}<script>window.onload=()=>{setTimeout(()=>window.print(),250)}<\/script></body></html>`);
  w.document.close();
 }
 
@@ -4389,6 +4382,13 @@ html body .nova-dayrow.on{border-color:rgba(56,189,248,.5);background:rgba(56,18
   /* Si los datos ya estaban cargados antes de instalar este módulo, dibujar ahora. */
   try{ if(ok()&&state.movimientos){ render('caja'); render('ventas') } }catch(e){}
 })();
+</script>
+<script id="pwa-register">
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./sw.js').catch(function(){});
+  });
+}
 </script>
 </body>
 </html>
