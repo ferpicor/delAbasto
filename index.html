@@ -972,7 +972,7 @@ html body .item-operativo .small{color:var(--acc-tx)}
 <div id="appShell" class="hidden">
 <header class="bg-slate-800 text-white p-4 sticky top-0 z-30 shadow">
  <div class="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between gap-3">
-  <div class="flex items-center gap-3"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-nova-logo class="brand-logo w-10 h-10 shrink-0" alt="Logo"><h1 class="text-xl font-bold app-brand-title">Bicicletería del Abasto</h1><span id="reloj" class="text-xs bg-slate-700 px-2 py-1 rounded">--:--:--</span><span id="syncStatus" class="text-xs bg-amber-600 px-2 py-1 rounded">⏳ Conectando...</span><span id="rolBadge" class="text-xs bg-slate-700 px-2 py-1 rounded" title="Rol de tu usuario"></span></div>
+  <div class="flex flex-wrap items-center gap-3"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-nova-logo class="brand-logo w-10 h-10 shrink-0" alt="Logo"><h1 class="text-xl font-bold app-brand-title">Bicicletería del Abasto</h1><span id="reloj" class="text-xs bg-slate-700 px-2 py-1 rounded">--:--:--</span><span id="syncStatus" class="text-xs bg-amber-600 px-2 py-1 rounded">⏳ Conectando...</span><span id="rolBadge" class="text-xs bg-slate-700 px-2 py-1 rounded" title="Rol de tu usuario"></span></div>
   <nav class="flex flex-wrap gap-2">
    <button class="tab px-3 py-2 rounded bg-blue-600" onclick="tab('dashboard')" id="t-dashboard">🏠 Inicio</button>
    <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('taller')" id="t-taller">🛠️ Taller</button>
@@ -981,6 +981,7 @@ html body .item-operativo .small{color:var(--acc-tx)}
    <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('crm')" id="t-crm">👥 CRM</button>
    <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('stock')" id="t-stock">📦 Stock</button>
    <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('compras')" id="t-compras">🚚 Compras</button>
+   <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('catalogoProveedores')" id="t-catalogoProveedores">🏷️ Proveedores y Productos</button>
    <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('reportes')" id="t-reportes">📊 Reportes</button>
    <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('configuracion')" id="t-configuracion" title="Configuración">⚙️ Configuración</button>
    <button class="px-3 py-2 rounded bg-rose-700 hover:bg-rose-600" onclick="cerrarSesion()" title="Cerrar sesión">🚪 Salir</button>
@@ -1160,6 +1161,99 @@ html body .item-operativo .small{color:var(--acc-tx)}
  </div>
  <div class="card p-4 overflow-x-auto"><h3 class="font-semibold mb-3">🏭 Proveedores</h3><div id="listaProveedores"></div></div>
  <div class="card p-4"><div class="flex flex-col md:flex-row justify-between gap-2 mb-3"><h3 class="font-semibold">🧾 Compras recientes</h3><input id="buscarCompras" oninput="renderCompras()" class="border p-2 rounded-lg text-sm" placeholder="Buscar proveedor o producto"></div><div id="listaCompras"></div></div>
+</section>
+
+
+<style id="catalogo-v8">
+#catalogoProveedores .cat-badge{display:inline-block;font-size:.68rem;line-height:1.2;padding:2px 7px;border-radius:999px;border:1px solid var(--line-2);color:var(--tx-2);margin:2px 4px 0 0;white-space:nowrap}
+#catalogoProveedores .cat-b-verde{background:var(--emerald-bg);border-color:var(--emerald-bd);color:var(--emerald-tx)}
+#catalogoProveedores .cat-b-rojo{background:var(--rose-bg);border-color:var(--rose-bd);color:var(--rose-tx)}
+#catalogoProveedores .cat-b-ambar{background:var(--amber-bg);border-color:var(--amber-bd);color:var(--amber-tx)}
+#catalogoProveedores .cat-b-azul{background:var(--blue-bg);border-color:var(--blue-bd);color:var(--blue-tx)}
+#catalogoProveedores .cat-b-violeta{background:var(--violet-bg);border-color:var(--violet-bd);color:var(--violet-tx)}
+#catalogoProveedores .cat-inactivo td{opacity:.55}
+#catalogoProveedores .cat-sub{font-size:.72rem;color:var(--tx-3);margin-top:2px}
+#catalogoProveedores .cat-acc button{padding:2px 4px}
+#catalogoProveedores .cat-chip{display:inline-flex;flex-direction:column;gap:2px;border:1px solid var(--line-2);border-radius:10px;padding:8px 10px;min-width:150px;cursor:pointer;background:var(--panel-2);text-align:left}
+#catalogoProveedores .cat-chip.activo{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc-glow)}
+#catalogoProveedores .cat-wrap{white-space:normal;max-width:160px;text-align:left;cursor:pointer;border-radius:10px}
+#catalogoProveedores td.cat-acc{white-space:normal;width:70px;min-width:70px}
+#catalogoProveedores .cat-sube{color:var(--rose-tx);font-size:.72rem}
+#catalogoProveedores .cat-baja{color:var(--emerald-tx);font-size:.72rem}
+#catalogoProveedores input[type=checkbox]{cursor:pointer}
+#ppTabla tr.pp-nav-activa{background:rgba(56,189,248,.12)!important;box-shadow:inset 3px 0 0 var(--acc)}
+#ppTabla tr.pp-nav-activa td{color:var(--tx-strong)}
+#ppBuscar:focus{box-shadow:0 0 0 3px rgba(56,189,248,.18)!important}
+.cat-comp-tabla td,.cat-comp-tabla th{padding:6px 8px;border-bottom:1px solid var(--line-2);font-size:.85rem}
+.cat-comp-mejor{background:var(--emerald-bg)}
+#comprasDash .compra-check-row{grid-template-columns:28px 1fr 36px}
+@media (max-width:700px){#comprasDash .compra-check-row{grid-template-columns:34px 1fr 40px}}
+.compra-buscar{background:transparent!important;border:0!important;padding:4px!important;font-size:1rem;opacity:.75}
+.compra-buscar:hover{opacity:1}
+</style>
+
+<section id="catalogoProveedores" class="hidden space-y-5">
+ <div class="card p-5">
+  <div class="flex flex-col lg:flex-row justify-between gap-4 items-start lg:items-center">
+   <div><h2 class="text-xl font-bold">🏷️ Proveedores y Productos</h2><p class="text-sm text-slate-500">Todas las listas de tus proveedores en un solo lugar: buscá, compará precios y armá el pedido.</p></div>
+   <div class="flex flex-wrap gap-2 items-center">
+    <label class="text-sm font-semibold">Margen general %</label><input id="ppMargenGeneral" type="number" min="0" step="0.1" class="border p-2 rounded-lg w-24" value="50" onchange="ppCambiarMargenGeneral(this.value)">
+    <select id="ppRedondeo" class="border p-2 rounded-lg" onchange="ppCambiarRedondeo(this.value)" title="Redondeo del precio sugerido"><option value="0">Sin redondeo</option><option value="10">Redondear a $10</option><option value="100">Redondear a $100</option><option value="500">Redondear a $500</option></select>
+    <button onclick="ppAbrirNuevo()" class="bg-blue-600 text-white px-4 py-2 rounded-lg">＋ Producto</button>
+   </div>
+  </div>
+  <div id="ppAviso" class="hidden mt-3"></div>
+ </div>
+
+ <div class="card p-4 space-y-3">
+  <div class="flex flex-col lg:flex-row justify-between gap-3 lg:items-center">
+   <div><h3 class="font-semibold">📥 Importar lista de precios</h3><div class="small">PDF, Excel o CSV. Primero ves una vista previa; no se guarda nada hasta que confirmes.</div></div>
+   <div class="flex flex-wrap gap-2">
+    <select id="ppImportProveedor" class="border p-2 rounded-lg" onchange="if(this.value==='__nuevo__')ppNuevoProveedorImport()"><option value="">Elegir proveedor…</option></select>
+    <input id="ppImportArchivo" type="file" accept=".pdf,.xlsx,.xls,.csv,.txt" class="border p-2 rounded-lg" onchange="ppPrepararImportacion(this.files?.[0])">
+   </div>
+  </div>
+  <div id="ppImportEstado" class="small text-slate-500">Reconoce las listas de La Argentina, Barbatelli, Bicipartes AM (Mazzini) y Zambito. Otros formatos se intentan leer igual.</div>
+  <div id="ppImportPreview" class="hidden"></div>
+ </div>
+
+ <div class="card p-4 space-y-3">
+  <div class="flex flex-col md:flex-row justify-between gap-3 md:items-center"><div><h3 class="font-semibold">🛒 Pedidos a proveedores</h3><div class="small">Agregá artículos con 🛒, ajustá cantidades, mandalo por WhatsApp y cuando llegue registralo como compra.</div></div><button type="button" onclick="ppVaciarPedidos()" class="bg-slate-700 px-3 py-2 rounded-lg text-sm">Vaciar pedidos</button></div>
+  <div id="ppPedidos"></div>
+ </div>
+
+ <div class="card p-4 space-y-3">
+  <div id="ppChips" class="flex flex-wrap gap-2"></div>
+  <div class="small">⌨️ Escribí para buscar (ej: <i>camara 29 presta</i>) · ↑ ↓ para recorrer · Enter agrega al pedido</div>
+  <div class="grid md:grid-cols-4 gap-3">
+   <input id="ppBuscar" class="border p-2 rounded-lg md:col-span-2" placeholder="Buscar por producto, medida, código, marca o proveedor..." oninput="ppBuscarCambio()" onkeydown="return ppBuscarTecla(event)" autocomplete="off">
+   <select id="ppFiltroProveedor" class="border p-2 rounded-lg" onchange="ppRender()"><option value="">Todos los proveedores</option></select>
+   <select id="ppOrden" class="border p-2 rounded-lg" onchange="ppRender()"><option value="producto">Ordenar: Producto</option><option value="costo">Menor costo</option><option value="costoDesc">Mayor costo</option><option value="precio">Menor precio sugerido</option><option value="proveedor">Proveedor</option><option value="suba">Mayor aumento</option><option value="actualizado">Más recientes</option></select>
+   <select id="ppFiltroCategoria" class="border p-2 rounded-lg" onchange="ppRender()"><option value="">Todas las categorías</option></select>
+   <select id="ppFiltroMarca" class="border p-2 rounded-lg" onchange="ppRender()"><option value="">Todas las marcas</option></select>
+   <input id="ppPrecioMin" type="number" min="0" class="border p-2 rounded-lg" placeholder="Costo desde $" oninput="ppBuscarCambio()">
+   <input id="ppPrecioMax" type="number" min="0" class="border p-2 rounded-lg" placeholder="Costo hasta $" oninput="ppBuscarCambio()">
+  </div>
+  <div class="flex flex-wrap gap-4 text-sm">
+   <label><input type="checkbox" id="ppSoloStock" onchange="ppRender()"> Solo con stock</label>
+   <label><input type="checkbox" id="ppSoloComparados" onchange="ppRender()"> Solo con comparación</label>
+   <label><input type="checkbox" id="ppVerInactivos" onchange="ppRender()"> Incluir los que ya no figuran en la lista</label>
+   <label><input type="checkbox" id="ppSoloRevisar" onchange="ppRender()"> Solo precios a revisar</label>
+  </div>
+  <div id="ppResumen" class="text-sm text-slate-500"></div>
+  <div class="flex flex-wrap gap-2 items-center">
+   <button type="button" onclick="ppSeleccionarVisibles(true)" class="bg-slate-700 px-3 py-2 rounded-lg text-sm">☑ Seleccionar visibles</button>
+   <button type="button" onclick="ppSeleccionarVisibles(false)" class="bg-slate-700 px-3 py-2 rounded-lg text-sm">☐ Quitar selección</button>
+   <button type="button" onclick="ppCategoriaSeleccionados()" class="bg-slate-700 px-3 py-2 rounded-lg text-sm">🏷️ Cambiar categoría</button>
+   <button type="button" onclick="ppVincularSeleccionados()" class="bg-slate-700 px-3 py-2 rounded-lg text-sm" title="Marcar los seleccionados como el mismo producto">⚖️ Vincular como iguales</button>
+   <button type="button" id="ppBtnEliminarSeleccionados" onclick="ppEliminarSeleccionados()" class="bg-rose-700 px-3 py-2 rounded-lg text-sm">🗑 Eliminar seleccionados</button>
+   <span id="ppSeleccionResumen" class="small"></span>
+  </div>
+ </div>
+ <div class="card p-4 overflow-x-auto">
+  <table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2 text-center" style="width:36px"><input id="ppCheckTodos" type="checkbox" title="Seleccionar productos visibles" onchange="ppSeleccionarVisibles(this.checked)"></th><th class="p-2 text-left">Producto</th><th class="p-2 text-left">Proveedor</th><th class="p-2 text-right">Tu costo</th><th class="p-2 text-right" title="Precio al público sugerido por el proveedor">Público ref.</th><th class="p-2 text-center">Margen %</th><th class="p-2 text-right">Precio sugerido</th><th class="p-2 text-left">Comparación</th><th class="p-2 text-center">Acciones</th></tr></thead><tbody id="ppTabla"></tbody></table>
+  <div id="ppMas" class="mt-3"></div>
+ </div>
 </section>
 
 <section id="configuracion" class="hidden space-y-5">
@@ -1350,7 +1444,7 @@ const PERMISOS={
  taller:{borrar:false,emitir:false,caja:false,reportes:false,compras:false,ventas:false,admin:false,editarCaja:false,anular:false}
 };
 function puede(p){return !!(PERMISOS[rolActual]||PERMISOS.mostrador)[p]}
-const TAB_PERMISO={caja:'caja',reportes:'reportes',compras:'compras',ventas:'ventas',configuracion:'caja'};
+const TAB_PERMISO={caja:'caja',reportes:'reportes',compras:'compras',catalogoProveedores:'compras',ventas:'ventas',configuracion:'caja'};
 const CFG_DEFAULT={
  nombre:'Bicicletería del Abasto',direccion:'Entre Ríos 1887, Rosario',telefono:'341813614',whatsapp:'3416508671',instagram:'@bicicletasdelabasto',
  emailRemitente:'',emailFacturaAuto:false,serviceAuto:true,serviceDias:30,tituloService:'Service de bicicleta',
@@ -1383,7 +1477,7 @@ function exportarClientesCSV(){const rows=exportRowsClientes();if(!rows.length)r
 function sumarDiasLocal(fechaBase,dias){const d=new Date(fechaBase);d.setDate(d.getDate()+Number(dias||0));return isoDate(d)}
 function tab(t){
  if(TAB_PERMISO[t]&&!puede(TAB_PERMISO[t]))t='dashboard';
- document.querySelectorAll('main>section').forEach(s=>s.classList.add('hidden'));document.getElementById(t).classList.remove('hidden');document.querySelectorAll('.tab').forEach(b=>b.classList.remove('tab-active'));document.getElementById('t-'+t).classList.add('tab-active');if(t==='configuracion')cargarFormularioConfiguracion();
+ document.querySelectorAll('main>section').forEach(s=>s.classList.add('hidden'));document.getElementById(t).classList.remove('hidden');document.querySelectorAll('.tab').forEach(b=>b.classList.remove('tab-active'));document.getElementById('t-'+t).classList.add('tab-active');if(t==='configuracion')cargarFormularioConfiguracion();if(t==='catalogoProveedores')ppRender();
  tabActual=t;renderActivo();
 }
 function reloj(){document.getElementById('reloj').textContent=new Intl.DateTimeFormat('es-AR',{timeZone:'America/Argentina/Buenos_Aires',dateStyle:'short',timeStyle:'medium',hour12:false}).format(new Date())}
@@ -3398,7 +3492,7 @@ function prepararNotaCredito(facturaId){
   <div class="bg-slate-50 border rounded-lg p-3 text-sm">Anula: <b>${esc(nombreCbte(f.tipo))} ${esc(String(f.ptoVta).padStart(4,'0')+'-'+String(f.numero).padStart(8,'0'))}</b><br>Cliente: ${esc(f.cliente)} · Total ${money(f.importe)}</div>
   <div><label class="small text-slate-500">Importe de la nota de crédito</label><input id="ncImporte" type="number" min="0.01" step="0.01" max="${Number(f.importe)}" class="border p-2 rounded w-full" value="${Number(f.importe)}"></div>
   <div><label class="small text-slate-500">Motivo / detalle</label><textarea id="ncDesc" class="border p-2 rounded w-full" rows="2">Anulación ${esc(nombreCbte(f.tipo))} ${esc(String(f.ptoVta).padStart(4,'0')+'-'+String(f.numero).padStart(8,'0'))}</textarea></div>
-  <div class="bg-amber-50 border border-amber-200 rounded p-3 text-sm">Se guarda como <b>pendiente</b>. Para emitirla, la Edge Function <code>arca-facturar</code> tiene que enviar el comprobante asociado (ver guía v7).</div>
+  <div class="bg-amber-50 border border-amber-200 rounded p-3 text-sm">Se guarda como <b>pendiente</b>. Después la emitís desde la factura, igual que una factura común: ARCA la registra asociada a la factura original.</div>
   <button onclick="guardarNotaCredito('${esc(String(f.id))}')" class="bg-rose-700 text-white px-4 py-2 rounded w-full font-semibold">💾 Guardar nota de crédito pendiente</button></div>`);
 }
 async function guardarNotaCredito(facturaId){
@@ -3641,6 +3735,664 @@ function cobrarVenta(i){
    }catch(e){console.error(e);alert('No se pudo registrar el cobro. No se modificó ni Ventas ni Caja.\n\n'+e.message);await cargarSupabase(true,['ventas','caja'])}
   }});
 }
+
+/* ===== CATÁLOGO v8: LECTORES DE LISTAS DE PROVEEDORES =====
+   Reciben las páginas del PDF ya extraídas: [{ancho, items:[{str,x,y}]}]
+   y devuelven {formato, ivaIncluido, fechaLista, filas:[...], descartadas:[...]}.
+   Cada fila: {codigo, producto, precio, referencia, lista3, cantMin, sinStock, rubro, marcaHint}
+   "precio" es el precio tal como figura en la lista (antes de IVA/descuento). */
+const CATL={};
+CATL.numAR=function(s){ // 1.234,56 · 1234,56 · $3.230,22
+ let x=String(s||'').replace(/[$\s]/g,'');if(!x)return NaN;
+ if(x.includes(','))x=x.replace(/\./g,'').replace(',','.');
+ else if(/^\d{1,3}(\.\d{3})+$/.test(x))x=x.replace(/\./g,'');
+ return Number(x);
+};
+CATL.numUS=function(s){return Number(String(s||'').replace(/[$\s,]/g,''))}; // 11,072.345
+CATL.numPunto=function(s){return Number(String(s||'').replace(/[$\s]/g,''))}; // 3250.91 (La Argentina)
+CATL.limpiar=function(s){
+ return String(s||'').replace(/×/g,'x').replace(/\.{3,}.*$/,'').replace(/\.{2,}\s*$/,'').replace(/\s+/g,' ').replace(/\s*c\/u\.?\s*$/i,'').trim();
+};
+// Agrupa los textos en renglones (misma altura) dentro de una franja horizontal opcional.
+CATL.renglones=function(items,desde,hasta,tol){
+ tol=tol||2.2;const col=items.filter(z=>(desde==null||z.x>=desde)&&(hasta==null||z.x<hasta)).sort((a,b)=>b.y-a.y||a.x-b.x);const grupos=[];
+ for(const it of col){let g=grupos.find(z=>Math.abs(z.y-it.y)<=tol);if(!g){g={y:it.y,items:[]};grupos.push(g)}g.items.push(it);g.y=g.items.reduce((s,z)=>s+z.y,0)/g.items.length}
+ return grupos.sort((a,b)=>b.y-a.y).map(g=>{const its=g.items.sort((a,b)=>a.x-b.x);return {y:g.y,items:its,texto:its.map(z=>String(z.str).trim()).join(' ').replace(/\s+/g,' ').trim()}}).filter(r=>r.texto);
+};
+CATL.textoTotal=function(paginas,max){return paginas.slice(0,max||2).map(p=>p.items.map(i=>i.str).join(' ')).join(' ')};
+CATL.detectar=function(paginas){
+ const t=CATL.textoTotal(paginas,2);
+ if(/Bicicleteria la Argentina/i.test(t)||/N[º°]\s*1.*N[º°]\s*2/i.test(t))return 'argentina';
+ if(/BARBATELLI|OVIDIO LAGOS/i.test(t))return 'barbatelli';
+ if(/Rubro:/i.test(t)&&/Precio Final/i.test(t))return 'rubros';
+ if(/PRECIO UNIT/i.test(t)&&/CANT\./i.test(t))return 'zambitoOferta';
+ if(/PRECIOS EN PESOS/i.test(t)&&/Cantidad/i.test(t))return 'zambito';
+ return 'generico';
+};
+CATL.fecha=function(paginas){
+ const t=CATL.textoTotal(paginas,1);let m;
+ if((m=t.match(/(\d{1,2})[-\/](\d{1,2})[-\/](20\d{2})/)))return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+ const meses=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+ if((m=t.toLowerCase().match(/(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\s*(20)?(\d{2})\b/)))return `20${m[3]}-${String(meses.indexOf(m[1])+1).padStart(2,'0')}-01`;
+ return '';
+};
+CATL.ivaIncluido=function(paginas){
+ const t=CATL.textoTotal(paginas,1);
+ if(/\+\s*I\.?V\.?A/i.test(t)||/m[aá]s\s+I\.?V\.?A/i.test(t))return false;
+ if(/I\.?V\.?A\.?\s*INCLUIDO|INCLUYEN\s+IVA|PRECIO FINAL/i.test(t))return true;
+ return null;
+};
+
+/* La Argentina: PRODUCTO (CODIGO) Nº1 Nº2 Nº3 — Nº2 es el costo, Nº1 el público. */
+CATL.argentina=function(paginas){
+ const filas=[],desc=[];
+ for(const p of paginas)for(const r of CATL.renglones(p.items)){
+  const l=r.texto;if(/^(producto\b|p[aá]gina|listas de precios|fecha de emisi|bicicleteria)/i.test(l))continue;
+  const m=l.match(/^(.*?)\s*\(([^()]+)\)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s*$/);
+  if(!m){if(/\(\d+\)/.test(l))desc.push(l);continue}
+  let prod=m[1].trim();const sinStock=/sin stock/i.test(prod);prod=prod.replace(/\s*sin stock\s*/i,' ').trim();
+  filas.push({codigo:m[2].trim(),producto:prod,referencia:CATL.numPunto(m[3]),precio:CATL.numPunto(m[4]),lista3:CATL.numPunto(m[5]),sinStock});
+ }
+ return {filas,descartadas:desc};
+};
+/* Barbatelli: dos columnas por página, DESCRIPCIÓN PRECIO (1000,00). Sin código. */
+CATL.barbatelli=function(paginas){
+ const filas=[],desc=[];const ign=/^(ACTUALIZADA\b|BARBATELLI\b|OVIDIO\b|PEDIDOS\b|HORARIOS?\b|S[ÁA]BADOS?\b|\(0341\)|SEPTIEMBRE|OCTUBRE|AGOSTO)/i;
+ for(const p of paginas){const mitad=p.ancho/2;
+  for(const [a,b] of [[null,mitad],[mitad,null]])for(const r of CATL.renglones(p.items,a,b)){
+   const m=r.texto.match(/^(.*?)\s+\$?(\d[\d.]*,\d{2})\s*$/);
+   if(!m){if(/\d,\d{2}\s*$/.test(r.texto))desc.push(r.texto);continue}
+   const prod=m[1].trim();if(!prod||ign.test(prod))continue;
+   filas.push({codigo:'',producto:prod,precio:CATL.numAR(m[2])});
+  }}
+ return {filas,descartadas:desc};
+};
+/* Listas por rubro (Bicipartes AM / Mazzini): Rubro: X · CODIGO PRODUCTO $PRECIO, con descripciones en 2 renglones. */
+CATL.rubros=function(paginas){
+ const filas=[],desc=[];let rubro='',ultima=null;
+ for(const p of paginas)for(const r of CATL.renglones(p.items)){
+  const l=r.texto;
+  let m=l.match(/^Rubro:\s*(.*)$/i);if(m){rubro=m[1].trim();ultima=null;continue}
+  if(/^Codigo\s+Producto/i.test(l)){ultima=null;continue}
+  m=l.match(/^(\d{1,6})\s+(.+?)\s+\$\s?(\d[\d.]*,\d{2})\s*$/);
+  if(m){ultima={codigo:m[1],producto:m[2].trim(),precio:CATL.numAR(m[3]),rubro,_pg:p,_y:r.y};filas.push(ultima);continue}
+  // renglón de continuación: solo texto, alineado con la descripción
+  if(ultima&&ultima._pg===p&&Math.abs(ultima._y-r.y)<16&&!/\$\s?\d/.test(l)&&!/^\d+\s/.test(l)&&!/IMPRESO POR|WWW\.|P[aá]gina\s+\d/i.test(l)&&r.items[0].x>60&&ultima.producto.length<160){ultima.producto+=' '+l;ultima._y=r.y;continue}
+  if(/\$\s?\d/.test(l))desc.push(l);
+ }
+ filas.forEach(f=>{delete f._pg;delete f._y});
+ return {filas,descartadas:desc};
+};
+/* Zambito (Winner, Oferta Nacional, Oferta Impo): CÓDIGO Descripción.... CANTIDAD PRECIO(11,072.345) */
+CATL.zambito=function(paginas){
+ const filas=[],desc=[];
+ for(const p of paginas)for(const r of CATL.renglones(p.items)){
+  const m=r.texto.match(/^([A-Z0-9]{5,8})\s+(.+?)\s+(\d{1,4})\s+([\d,]+\.\d{2,3})\s*$/);
+  if(!m){if(/\d\.\d{3}\s*$/.test(r.texto))desc.push(r.texto);continue}
+  filas.push({codigo:m[1],producto:CATL.limpiar(m[2]),cantMin:Number(m[3]),precio:CATL.numUS(m[4])});
+ }
+ return {filas,descartadas:desc};
+};
+/* Zambito ofertas (Cámaras): CÓDIGO Descripción CANT. $PRECIO UNIT. $-15% $-5% — con títulos de sección (marca). */
+CATL.zambitoOferta=function(paginas){
+ const filas=[],desc=[];let seccion='';
+ for(const p of paginas)for(const r of CATL.renglones(p.items)){
+  const l=r.texto;
+  const m=l.match(/^([A-Z0-9]{5,8})\s+(.+?)\s+(\d{1,4})\s+\$\s?(\d[\d.]*,\d{2})(?:\s+\$\s?(\d[\d.]*,\d{2}))?/);
+  if(m){filas.push({codigo:m[1],producto:CATL.limpiar(m[2]),cantMin:Number(m[3]),precio:CATL.numAR(m[4]),contado:m[5]?CATL.numAR(m[5]):null,marcaHint:seccion});continue}
+  if(/®/.test(l)&&!/\$/.test(l)){const s=l.split('®')[0].replace(/^(C[AÁ]MARAS?|CUBIERTAS?)\s+/i,'').trim();seccion=s;continue}
+  if(/\$\s?\d/.test(l))desc.push(l);
+ }
+ return {filas,descartadas:desc};
+};
+/* Genérico: intenta "PRODUCTO (COD) n n n" o "PRODUCTO ... PRECIO". */
+CATL.generico=function(paginas){
+ const a=CATL.argentina(paginas);if(a.filas.length>5)return a;
+ const filas=[],desc=[];
+ for(const p of paginas)for(const r of CATL.renglones(p.items)){
+  const m=r.texto.match(/^(?:([A-Z0-9-]{3,12})\s+)?(.+?)\s+\$?\s?(\d[\d.,]*)\s*$/);if(!m)continue;
+  const precio=CATL.numAR(m[3]);if(!(precio>0)||m[2].length<4){desc.push(r.texto);continue}
+  filas.push({codigo:m[1]||'',producto:CATL.limpiar(m[2]),precio});
+ }
+ return {filas,descartadas:desc};
+};
+CATL.FORMATOS={argentina:'La Argentina (Nº1 público · Nº2 costo)',barbatelli:'Barbatelli (2 columnas, sin código)',rubros:'Lista por rubros (Bicipartes AM)',zambito:'Zambito (código · cantidad · precio)',zambitoOferta:'Zambito ofertas (precio unitario · contado)',generico:'Formato genérico'};
+CATL.leer=function(paginas,formato){
+ formato=formato||CATL.detectar(paginas);
+ const r=(CATL[formato]||CATL.generico)(paginas);
+ // Unificar duplicados dentro del mismo archivo (mismo código o, sin código, mismo nombre).
+ const vistos=new Map(),filas=[];let sinPrecio=0;
+ for(const f of r.filas){
+  f.producto=CATL.limpiar(f.producto);if(!f.producto||!Number.isFinite(f.precio))continue;
+  if(!(f.precio>0)){sinPrecio++;continue}
+  const k=(f.codigo?'c:'+f.codigo:'n:'+f.producto.toLowerCase());
+  if(vistos.has(k)){const i=vistos.get(k);if(!f.codigo){filas[i]=f}continue}
+  vistos.set(k,filas.length);filas.push(f);
+ }
+ return {formato,formatoNombre:CATL.FORMATOS[formato]||formato,ivaIncluido:CATL.ivaIncluido(paginas),fechaLista:CATL.fecha(paginas),filas,descartadas:r.descartadas||[],sinPrecio,paginas:paginas.length};
+};
+
+
+/* ===== CATÁLOGO v8: NORMALIZACIÓN, CATEGORÍA, MARCA Y SIMILITUD ===== */
+const CATU={};
+CATU.sinAcentos=function(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')};
+// Texto normalizado para buscar: minúsculas, sin acentos, medidas y válvulas unificadas.
+CATU.norm=function(s){
+ let t=CATU.sinAcentos(s).toLowerCase().replace(/×/g,'x').replace(/®/g,' ').replace(/[“”"]/g,' ');
+ t=t.replace(/(\d),(\d)/g,'$1.$2');                         // 1,90 → 1.90
+ t=t.replace(/(\d)\s*x\s*(\d)/g,'$1x$2');                   // 26 x 1.90 → 26x1.90
+ t=t.replace(/(?<![\d.\/])1([135])\/([248])(?![\d\/])/g,'1 $1/$2');     // 26 X 11/2 (Barbatelli) → 26x1 1/2
+ t=t.replace(/(?<![\d.\/])(\d) (\d\/\d{1,2})(?![\d])/g,'$1f$2');      // 1 1/2 → 1f1/2 (pulgadas: distinta de 1.50)
+ t=t.replace(/\bv(?:alv)?\.?\s*\/\s*a(?:uto)?\b|\bvalv\.?\s*auto\b|\bv\.a\.?\b|\bva\b|\bvalvula auto(?:movil)?\b/g,' valv_auto ');
+ t=t.replace(/\bv(?:alv)?\.?\s*\/\s*p(?:resta)?\b|\bvalv\.?\s*presta\b|\bv\.?p\b|\bpresta\b|\bfrancesa\b/g,' valv_presta ');
+ t=t.replace(/\bv(?:alv)?\.?\s*\/\s*(?:d|f|fina)\b|\bvalv\.?\s*fina\b|\bdunlop\b|\bv\.?d\b/g,' valv_fina ');
+ t=t.replace(/\brod(?:ado)?\.?\s*(\d{2})/g,'r$1').replace(/\br[\s-]+(\d{2})\b/g,'r$1');
+ t=t.replace(/[^a-z0-9./_ ]+/g,' ').replace(/\s+/g,' ').trim();
+ return t;
+};
+CATU.TIPOS={camara:/^c[aá]maras?$/,cubierta:/^cubiertas?$/,cadena:/^cadenas?$/,asiento:/^asientos?$/,pinon:/^pi[ñn]on(es)?$/,
+ cable:/^cables?$/,forro:/^forros?$/,freno:/^frenos?$/,pedal:/^pedal(es)?$/,rayo:/^rayos?$/,llanta:/^llantas?$/,maza:/^mazas?$/,
+ inflador:/^infladores?$/,casco:/^cascos?$/,luz:/^(luz|luces|baliza|balizas)$/,candado:/^candados?$/,pastilla:/^pastillas?$/,
+ manubrio:/^manubrios?$/,puno:/^pu[ñn]os?$/,cuadro:/^cuadros?$/,horquilla:/^horquillas?$/,bici:/^(bici|bicicleta|bicicletas)$/,
+ parche:/^parches?$/,rulemán:/^rulemanes$|^ruleman$/,grasa:/^grasas?$/,aceite:/^(aceite|aceites|lubricante|lubricantes)$/};
+CATU.tipo=function(s){
+ const w=CATU.norm(s).split(' ');
+ for(const [k,re] of Object.entries(CATU.TIPOS))if(re.test(w[0]||''))return k;
+ return (w[0]||'').replace(/(es|s)$/,'');
+};
+// Rodado (26, 29, 700, 27.5…) y ancho(s) de la primera medida tipo "29x1.75/2.35".
+CATU.medida=function(s){
+ const t=CATU.norm(s);let m=t.match(/\b(12|14|16|18|20|22|24|26|27\.5|275|28|29|650|700)x(\df\d\/\d{1,2}|\d{1,2}(?:\.\d{1,3})?c?)(?:\s?\/\s?(\d{1,2}(?:\.\d{1,3})?))?/);
+ if(m){const rod=m[1]==='275'?'27.5':m[1];const anchos=[m[2],m[3]].filter(Boolean).map(a=>a.includes('f')?a:Number(String(a).replace('c','')));return {rodado:rod,anchos}}
+ m=t.match(/\br(12|14|16|18|20|24|26|27\.5|28|29)\b/);if(m)return {rodado:m[1],anchos:[]};
+ return null;
+};
+CATU.valvula=function(s){const t=CATU.norm(s);return /valv_presta/.test(t)?'presta':/valv_fina/.test(t)?'fina':/valv_auto/.test(t)?'auto':''};
+CATU.MARCAS=['WINNER PLUS','WINNER','SHIMANO','ARISUN','CHAOYANG','CST','KENDA','MAXXIS','CAMEL','ALMARC','DSI','DSH','VEE RUBBER','LEVORIN','KEOPS','RCT','WANDA','SELLE ROYAL','KALF','EASTMAN','TAYA','KMC','MAYA','NECO','ZENTHA','EZMTB','ALLIGATOR','WKNS','SHUNFENG','SYPO','LOGAN','VENZO','SPY','TOPMEGA','TOP MEGA','ZEST','DIAFA','MAXXUM','SMART','DONCA','MEDOCA','TF2','TOPROAD','AZONIC','SUNRACE','PROWHEEL','TEKTRO','AWA','SRAM','MICHELIN','PIRELLI','GAERNE','ZMB','SARS','RITECH','MEILAN','BETO','TEC','GW','OLMO','RALEIGH','FIRE BIRD','SR','LAL','HF','JING YI','P3K','MARCH','DUNLOP','VELO','ZOOM','PROMAX','LOTUS'];
+CATU.marca=function(s,pista){
+ if(pista){const p=String(pista).replace(/®/g,'').trim().toUpperCase();if(p&&p.length<=25)return p}
+ const t=' '+CATU.sinAcentos(s).toUpperCase().replace(/®/g,' ').replace(/[^A-Z0-9 ]+/g,' ')+' ';
+ let mejor='',pos=1e9;for(const m of CATU.MARCAS){const i=t.indexOf(' '+m+' ');if(i>=0&&i<pos){pos=i;mejor=m}}
+ return mejor;
+};
+CATU.CATEGORIAS=['Bicicletas','Cámaras y cubiertas','Repuestos','Accesorios','Taller y lubricantes','Indumentaria'];
+CATU.categoria=function(s,rubro){
+ const t=CATU.norm((rubro||'')+' '+s);const w=t.split(' ');const tipo=CATU.tipo(s);
+ if(['camara','cubierta','parche'].includes(tipo)||/\b(camaras?|cubiertas?)\b/.test(CATU.norm(rubro||''))){if(!/\bmoto\b/.test(t)||true)return 'Cámaras y cubiertas'}
+ if(tipo==='bici'||/^(bicicletas?|triciclos?|monopatin)/.test(w[0]))return 'Bicicletas';
+ if(/\b(zapatillas?|remeras?|jersey|calzas?|guantes?|mallas?|medias?|campera|anteojos?|lentes)\b/.test(t))return 'Indumentaria';
+ if(/\b(aceites?|aceitera|grasas?|lubricantes?|aerosol|herramientas?|llaves?|extractor|desarmador|purgad\w*|liquido|limpiador|kit de purg\w*|caballete|soporte de taller)\b/.test(t))return 'Taller y lubricantes';
+ if(/\b(casco|cascos|luz|luces|baliza|balizas|timbres?|bocinas?|candados?|infladores?|canastos?|caramanolas?|portacaramanola|porta|alforjas?|carterita|espejos?|calcos?|calcomanias?|fundas?|cubresillas?|estabilizador\w*|velocimetros?|computadora|sillitas?|asiento porta|bolsos?|mochilas?|cestos?|pie de apoyo|patas?|guardabarros?|cubre ?vainas?|cubre ?polleras?|ruedita\w*|banderin\w*|flecos|gomines|corneta)\b/.test(t))return 'Accesorios';
+ return 'Repuestos';
+};
+// Palabras significativas (para parecido entre productos de distintos proveedores).
+CATU.PALABRAS_VACIAS=new Set(['de','del','la','el','con','sin','para','p','c','s','y','x','en','por','the','a','o','mm','un','una','negro','negra','juego','jgo','par','set','unidad','cu','u','importado','importada','nac','nacional','china','chino']);
+CATU.tokens=function(s){return CATU.norm(s).split(' ').filter(w=>w.length>1&&!CATU.PALABRAS_VACIAS.has(w))};
+function _anchosCompatibles(a,b){
+ if(!a.length||!b.length)return true;
+ const na=a.filter(x=>typeof x==='number'),nb=b.filter(x=>typeof x==='number');
+ if(na.length&&nb.length){const [a1,a2]=[Math.min(...na),Math.max(...na)],[b1,b2]=[Math.min(...nb),Math.max(...nb)];return a1<=b2+0.06&&b1<=a2+0.06}
+ return String(a[0])===String(b[0]);
+}
+/* Puntaje 0–100 de que A y B sean el mismo producto. -1 = incompatibles (tipo, rodado, válvula o ancho distintos). */
+CATU.parecido=function(A,B){
+ const ta=A._tipo??CATU.tipo(A.producto),tb=B._tipo??CATU.tipo(B.producto);
+ if(ta!==tb)return -1;
+ const ma=A._medida!==undefined?A._medida:CATU.medida(A.producto),mb=B._medida!==undefined?B._medida:CATU.medida(B.producto);
+ if(ma&&mb){if(ma.rodado!==mb.rodado)return -1;if(!_anchosCompatibles(ma.anchos,mb.anchos))return -1}
+ else if(ma||mb){if(['camara','cubierta','llanta','cuadro','horquilla','bici'].includes(ta))return -1}
+ const va=A._valv??CATU.valvula(A.producto),vb=B._valv??CATU.valvula(B.producto);
+ if(va&&vb&&va!==vb)return -1;
+ const xa=new Set(A._tok||CATU.tokens(A.producto)),xb=new Set(B._tok||CATU.tokens(B.producto));
+ let comun=0;xa.forEach(w=>{if(xb.has(w))comun++});
+ const jac=comun/Math.max(1,Math.min(xa.size,xb.size));
+ let p=35+45*jac;if(ma&&mb)p+=(ma.anchos.length&&mb.anchos.length)?12:4;if(va&&vb)p+=8;
+ const mA=A.marca||'',mB=B.marca||'';if(mA&&mB&&mA===mB)p+=10;
+ return Math.min(100,Math.round(p));
+};
+
+
+
+/* ===================================================================
+   PROVEEDORES Y PRODUCTOS · v8
+   Catálogo unificado guardado en Supabase (catalogo_productos, catalogo_pedidos, catalogo_config).
+   No modifica Stock, Caja ni Compras salvo al "Registrar compra" de un pedido.
+   =================================================================== */
+const CAT={productos:[],pedidos:[],config:{},cargado:false,cargando:null,version:0,porId:new Map(),grupos:new Map(),error:''};
+const PP_SEL=new Set();
+let PP_VISIBLES=[],PP_NAV_INDEX=-1,PP_LIMITE=200,PP_IMPORT=null,PP_BUSCAR_T=null;
+const PP_OLD_KEY='abasto_proveedores_productos_v2',PP_OLD_PEDIDOS='abasto_pedidos_proveedores_v1',PP_OLD_MARGEN='abasto_margen_general_v2',PP_MIGRADO='abasto_catalogo_migrado_v8';
+function ppJs(s){return esc(JSON.stringify(String(s??'')))}
+function ppToast(m,t,ms){if(window.novaToast)novaToast(m,t||'ok',ms||3200)}
+function ppR2(n){return Math.round((Number(n)||0)*100)/100}
+function ppNuevoId(){try{return crypto.randomUUID()}catch(_){return 'g'+Date.now().toString(36)+Math.random().toString(36).slice(2,10)}}
+function ppClave(codigo,producto){const c=String(codigo||'').trim().toUpperCase();return c?'c:'+c:'n:'+CATU.norm(producto)}
+function ppDiasDesde(f){if(!f)return null;const d=new Date(String(f).length===10?f+'T12:00:00':f);return Math.floor((Date.now()-d.getTime())/86400000)}
+function ppFechaCorta(f){if(!f)return '-';const d=new Date(String(f).length===10?f+'T12:00:00':f);return isNaN(d)?'-':d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'})}
+
+/* ---------- Carga ---------- */
+async function catIniciar(forzar){
+ if(CAT.cargado&&!forzar)return;
+ if(CAT.cargando&&!forzar)return CAT.cargando;
+ CAT.cargando=(async()=>{
+  try{
+   const {data:ver}=await supabaseClient.rpc('crm_version');CAT.version=Number(ver)||0;
+   if(CAT.version<8){CAT.error='version';CAT.cargado=true;return}
+   const productos=[];for(let i=0;;i+=1000){const {data,error}=await supabaseClient.from('catalogo_productos').select('*').order('id').range(i,i+999);if(error)throw error;productos.push(...(data||[]));if(!data||data.length<1000)break}
+   const [{data:ped,error:e2},{data:cfg,error:e3}]=await Promise.all([supabaseClient.from('catalogo_pedidos').select('*').order('created_at'),supabaseClient.from('catalogo_config').select('*')]);
+   if(e2)throw e2;if(e3)throw e3;
+   CAT.productos=productos.map(catPreparar);CAT.pedidos=ped||[];CAT.config={};(cfg||[]).forEach(c=>CAT.config[c.clave]=c.valor);
+   catIndexar();CAT.error='';CAT.cargado=true;
+  }catch(e){console.error('Catálogo',e);CAT.error=e?.message||String(e);CAT.cargado=true}
+  finally{CAT.cargando=null}
+ })();
+ return CAT.cargando;
+}
+function catPreparar(x){
+ x.costo=Number(x.costo)||0;x.referencia=Number(x.referencia)||0;x.precio_lista=Number(x.precio_lista)||0;
+ x._n=CATU.norm([x.producto,x.codigo,x.marca,x.proveedor,x.rubro].join(' '));
+ x._tipo=CATU.tipo(x.producto);x._medida=CATU.medida(x.producto);x._valv=CATU.valvula(x.producto);x._tok=CATU.tokens(x.producto);
+ return x;
+}
+function catIndexar(){
+ CAT.porId=new Map(CAT.productos.map(x=>[String(x.id),x]));CAT.grupos=new Map();
+ CAT.productos.forEach(x=>{if(x.grupo&&x.activo){if(!CAT.grupos.has(x.grupo))CAT.grupos.set(x.grupo,[]);CAT.grupos.get(x.grupo).push(x)}});
+ CAT.grupos.forEach(a=>a.sort((p,q)=>p.costo-q.costo));
+}
+async function catGuardarConfig(clave,valor){CAT.config[clave]=valor;const {error}=await supabaseClient.from('catalogo_config').upsert({clave,valor,updated_at:new Date().toISOString()});if(error)throw error}
+
+/* ---------- Precios ---------- */
+function ppMargenGeneral(){const x=Number(CAT.config.margen_general);return Number.isFinite(x)&&x>=0?x:50}
+function ppRedondeo(){return Number(CAT.config.redondeo)||0}
+function ppMargenAplicado(x){return (x.margen===null||x.margen===undefined||x.margen===''||!Number.isFinite(Number(x.margen)))?ppMargenGeneral():Number(x.margen)}
+function ppPrecio(x){const p=Number(x.costo||0)*(1+ppMargenAplicado(x)/100),r=ppRedondeo();return r?Math.ceil(p/r)*r:p}
+function ppVariacion(x){const a=Number(x.costo_anterior);return a>0&&x.costo>0?(x.costo-a)/a*100:null}
+function ppARevisar(x){
+ const v=ppVariacion(x);const m=[];
+ if(x.costo>0&&x.costo<50)m.push('costo muy bajo');
+ if(v!==null&&Math.abs(v)>60)m.push(`cambió ${v>0?'+':''}${v.toFixed(0)}%`);
+ if(x.referencia>0&&x.referencia<x.costo)m.push('público menor que el costo');
+ if(x.referencia>0&&x.referencia>x.costo*4)m.push('público 4 veces el costo');
+ return m;
+}
+async function ppCambiarMargenGeneral(v){let n=Number(v);if(!Number.isFinite(n)||n<0)n=0;try{await catGuardarConfig('margen_general',n);ppRender()}catch(e){alert('No se pudo guardar el margen: '+e.message)}}
+async function ppCambiarRedondeo(v){try{await catGuardarConfig('redondeo',Number(v)||0);ppRender()}catch(e){alert('No se pudo guardar el redondeo: '+e.message)}}
+
+/* ---------- Listado ---------- */
+function ppOpciones(id,valores,todos){const s=document.getElementById(id);if(!s)return;const act=s.value;s.innerHTML=`<option value="">${todos}</option>`+valores.map(v=>`<option value="${esc(v)}" ${v===act?'selected':''}>${esc(v)}</option>`).join('');if(act&&!valores.includes(act))s.value=''}
+function ppAvisoHTML(){
+ const el=document.getElementById('ppAviso');if(!el)return;let h='';
+ if(CAT.error==='version')h=`<div class="bg-rose-50 border border-rose-200 rounded-lg p-3 text-sm"><b>Falta instalar la actualización v8 de la base de datos.</b> Ejecutá <code>migracion_v8.sql</code> en Supabase → SQL Editor. Hasta entonces el catálogo no se puede usar (el resto del sistema funciona normal).</div>`;
+ else if(CAT.error)h=`<div class="bg-rose-50 border border-rose-200 rounded-lg p-3 text-sm">No se pudo cargar el catálogo: ${esc(CAT.error)} <button class="bg-slate-700 px-3 py-1 rounded" style="margin-left:8px" onclick="catIniciar(true).then(ppRender)">Reintentar</button></div>`;
+ else{const loc=ppLocalPendiente();if(loc)h=`<div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm flex flex-col md:flex-row justify-between gap-3 md:items-center"><div><b>Tenés ${loc.productos} producto(s) y ${loc.pedidos} pedido(s) guardados solo en este navegador</b> (versión anterior del catálogo). Subilos a Supabase para verlos en todos tus dispositivos. Los precios se actualizan cuando vuelvas a importar cada lista.</div><button onclick="ppMigrarLocal()" class="bg-emerald-600 px-4 py-2 rounded-lg shrink-0">⬆️ Subir a Supabase</button></div>`}
+ el.innerHTML=h;el.classList.toggle('hidden',!h);
+}
+function ppFiltrar(){
+ const q=CATU.norm(document.getElementById('ppBuscar')?.value||'').split(' ').filter(Boolean).map(w=>{const v=[w];if(w.length>4&&/es$/.test(w))v.push(w.slice(0,-2));if(w.length>3&&/s$/.test(w))v.push(w.slice(0,-1));return v});
+ const fp=document.getElementById('ppFiltroProveedor')?.value||'',fc=document.getElementById('ppFiltroCategoria')?.value||'',fm=document.getElementById('ppFiltroMarca')?.value||'';
+ const pmin=Number(document.getElementById('ppPrecioMin')?.value)||0,pmax=Number(document.getElementById('ppPrecioMax')?.value)||0;
+ const soloStock=document.getElementById('ppSoloStock')?.checked,soloComp=document.getElementById('ppSoloComparados')?.checked,verInact=document.getElementById('ppVerInactivos')?.checked,soloRev=document.getElementById('ppSoloRevisar')?.checked;
+ let items=CAT.productos.filter(x=>(verInact||x.activo)&&(!fp||x.proveedor===fp)&&(!fc||x.categoria===fc)&&(!fm||x.marca===fm)&&(!pmin||x.costo>=pmin)&&(!pmax||x.costo<=pmax)&&(!soloStock||!x.sin_stock)&&(!soloComp||(x.grupo&&(CAT.grupos.get(x.grupo)||[]).length>1))&&(!soloRev||ppARevisar(x).length)&&q.every(v=>v.some(w=>x._n.includes(w))));
+ const ord=document.getElementById('ppOrden')?.value||'producto';
+ const cmp={costo:(a,b)=>a.costo-b.costo,costoDesc:(a,b)=>b.costo-a.costo,precio:(a,b)=>ppPrecio(a)-ppPrecio(b),proveedor:(a,b)=>a.proveedor.localeCompare(b.proveedor,'es')||a.producto.localeCompare(b.producto,'es'),suba:(a,b)=>(ppVariacion(b)??-1e9)-(ppVariacion(a)??-1e9),actualizado:(a,b)=>String(b.actualizado_at).localeCompare(String(a.actualizado_at)),producto:(a,b)=>a.producto.localeCompare(b.producto,'es')};
+ // Con búsqueda y orden "Producto", se agrupan juntos los productos vinculados para comparar de un vistazo.
+ const fnOrd=cmp[ord]||cmp.producto;
+ // Al ordenar por precio, los costos sospechosos (menos de $50, casi siempre un error de la lista) van al final.
+ items.sort(['costo','precio'].includes(ord)?(a,b)=>((a.costo<50)-(b.costo<50))||fnOrd(a,b):fnOrd);
+ return items;
+}
+function ppChipsHTML(){
+ const host=document.getElementById('ppChips');if(!host)return;const fp=document.getElementById('ppFiltroProveedor')?.value||'';
+ const m=new Map();CAT.productos.forEach(x=>{if(!x.activo)return;const k=x.proveedor;if(!m.has(k))m.set(k,{n:0,fecha:null});const o=m.get(k);o.n++;const f=x.fecha_lista||x.actualizado_at;if(f&&(!o.fecha||String(f)>String(o.fecha)))o.fecha=f});
+ host.innerHTML=[...m.entries()].sort((a,b)=>a[0].localeCompare(b[0],'es')).map(([p,o])=>{const d=ppDiasDesde(o.fecha);const vieja=d!==null&&d>30;return `<button type="button" class="cat-chip ${p===fp?'activo':''}" onclick="ppElegirProveedor(${ppJs(p)})"><b>${esc(p)}</b><span class="small">${o.n} productos · lista ${ppFechaCorta(o.fecha)}</span>${vieja?`<span class="cat-badge cat-b-ambar">⚠️ hace ${d} días</span>`:''}</button>`}).join('')||'<div class="small">Todavía no importaste ninguna lista.</div>';
+}
+function ppElegirProveedor(p){const s=document.getElementById('ppFiltroProveedor');if(!s)return;s.value=s.value===p?'':p;PP_NAV_INDEX=0;ppRender()}
+function ppCompHTML(x){
+ const g=x.grupo?(CAT.grupos.get(x.grupo)||[]):[];const otros=g.filter(z=>z.id!==x.id);
+ if(!otros.length)return `<button type="button" class="text-blue-600 text-xs" onclick="ppComparar('${x.id}')" title="Buscar este producto en otros proveedores">🔍 Buscar iguales</button>`;
+ const min=g[0];
+ if(String(min.id)===String(x.id)){const seg=g[1];const ah=seg?((seg.costo-x.costo)/Math.max(1,seg.costo)*100):0;return `<button type="button" onclick="ppComparar('${x.id}')" class="cat-badge cat-b-verde cat-wrap" title="Ver comparación">🏆 Más barato de ${g.length}${seg?` · ${ah.toFixed(0)}% menos`:''}</button>`}
+ const dif=(x.costo-min.costo)/Math.max(1,min.costo)*100;
+ return `<button type="button" onclick="ppComparar('${x.id}')" class="cat-badge cat-b-ambar cat-wrap" title="Ver comparación">⚖️ ${esc(min.proveedor)} ${money(min.costo)} · +${dif.toFixed(0)}%</button>`;
+}
+function ppFilaHTML(x,i){
+ const v=ppVariacion(x),rev=ppARevisar(x);
+ const badges=[x.marca?`<span class="cat-badge">${esc(x.marca)}</span>`:'',`<span class="cat-badge cat-b-azul">${esc(x.categoria)}</span>`,
+  x.sin_stock?'<span class="cat-badge cat-b-rojo">Sin stock</span>':'',!x.activo?'<span class="cat-badge cat-b-rojo" title="No apareció en la última lista importada">Ya no figura</span>':'',
+  x.cant_minima>1?`<span class="cat-badge" title="Cantidad mínima para este precio">mín. ${x.cant_minima}</span>`:'',
+  x.descuento>0?`<span class="cat-badge cat-b-verde">−${Number(x.descuento)}%</span>`:'',x.iva_incluido===false?'<span class="cat-badge" title="La lista era + IVA; el costo ya incluye el 21%">+IVA</span>':'',
+  rev.length?`<span class="cat-badge cat-b-ambar" title="${esc(rev.join(' · '))}">⚠️ Revisar</span>`:''].join('');
+ const varHTML=v===null||Math.abs(v)<0.5?'':`<div class="${v>0?'cat-sube':'cat-baja'}" title="Antes ${money(x.costo_anterior)}">${v>0?'▲':'▼'} ${Math.abs(v).toFixed(1)}%</div>`;
+ return `<tr data-pp-id="${esc(x.id)}" class="border-b ${i===PP_NAV_INDEX?'pp-nav-activa':''} ${x.activo?'':'cat-inactivo'}" onmouseenter="PP_NAV_INDEX=${i};ppActualizarFilaNav()">
+<td class="p-2 text-center"><input type="checkbox" ${PP_SEL.has(String(x.id))?'checked':''} onchange="ppToggleSeleccion('${x.id}',this.checked)"></td>
+<td class="p-2" style="min-width:220px"><div class="font-semibold">${esc(x.producto)}</div><div class="cat-sub">${x.codigo?`<span class="font-mono">${esc(x.codigo)}</span> · `:''}${esc(x.lista||'')} · ${ppFechaCorta(x.fecha_lista||x.actualizado_at)}</div><div>${badges}</div></td>
+<td class="p-2"><button type="button" class="text-blue-600 text-left" onclick="ppFichaProveedor(${ppJs(x.proveedor)})" title="Ficha del proveedor">${esc(x.proveedor)}</button></td>
+<td class="p-2 text-right money whitespace-nowrap">${money(x.costo)}${varHTML}</td>
+<td class="p-2 text-right money whitespace-nowrap">${x.referencia>0?money(x.referencia):'-'}</td>
+<td class="p-2 text-center" style="width:90px;min-width:90px"><input type="number" min="0" step="0.1" class="border rounded p-1 text-center" style="width:76px;max-width:76px" value="${x.margen===null||x.margen===undefined?'':Number(x.margen)}" placeholder="${ppMargenGeneral()}" title="Vacío = margen general" onchange="ppMargenProducto('${x.id}',this.value,this)"></td>
+<td class="p-2 text-right font-semibold money whitespace-nowrap">${money(ppPrecio(x))}</td>
+<td class="p-2">${ppCompHTML(x)}</td>
+<td class="p-2 text-center cat-acc"><button onclick="ppAgregarPedido('${x.id}')" class="text-emerald-600" title="Agregar al pedido">🛒＋</button><button onclick="ppEditar('${x.id}')" class="text-blue-600" title="Editar">✏️</button><button onclick="ppBorrar('${x.id}')" class="text-rose-600" title="Eliminar del catálogo">🗑️</button></td></tr>`;
+}
+function ppRender(){
+ const tabla=document.getElementById('ppTabla');if(!tabla)return;
+ if(!CAT.cargado){tabla.innerHTML='<tr><td colspan="9" class="p-4 text-center text-slate-400">⏳ Cargando catálogo…</td></tr>';catIniciar().then(()=>ppRender());return}
+ ppAvisoHTML();ppOpcionesImport();
+ const mg=document.getElementById('ppMargenGeneral');if(mg&&document.activeElement!==mg)mg.value=ppMargenGeneral();
+ const rd=document.getElementById('ppRedondeo');if(rd)rd.value=String(ppRedondeo());
+ const activos=CAT.productos.filter(x=>x.activo);
+ ppOpciones('ppFiltroProveedor',[...new Set(CAT.productos.map(x=>x.proveedor))].sort((a,b)=>a.localeCompare(b,'es')),'Todos los proveedores');
+ ppOpciones('ppFiltroCategoria',[...new Set([...CATU.CATEGORIAS,...activos.map(x=>x.categoria)])].filter(Boolean),'Todas las categorías');
+ const fp=document.getElementById('ppFiltroProveedor')?.value||'';
+ ppOpciones('ppFiltroMarca',[...new Set(activos.filter(x=>!fp||x.proveedor===fp).map(x=>x.marca).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es')),'Todas las marcas');
+ ppChipsHTML();
+ const items=ppFiltrar();PP_VISIBLES=items.slice(0,PP_LIMITE);
+ if(PP_NAV_INDEX>=PP_VISIBLES.length)PP_NAV_INDEX=PP_VISIBLES.length-1;
+ tabla.innerHTML=PP_VISIBLES.map(ppFilaHTML).join('')||`<tr><td colspan="9" class="p-4 text-center text-slate-400">${CAT.productos.length?'No hay productos que coincidan con el filtro.':'Todavía no hay productos. Importá una lista de precios arriba.'}</td></tr>`;
+ const mas=document.getElementById('ppMas');if(mas)mas.innerHTML=items.length>PP_LIMITE?`<div class="flex flex-wrap gap-2 items-center"><span class="small">Mostrando ${PP_LIMITE} de ${items.length}. Afiná la búsqueda o</span><button class="bg-slate-700 px-3 py-2 rounded-lg text-sm" onclick="PP_LIMITE+=300;ppRender()">Mostrar 300 más</button></div>`:'';
+ const r=document.getElementById('ppResumen');if(r){const comp=[...CAT.grupos.values()].filter(g=>g.length>1).length;r.innerHTML=`<b>${items.length}</b> productos encontrados · <b>${activos.length}</b> en catálogo · <b>${comp}</b> comparaciones vinculadas · margen general <b>${ppMargenGeneral()}%</b>${ppRedondeo()?` · redondeo $${ppRedondeo()}`:''}.`}
+ ppActualizarSeleccionUI();ppRenderPedidos();
+}
+function ppBuscarCambio(){PP_NAV_INDEX=0;PP_LIMITE=200;clearTimeout(PP_BUSCAR_T);PP_BUSCAR_T=setTimeout(ppRender,180)}
+function ppBuscarTecla(e){
+ if(!PP_VISIBLES.length)return true;
+ if(e.key==='ArrowDown'){e.preventDefault();PP_NAV_INDEX=Math.min(PP_VISIBLES.length-1,PP_NAV_INDEX<0?0:PP_NAV_INDEX+1);ppActualizarFilaNav();return false}
+ if(e.key==='ArrowUp'){e.preventDefault();PP_NAV_INDEX=Math.max(0,PP_NAV_INDEX<0?0:PP_NAV_INDEX-1);ppActualizarFilaNav();return false}
+ if(e.key==='Enter'){e.preventDefault();clearTimeout(PP_BUSCAR_T);const x=PP_VISIBLES[PP_NAV_INDEX<0?0:PP_NAV_INDEX];if(x)ppAgregarPedido(x.id);return false}
+ return true;
+}
+function ppActualizarFilaNav(){const rows=[...document.querySelectorAll('#ppTabla tr[data-pp-id]')];rows.forEach((tr,i)=>tr.classList.toggle('pp-nav-activa',i===PP_NAV_INDEX));const tr=rows[PP_NAV_INDEX];if(tr)tr.scrollIntoView({block:'nearest'})}
+function ppBuscarEnCatalogo(texto){tab('catalogoProveedores');const b=document.getElementById('ppBuscar');if(b){b.value=String(texto||'').split('\n')[0].slice(0,60);ppBuscarCambio();b.focus()}}
+
+/* ---------- Selección y acciones masivas ---------- */
+function ppToggleSeleccion(id,checked){checked?PP_SEL.add(String(id)):PP_SEL.delete(String(id));ppActualizarSeleccionUI()}
+function ppSeleccionarVisibles(si){PP_VISIBLES.forEach(x=>si?PP_SEL.add(String(x.id)):PP_SEL.delete(String(x.id)));ppRender()}
+function ppActualizarSeleccionUI(){
+ const n=PP_SEL.size,el=document.getElementById('ppSeleccionResumen');if(el)el.textContent=n?`${n} seleccionado(s)`:'';
+ const b=document.getElementById('ppBtnEliminarSeleccionados');if(b)b.disabled=!n;
+ const all=document.getElementById('ppCheckTodos');if(all){const ids=PP_VISIBLES.map(x=>String(x.id));all.checked=ids.length>0&&ids.every(id=>PP_SEL.has(id));all.indeterminate=ids.some(id=>PP_SEL.has(id))&&!all.checked}
+}
+async function ppActualizarVarios(ids,cambios){for(let i=0;i<ids.length;i+=150){const {error}=await supabaseClient.from('catalogo_productos').update(cambios).in('id',ids.slice(i,i+150));if(error)throw error}ids.forEach(id=>{const x=CAT.porId.get(String(id));if(x)Object.assign(x,cambios)})}
+async function ppBorrarVarios(ids){for(let i=0;i<ids.length;i+=150){const {error}=await supabaseClient.from('catalogo_productos').delete().in('id',ids.slice(i,i+150));if(error)throw error}const s=new Set(ids.map(String));CAT.productos=CAT.productos.filter(x=>!s.has(String(x.id)));CAT.pedidos.forEach(p=>{if(s.has(String(p.producto_id)))p.producto_id=null});ids.forEach(id=>PP_SEL.delete(String(id)));catIndexar()}
+async function ppEliminarSeleccionados(){
+ const ids=[...PP_SEL];if(!ids.length)return alert('Seleccioná al menos un producto.');
+ if(!confirm(`¿Eliminar ${ids.length} producto(s) del catálogo?\n\nNo afecta Stock, Ventas, Compras ni la lista de Proveedores. Si vuelven a aparecer en una lista, se cargan de nuevo al importarla.`))return;
+ try{await ppBorrarVarios(ids);ppRender();ppToast(`${ids.length} producto(s) eliminados del catálogo.`)}catch(e){alert('No se pudo eliminar: '+e.message)}
+}
+function ppCategoriaSeleccionados(){
+ const ids=[...PP_SEL];if(!ids.length)return alert('Seleccioná al menos un producto.');
+ abrirModal('🏷️ Cambiar categoría',`<div class="space-y-3"><div class="text-sm">${ids.length} producto(s) seleccionados.</div><select id="ppCatNueva" class="border p-2 rounded w-full">${CATU.CATEGORIAS.map(c=>`<option>${c}</option>`).join('')}</select><input id="ppMarcaNueva" class="border p-2 rounded w-full" placeholder="Marca (opcional, vacío = no cambiar)"><button onclick="ppGuardarCategoriaSel()" class="bg-blue-600 px-4 py-2 rounded w-full font-semibold">Guardar</button></div>`);
+}
+async function ppGuardarCategoriaSel(){const ids=[...PP_SEL],c={categoria:document.getElementById('ppCatNueva').value};const m=document.getElementById('ppMarcaNueva').value.trim().toUpperCase();if(m)c.marca=m;try{await ppActualizarVarios(ids,c);cerrarModal();ppRender();ppToast('Categoría actualizada.')}catch(e){alert('No se pudo guardar: '+e.message)}}
+
+/* ---------- Comparación entre proveedores ---------- */
+function ppCandidatos(x,max){
+ const g=new Set((x.grupo?(CAT.grupos.get(x.grupo)||[]):[]).map(z=>String(z.id)));
+ const todos=CAT.productos.filter(z=>z.activo&&z.proveedor!==x.proveedor&&!g.has(String(z.id))).map(z=>[CATU.parecido(x,z),z]).filter(p=>p[0]>=50).sort((a,b)=>b[0]-a[0]||a[1].costo-b[1].costo);
+ const porProv={};const out=todos.filter(([_,z])=>(porProv[z.proveedor]=(porProv[z.proveedor]||0)+1)<=4);  // hasta 4 por proveedor, así aparecen todos
+ return out.slice(0,max||15);
+}
+function ppComparar(id){
+ const x=CAT.porId.get(String(id));if(!x)return;
+ const g=x.grupo?(CAT.grupos.get(x.grupo)||[]):[x];const lista=g.length?g:[x];const min=Math.min(...lista.map(z=>z.costo));
+ const fila=z=>`<tr class="${z.costo===min&&lista.length>1?'cat-comp-mejor':''}"><td>${esc(z.proveedor)}${String(z.id)===String(x.id)?' <span class="small">(este)</span>':''}</td><td>${esc(z.producto)}${z.codigo?`<div class="small font-mono">${esc(z.codigo)}</div>`:''}</td><td class="text-right money">${money(z.costo)}${z.costo===min&&lista.length>1?' 🏆':''}</td><td class="small">${ppFechaCorta(z.fecha_lista||z.actualizado_at)}${z.sin_stock?'<br>Sin stock':''}${z.cant_minima>1?`<br>mín. ${z.cant_minima}`:''}</td><td class="whitespace-nowrap"><button class="text-emerald-600" title="Agregar al pedido" onclick="ppAgregarPedido('${z.id}')">🛒＋</button>${lista.length>1?` <button class="text-rose-600 text-xs" title="No es el mismo producto" onclick="ppDesvincular('${z.id}','${x.id}')">✖</button>`:''}</td></tr>`;
+ const cand=ppCandidatos(x,15);
+ abrirModal('⚖️ Comparar entre proveedores',`<div class="space-y-4">
+ <div class="overflow-x-auto"><table class="w-full cat-comp-tabla"><thead><tr><th class="text-left">Proveedor</th><th class="text-left">Producto</th><th class="text-right">Tu costo</th><th class="text-left">Lista</th><th></th></tr></thead><tbody>${lista.slice().sort((a,b)=>a.costo-b.costo).map(fila).join('')}</tbody></table></div>
+ ${lista.length<2?'<div class="small">Todavía no vinculaste este producto con el de otro proveedor.</div>':''}
+ <div><h4 class="font-semibold mb-2">🔍 Posibles iguales en otros proveedores</h4>${cand.length?`<div class="small mb-2">Marcá los que son el mismo producto y tocá "Vincular". Queda guardado para las próximas listas.</div><div class="space-y-1" style="max-height:340px;overflow-y:auto">${cand.map(([p,z])=>`<label class="flex gap-2 items-start border rounded-lg p-2"><input type="checkbox" class="pp-cand" value="${z.id}"><div class="flex-1 min-w-0"><div>${esc(z.producto)}</div><div class="small">${esc(z.proveedor)} · ${money(z.costo)} · parecido ${p}%</div></div></label>`).join('')}</div><button onclick="ppVincularDesdeModal('${x.id}')" class="bg-blue-600 px-4 py-2 rounded w-full font-semibold mt-2">⚖️ Vincular marcados</button>`:'<div class="small">No encontré productos parecidos en otros proveedores. Podés buscarlos en la lista, seleccionarlos junto con este y usar "⚖️ Vincular como iguales".</div>'}</div></div>`);
+}
+async function ppVincular(ids){
+ ids=[...new Set(ids.map(String))];if(ids.length<2)return alert('Seleccioná al menos 2 productos para vincular.');
+ const prods=ids.map(id=>CAT.porId.get(id)).filter(Boolean);
+ const gruposPrev=[...new Set(prods.map(p=>p.grupo).filter(Boolean))];const grupo=gruposPrev[0]||ppNuevoId();
+ const todos=new Set(ids);CAT.productos.forEach(p=>{if(p.grupo&&gruposPrev.includes(p.grupo))todos.add(String(p.id))});
+ await ppActualizarVarios([...todos],{grupo});catIndexar();
+}
+async function ppVincularDesdeModal(id){const ids=[id,...[...document.querySelectorAll('.pp-cand:checked')].map(c=>c.value)];if(ids.length<2)return alert('Marcá al menos un producto.');try{await ppVincular(ids);ppRender();ppComparar(id);ppToast('Productos vinculados.')}catch(e){alert('No se pudo vincular: '+e.message)}}
+async function ppVincularSeleccionados(){try{await ppVincular([...PP_SEL]);PP_SEL.clear();ppRender();ppToast('Productos vinculados.')}catch(e){alert(e.message)}}
+async function ppDesvincular(id,volverA){
+ const x=CAT.porId.get(String(id));if(!x||!x.grupo)return;const g=CAT.grupos.get(x.grupo)||[];
+ try{const ids=g.length<=2?g.map(z=>String(z.id)):[String(id)];await ppActualizarVarios(ids,{grupo:null});catIndexar();ppRender();const v=CAT.porId.get(String(volverA));if(v&&String(volverA)!==String(id))ppComparar(volverA);else cerrarModal()}catch(e){alert('No se pudo desvincular: '+e.message)}
+}
+
+/* ---------- Ficha del proveedor ---------- */
+function ppProveedorCRM(nombre){return (state.proveedores||[]).find(p=>String(p.nombre||'').trim().toLowerCase()===String(nombre||'').trim().toLowerCase())||null}
+function ppTelefonoProveedor(nombre){const raw=String(ppProveedorCRM(nombre)?.contacto||'');const m=raw.match(/(?:\+?54\s*)?(?:9\s*)?(?:\(?\d{2,4}\)?[\s.-]*)?(?:15[\s.-]*)?\d{3,4}[\s.-]?\d{3,4}/);return m?m[0]:''}
+function ppFichaProveedor(nombre){
+ const crm=ppProveedorCRM(nombre),tel=ppTelefonoProveedor(nombre);const ps=CAT.productos.filter(x=>x.proveedor===nombre);
+ const listas=new Map();ps.forEach(x=>{const k=x.lista||'(sin lista)';if(!listas.has(k))listas.set(k,{act:0,inact:0,fecha:null,archivo:''});const o=listas.get(k);x.activo?o.act++:o.inact++;const f=x.fecha_lista||x.actualizado_at;if(f&&(!o.fecha||String(f)>String(o.fecha))){o.fecha=f;o.archivo=x.archivo||''}});
+ const inact=ps.filter(x=>!x.activo).length,sinLista=ps.filter(x=>!x.lista&&!x.manual).length;const compras=(state.compras||[]).filter(c=>String(c.proveedor||'').toLowerCase()===String(nombre).toLowerCase());
+ const totalCompras=compras.reduce((s,c)=>s+(Number(c.total)||0),0);
+ abrirModal('🏭 '+nombre,`<div class="space-y-3">
+ <div class="border rounded-lg p-3 text-sm">${crm?`<b>Contacto:</b> ${esc(crm.contacto||'-')}`:'<span class="text-slate-500">No está cargado en Proveedores (Compras).</span>'}${tel?`<div class="mt-2"><a class="bg-emerald-600 px-3 py-2 rounded inline-block" target="_blank" href="${waLink(tel)}">💬 WhatsApp</a></div>`:''}<div class="small mt-2">Compras registradas: ${compras.length} · total ${money(totalCompras)}</div></div>
+ <div class="overflow-x-auto"><table class="w-full cat-comp-tabla"><thead><tr><th class="text-left">Lista</th><th class="text-right">Productos</th><th class="text-left">Fecha</th><th class="text-left">Archivo</th></tr></thead><tbody>${[...listas.entries()].map(([k,o])=>`<tr><td>${esc(k)}</td><td class="text-right">${o.act}${o.inact?` <span class="small">(+${o.inact} que ya no figuran)</span>`:''}</td><td>${ppFechaCorta(o.fecha)}${ppDiasDesde(o.fecha)>30?' ⚠️':''}</td><td class="small">${esc(o.archivo)}</td></tr>`).join('')||'<tr><td colspan="4" class="small">Sin productos en el catálogo.</td></tr>'}</tbody></table></div>
+ <div class="grid grid-cols-1 gap-2">
+  <button class="bg-blue-600 px-4 py-2 rounded font-semibold" onclick="cerrarModal();document.getElementById('ppFiltroProveedor').value=${ppJs(nombre)};ppRender()">Ver sus productos</button>
+  ${inact?`<button class="bg-slate-700 px-4 py-2 rounded" onclick="ppQuitarInactivos(${ppJs(nombre)})">🧹 Quitar los ${inact} que ya no figuran en sus listas</button>`:''}
+  ${sinLista&&listas.size>1?`<button class="bg-slate-700 px-4 py-2 rounded" onclick="ppQuitarSinLista(${ppJs(nombre)})">🧹 Quitar los ${sinLista} de la carga anterior que no aparecieron en ninguna lista nueva</button>`:''}
+  ${ps.length?`<button class="bg-rose-700 px-4 py-2 rounded" onclick="ppQuitarProveedorCatalogo(${ppJs(nombre)})">🗑 Quitar todos sus productos del catálogo</button>`:''}
+  <div class="small">Quitar productos del catálogo no borra al proveedor de Compras ni sus compras registradas.</div>
+ </div></div>`);
+}
+async function ppQuitarInactivos(nombre){const ids=CAT.productos.filter(x=>x.proveedor===nombre&&!x.activo).map(x=>x.id);if(!confirm(`¿Quitar ${ids.length} producto(s) de ${nombre} que ya no figuran en sus listas?`))return;try{await ppBorrarVarios(ids);cerrarModal();ppRender();ppToast('Productos quitados del catálogo.')}catch(e){alert('No se pudo: '+e.message)}}
+async function ppQuitarSinLista(nombre){const ids=CAT.productos.filter(x=>x.proveedor===nombre&&!x.lista&&!x.manual).map(x=>x.id);if(!confirm(`¿Quitar ${ids.length} producto(s) de ${nombre} que venían del catálogo anterior y no aparecieron en ninguna lista importada?`))return;try{await ppBorrarVarios(ids);cerrarModal();ppRender();ppToast('Productos quitados del catálogo.')}catch(e){alert('No se pudo: '+e.message)}}
+async function ppQuitarProveedorCatalogo(nombre){
+ const n=CAT.productos.filter(x=>x.proveedor===nombre).length;
+ if(!confirm(`¿Quitar los ${n} productos de "${nombre}" del catálogo?\n\nEl proveedor sigue en Compras y sus compras no se tocan. Podés volver a importar su lista cuando quieras.`))return;
+ try{const {error}=await supabaseClient.from('catalogo_productos').delete().eq('proveedor',nombre);if(error)throw error;const {error:e2}=await supabaseClient.from('catalogo_pedidos').delete().eq('proveedor',nombre);if(e2)throw e2;
+  CAT.productos=CAT.productos.filter(x=>x.proveedor!==nombre);CAT.pedidos=CAT.pedidos.filter(p=>p.proveedor!==nombre);catIndexar();cerrarModal();const f=document.getElementById('ppFiltroProveedor');if(f&&f.value===nombre)f.value='';ppRender();ppToast('Productos del proveedor quitados del catálogo.')}
+ catch(e){alert('No se pudo: '+e.message)}
+}
+
+/* ---------- Pedidos ---------- */
+async function ppAgregarPedido(id){
+ const x=CAT.porId.get(String(id));if(!x)return;
+ try{
+  const ya=CAT.pedidos.find(p=>String(p.producto_id)===String(id));
+  if(ya){const cantidad=(Number(ya.cantidad)||0)+1;const {error}=await supabaseClient.from('catalogo_pedidos').update({cantidad}).eq('id',ya.id);if(error)throw error;ya.cantidad=cantidad}
+  else{const {data,error}=await supabaseClient.from('catalogo_pedidos').insert({producto_id:x.id,proveedor:x.proveedor,codigo:x.codigo||'',producto:x.producto,cantidad:1,costo:x.costo}).select().single();if(error)throw error;CAT.pedidos.push(data)}
+  ppRenderPedidos();ppToast(`🛒 ${x.producto.slice(0,50)} → pedido a ${x.proveedor}`,'ok',2200);
+ }catch(e){alert('No se pudo agregar al pedido: '+e.message)}
+}
+async function ppPedidoCantidad(id,v){const p=CAT.pedidos.find(z=>String(z.id)===String(id));if(!p)return;const cantidad=Math.max(1,Number(String(v).replace(',','.'))||1);try{const {error}=await supabaseClient.from('catalogo_pedidos').update({cantidad}).eq('id',id);if(error)throw error;p.cantidad=cantidad;ppRenderPedidos()}catch(e){alert('No se pudo cambiar la cantidad: '+e.message)}}
+async function ppQuitarPedido(id){try{const {error}=await supabaseClient.from('catalogo_pedidos').delete().eq('id',id);if(error)throw error;CAT.pedidos=CAT.pedidos.filter(p=>String(p.id)!==String(id));ppRenderPedidos()}catch(e){alert('No se pudo quitar: '+e.message)}}
+async function ppVaciarPedidos(proveedor){
+ const lista=CAT.pedidos.filter(p=>!proveedor||p.proveedor===proveedor);if(!lista.length)return;
+ if(!confirm(proveedor?`¿Vaciar el pedido a ${proveedor}?`:'¿Vaciar todos los pedidos?'))return;
+ try{let q=supabaseClient.from('catalogo_pedidos').delete();q=proveedor?q.eq('proveedor',proveedor):q.not('id','is',null);const {error}=await q;if(error)throw error;CAT.pedidos=CAT.pedidos.filter(p=>proveedor&&p.proveedor!==proveedor);ppRenderPedidos()}catch(e){alert('No se pudo vaciar: '+e.message)}
+}
+function ppPedidosDe(prov){return CAT.pedidos.filter(x=>x.proveedor===prov)}
+function ppRenderPedidos(){
+ const host=document.getElementById('ppPedidos');if(!host)return;const a=CAT.pedidos;
+ if(!a.length){host.innerHTML='<div class="text-slate-400 text-sm p-2">Todavía no agregaste artículos. Usá 🛒＋ en cualquier producto.</div>';return}
+ const grupos={};a.forEach(x=>(grupos[x.proveedor]??=[]).push(x));
+ host.innerHTML=Object.entries(grupos).map(([prov,it])=>{const total=it.reduce((s,x)=>s+(Number(x.costo)||0)*(Number(x.cantidad)||0),0);return `<div class="border rounded-lg p-3 mb-3"><div class="flex flex-wrap justify-between gap-2 items-center mb-2"><div><b>${esc(prov)}</b><div class="small">${it.length} artículo(s) · costo estimado ${money(total)}</div></div><div class="flex flex-wrap gap-2"><button type="button" onclick="ppEnviarPedido(${ppJs(prov)})" class="bg-emerald-600 px-3 py-2 rounded-lg text-sm">📲 WhatsApp</button><button type="button" onclick="ppRegistrarCompraPedido(${ppJs(prov)})" class="bg-blue-600 px-3 py-2 rounded-lg text-sm">✓ Llegó: registrar compra</button><button type="button" onclick="ppVaciarPedidos(${ppJs(prov)})" class="bg-slate-700 px-3 py-2 rounded-lg text-sm">Vaciar</button></div></div>${it.map(x=>{const p=CAT.porId.get(String(x.producto_id));const alt=p&&p.grupo?(CAT.grupos.get(p.grupo)||[])[0]:null;const masBarato=alt&&String(alt.id)!==String(p.id)&&alt.costo<p.costo?`<div class="small" style="color:var(--amber-tx)">💡 Más barato en ${esc(alt.proveedor)}: ${money(alt.costo)}</div>`:'';const min=p?.cant_minima>1&&Number(x.cantidad)<p.cant_minima?`<div class="small" style="color:var(--amber-tx)">Este precio es llevando ${p.cant_minima} o más</div>`:'';return `<div class="flex gap-2 items-center border-t py-2"><input type="number" min="1" step="1" value="${Number(x.cantidad)||1}" onchange="ppPedidoCantidad('${x.id}',this.value)" class="border rounded p-1 text-center" style="width:62px;max-width:62px"><div class="flex-1 min-w-0"><div class="font-semibold">${esc(x.producto)}</div><div class="small">${x.codigo?'Cód. '+esc(x.codigo)+' · ':''}${money(x.costo)} c/u</div>${masBarato}${min}</div><button type="button" onclick="ppQuitarPedido('${x.id}')" class="text-rose-600" title="Quitar">✖</button></div>`}).join('')}</div>`}).join('');
+}
+function ppTextoPedido(prov){let t='Hola, te paso un pedido de Bicicletas del Abasto:\n\n';ppPedidosDe(prov).forEach(x=>{t+=`• ${Number(x.cantidad)} x ${x.producto}${x.codigo?' (cód. '+x.codigo+')':''}\n`});return t+'\nGracias.'}
+function ppEnviarPedido(prov){abrirModal('📲 Pedido a '+prov,`<div class="space-y-3"><div><label class="small">WhatsApp del proveedor</label><input id="ppWaProveedor" class="border p-2 rounded w-full" placeholder="Ej: 341 555-1234" value="${esc(ppTelefonoProveedor(prov))}"></div><div><label class="small">Mensaje</label><textarea id="ppWaMensaje" rows="12" class="border p-2 rounded w-full">${esc(ppTextoPedido(prov))}</textarea></div><button type="button" onclick="ppAbrirWhatsappPedido()" class="bg-emerald-600 px-4 py-2 rounded w-full font-semibold">📲 Abrir WhatsApp</button><p class="small">Podés corregir el teléfono o el mensaje antes de enviarlo. Si el teléfono no está, cargalo en Compras → Proveedores.</p></div>`)}
+function ppAbrirWhatsappPedido(){const tel=waNumero(document.getElementById('ppWaProveedor')?.value),msg=document.getElementById('ppWaMensaje')?.value||'';if(!tel)return alert('Ingresá el WhatsApp del proveedor.');window.open('https://wa.me/'+tel+'?text='+encodeURIComponent(msg),'_blank')}
+function ppRegistrarCompraPedido(prov){
+ if(!puede('compras'))return alert('Tu usuario no puede registrar compras.');
+ const it=ppPedidosDe(prov);if(!it.length)return;const total=ppR2(it.reduce((s,x)=>s+(Number(x.costo)||0)*(Number(x.cantidad)||0),0));
+ abrirModal('✓ Registrar compra a '+prov,`<div class="space-y-3"><div class="small">Se registra <b>una</b> compra con todo lo que llegó y su salida en Caja. Destildá lo que no vino.</div><div class="space-y-1" style="max-height:260px;overflow-y:auto">${it.map(x=>`<label class="flex gap-2 items-center border rounded p-2"><input type="checkbox" class="pp-rc" value="${x.id}" data-sub="${ppR2((Number(x.costo)||0)*(Number(x.cantidad)||0))}" checked onchange="ppRecalcCompraPedido()"><span class="flex-1">${Number(x.cantidad)} x ${esc(x.producto)}</span><span class="money small">${money((Number(x.costo)||0)*(Number(x.cantidad)||0))}</span></label>`).join('')}</div><div class="grid grid-cols-2 gap-2"><div><label class="small">Total de la factura / remito</label><input id="ppRcTotal" type="number" step="0.01" min="0" class="border p-2 rounded w-full" value="${total}"></div><div><label class="small">Medio de pago</label><select id="ppRcMedio" class="border p-2 rounded w-full">${opcionesMedio('Efectivo')}</select></div></div><div class="small">El total arranca con los costos del catálogo; corregilo con lo que realmente pagaste.</div><button id="ppRcBtn" onclick="ppConfirmarCompraPedido(${ppJs(prov)})" class="bg-blue-600 px-4 py-2 rounded w-full font-semibold">Registrar compra</button></div>`);
+}
+function ppRecalcCompraPedido(){const t=[...document.querySelectorAll('.pp-rc:checked')].reduce((s,c)=>s+Number(c.dataset.sub||0),0);const el=document.getElementById('ppRcTotal');if(el)el.value=ppR2(t)}
+async function ppConfirmarCompraPedido(prov){
+ const ids=[...document.querySelectorAll('.pp-rc:checked')].map(c=>c.value);if(!ids.length)return alert('Marcá al menos un artículo.');
+ const total=ppR2(document.getElementById('ppRcTotal').value),medio=document.getElementById('ppRcMedio').value;if(!(total>0))return alert('Ingresá un total válido.');
+ const it=CAT.pedidos.filter(p=>ids.includes(String(p.id)));let detalle='Pedido: '+it.map(x=>`${Number(x.cantidad)}x ${x.producto}${x.codigo?' ('+x.codigo+')':''}`).join('; ');if(detalle.length>480)detalle=detalle.slice(0,477)+'...';
+ const btn=document.getElementById('ppRcBtn');if(btn){btn.disabled=true;btn.textContent='⏳ Registrando...'}
+ try{
+  await rpc('crm_crear_compra_v1',{p_compra:{fecha:fechaHoraLocal(),proveedor:prov,producto:detalle,cantidad:1,costo:total,total,medio},p_medio:medio,p_stock_id:null,p_actualizar_costo:false});
+  const {error}=await supabaseClient.from('catalogo_pedidos').delete().in('id',ids);if(error)console.error(error);
+  CAT.pedidos=CAT.pedidos.filter(p=>!ids.includes(String(p.id)));cerrarModal();ppRenderPedidos();
+  await cargarSupabase(true,['compras','caja']);alert('Compra registrada. Quedó en Compras y como salida en Caja.');
+ }catch(e){alert('No se pudo registrar la compra. No se guardó nada.\n\n'+e.message);if(btn){btn.disabled=false;btn.textContent='Registrar compra'}}
+}
+
+/* ---------- Alta, edición y borrado individual ---------- */
+async function ppMargenProducto(id,v,el){
+ const x=CAT.porId.get(String(id));if(!x)return;const margen=v===''?null:Math.max(0,Number(String(v).replace(',','.'))||0);
+ try{const {error}=await supabaseClient.from('catalogo_productos').update({margen}).eq('id',id);if(error)throw error;x.margen=margen;const tr=el&&el.closest('tr');if(tr){const c=tr.children[6];if(c)c.textContent=money(ppPrecio(x))}}catch(e){alert('No se pudo guardar el margen: '+e.message)}
+}
+function ppAbrirNuevo(){ppModal(null)}
+function ppEditar(id){ppModal(CAT.porId.get(String(id)))}
+function ppModal(x){
+ x=x||{};const provs=[...new Set([...(state.proveedores||[]).map(p=>p.nombre),...CAT.productos.map(p=>p.proveedor)].filter(Boolean))].sort();
+ abrirModal(x.id?'✏️ Editar producto':'＋ Nuevo producto',`<div class="space-y-3"><input id="ppMProveedor" list="ppMProvs" class="border p-2 rounded w-full" placeholder="Proveedor" value="${esc(x.proveedor||'')}" ${x.id?'disabled':''}><datalist id="ppMProvs">${provs.map(p=>`<option value="${esc(p)}">`).join('')}</datalist>
+ <div class="grid grid-cols-2 gap-2"><input id="ppMCodigo" class="border p-2 rounded w-full" placeholder="Código" value="${esc(x.codigo||'')}" ${x.id&&!x.manual?'disabled':''}><input id="ppMMarca" class="border p-2 rounded w-full" placeholder="Marca" value="${esc(x.marca||'')}"></div>
+ <input id="ppMProducto" class="border p-2 rounded w-full" placeholder="Descripción del producto" value="${esc(x.producto||'')}">
+ <select id="ppMCategoria" class="border p-2 rounded w-full">${CATU.CATEGORIAS.map(c=>`<option ${c===(x.categoria||'Repuestos')?'selected':''}>${c}</option>`).join('')}</select>
+ <div class="grid grid-cols-2 gap-2"><div><label class="small">Tu costo</label><input id="ppMCosto" type="number" min="0" step="0.01" class="border p-2 rounded w-full" value="${x.costo||''}"></div><div><label class="small">Público ref.</label><input id="ppMReferencia" type="number" min="0" step="0.01" class="border p-2 rounded w-full" value="${x.referencia||''}"></div><div><label class="small">Cantidad mínima</label><input id="ppMMin" type="number" min="0" step="1" class="border p-2 rounded w-full" value="${x.cant_minima||''}"></div><div><label class="small">Margen % (vacío = general)</label><input id="ppMMargen" type="number" min="0" step="0.1" class="border p-2 rounded w-full" value="${x.margen??''}"></div></div>
+ <label class="text-sm"><input type="checkbox" id="ppMSinStock" ${x.sin_stock?'checked':''}> Sin stock en el proveedor</label>
+ ${x.id&&!x.manual?'<div class="small">Si cambiás el costo a mano, la próxima importación de la lista lo vuelve a poner como figure en la lista.</div>':''}
+ <button onclick="ppGuardar(${x.id?`'${x.id}'`:'null'})" class="bg-blue-600 px-4 py-2 rounded w-full font-semibold">Guardar</button></div>`);
+}
+async function ppGuardar(id){
+ const g=k=>document.getElementById(k)?.value.trim()||'';const proveedor=g('ppMProveedor'),codigo=g('ppMCodigo'),producto=g('ppMProducto');
+ const costo=ppR2(g('ppMCosto')),referencia=ppR2(g('ppMReferencia')||0),margenTxt=g('ppMMargen'),cant=Number(g('ppMMin'))||null;
+ if(!proveedor||!producto||!(costo>=0)||g('ppMCosto')==='')return alert('Completá proveedor, producto y un costo válido.');
+ const datos={producto,codigo,marca:g('ppMMarca').toUpperCase(),categoria:document.getElementById('ppMCategoria').value,costo,referencia,cant_minima:cant,margen:margenTxt===''?null:Number(margenTxt),sin_stock:document.getElementById('ppMSinStock').checked,actualizado_at:new Date().toISOString()};
+ try{
+  if(id){const x=CAT.porId.get(String(id));if(x&&ppR2(x.costo)!==costo){datos.costo_anterior=x.costo;datos.costo_cambio_at=new Date().toISOString()}if(x&&x.manual)datos.precio_lista=costo;
+   const {data,error}=await supabaseClient.from('catalogo_productos').update(datos).eq('id',id).select().single();if(error)throw error;Object.assign(x,data);catPreparar(x)}
+  else{const {data,error}=await supabaseClient.from('catalogo_productos').insert({...datos,proveedor,clave:codigo?ppClave(codigo,producto):'m:'+ppNuevoId(),lista:'Carga manual',manual:true,precio_lista:costo}).select().single();
+   if(error)throw new Error(/duplicate|unique/i.test(error.message)?'Ya existe un producto de ese proveedor con ese código.':error.message);CAT.productos.push(catPreparar(data))}
+  catIndexar();cerrarModal();ppRender();ppToast('Producto guardado.');
+ }catch(e){alert('No se pudo guardar: '+e.message)}
+}
+async function ppBorrar(id){const x=CAT.porId.get(String(id));if(!x)return;if(!confirm(`¿Eliminar "${x.producto}" del catálogo?`))return;try{await ppBorrarVarios([id]);ppRender()}catch(e){alert('No se pudo eliminar: '+e.message)}}
+
+/* ---------- Importación ---------- */
+function ppOpcionesImport(){
+ const ips=document.getElementById('ppImportProveedor');if(!ips)return;const act=ips.value;
+ const todos=[...new Set([...(state.proveedores||[]).map(p=>p.nombre),...CAT.productos.map(p=>p.proveedor),...(act&&act!=='__nuevo__'?[act]:[])].filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+ ips.innerHTML='<option value="">Elegir proveedor…</option>'+todos.map(p=>`<option value="${esc(p)}" ${p===act?'selected':''}>${esc(p)}</option>`).join('')+'<option value="__nuevo__">➕ Otro proveedor…</option>';
+}
+function ppNuevoProveedorImport(){const n=(prompt('Nombre del proveedor:')||'').trim();const s=document.getElementById('ppImportProveedor');if(!n){s.value='';return}const o=document.createElement('option');o.value=n;o.textContent=n;s.insertBefore(o,s.lastElementChild);s.value=n}
+async function ppCargarPDFjs(){
+ if(!window.pdfjsLib)await new Promise((ok,mal)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';s.onload=ok;s.onerror=()=>mal(new Error('No se pudo cargar el lector de PDF. Revisá la conexión a Internet.'));document.head.appendChild(s)});
+ if(!window.pdfjsLib)throw new Error('No se pudo cargar el lector de PDF. Revisá la conexión a Internet.');
+ if(!pdfjsLib.GlobalWorkerOptions.workerSrc)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+async function ppPaginasPDF(file){
+ await ppCargarPDFjs();const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;const out=[];
+ for(let n=1;n<=pdf.numPages;n++){const pg=await pdf.getPage(n),tc=await pg.getTextContent(),vp=pg.getViewport({scale:1});out.push({ancho:vp.width,items:(tc.items||[]).filter(it=>String(it.str||'').trim()).map(it=>({str:String(it.str),x:Number(it.transform?.[4]||0),y:Number(it.transform?.[5]||0)}))})}
+ return out;
+}
+async function ppLeerPlanilla(file){
+ if(!window.XLSX)throw new Error('No se pudo cargar el lector de Excel.');
+ const wb=XLSX.read(await file.arrayBuffer(),{type:'array'}),filas=[];
+ for(const sn of wb.SheetNames){const data=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:''});if(!data.length)continue;
+  let hi=data.findIndex(r=>r.some(v=>/producto|descripci[oó]n|art[ií]culo/i.test(String(v))));if(hi<0)hi=0;const h=data[hi].map(v=>String(v).trim().toLowerCase());
+  const ix=res=>h.findIndex(x=>res.some(re=>re.test(x)));
+  const ip=ix([/producto/,/descrip/,/art[ií]culo/]),ic=ix([/c[oó]digo/,/^cod\.?$/]),i1=ix([/^n[º°]?\s*1$/,/lista\s*1/,/p[uú]blico/]),i2=ix([/^n[º°]?\s*2$/,/lista\s*2/,/costo/]),iprec=ix([/^precio/,/importe/]),im=ix([/marca/]),irub=ix([/rubro/,/categor/]);
+  for(const r of data.slice(hi+1)){const producto=String(r[ip>=0?ip:0]||'').trim();if(!producto)continue;const num=v=>typeof v==='number'?v:CATL.numAR(v);let precio=num(r[i2>=0?i2:iprec]);if(!Number.isFinite(precio)&&iprec>=0)precio=num(r[iprec]);if(!Number.isFinite(precio))continue;
+   filas.push({codigo:ic>=0?String(r[ic]||'').trim():'',producto,precio,referencia:i1>=0?num(r[i1]):0,marcaHint:im>=0?String(r[im]||''):'',rubro:irub>=0?String(r[irub]||''):''})}
+ }
+ return {formato:'planilla',formatoNombre:'Planilla (Excel/CSV)',ivaIncluido:null,fechaLista:'',filas:filas.filter(f=>f.precio>0),descartadas:[],sinPrecio:filas.filter(f=>!(f.precio>0)).length,paginas:wb.SheetNames.length};
+}
+async function ppPrepararImportacion(file){
+ const estado=document.getElementById('ppImportEstado'),prev=document.getElementById('ppImportPreview');PP_IMPORT=null;prev.classList.add('hidden');prev.innerHTML='';
+ if(!file)return;
+ const proveedor=document.getElementById('ppImportProveedor')?.value||'';
+ if(!proveedor||proveedor==='__nuevo__'){document.getElementById('ppImportArchivo').value='';return alert('Primero elegí el proveedor de la lista.')}
+ if(CAT.error)return alert(CAT.error==='version'?'Primero ejecutá migracion_v8.sql en Supabase.':'El catálogo no se cargó: '+CAT.error);
+ estado.innerHTML='⏳ Leyendo <b>'+esc(file.name)+'</b>…';
+ try{
+  await catIniciar();
+  const ext=(file.name.split('.').pop()||'').toLowerCase();let paginas=null,res;
+  if(ext==='pdf'){paginas=await ppPaginasPDF(file);res=CATL.leer(paginas)}
+  else if(['xlsx','xls','csv'].includes(ext))res=await ppLeerPlanilla(file);
+  else{const lineas=(await file.text()).split(/\r?\n/);paginas=[{ancho:1000,items:lineas.map((l,i)=>({str:l,x:0,y:-i*20}))}];res=CATL.leer(paginas,'generico')}
+  if(!res.filas.length)throw new Error('No pude reconocer productos con precio en este archivo. Si es un formato nuevo, mandámelo para agregarlo.');
+  PP_IMPORT={proveedor,archivo:file.name,paginas,res};
+  ppMostrarPreviewImport(true);
+ }catch(e){console.error(e);estado.innerHTML='⚠️ '+esc(e.message||String(e))}
+}
+function ppSugerirLista(proveedor,res,archivo){
+ const claves=new Set(res.filas.map(f=>ppClave(f.codigo,f.producto)));const cuenta={};
+ CAT.productos.forEach(x=>{if(x.proveedor===proveedor&&x.lista&&claves.has(x.clave))cuenta[x.lista]=(cuenta[x.lista]||0)+1});
+ const mejor=Object.entries(cuenta).sort((a,b)=>b[1]-a[1])[0];if(mejor&&mejor[1]>=Math.min(10,claves.size*0.2))return mejor[0];
+ const palabrasProv=CATU.norm(proveedor).split(' ');
+ let n=String(archivo||'').replace(/\.[a-z0-9]+$/i,'').replace(/[_-]+/g,' ').replace(/\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\s*\d*\w?\b/gi,' ').replace(/\b(lista|listas|de|precios?|actualizada|oferta)\b/gi,' ').replace(/\d+/g,' ').replace(/\s+/g,' ').trim();
+ n=n.split(' ').filter(w=>w.length>1&&!palabrasProv.includes(CATU.norm(w))).join(' ');
+ return n?n.charAt(0).toUpperCase()+n.slice(1):'General';
+}
+function ppMostrarPreviewImport(inicial){
+ const I=PP_IMPORT;if(!I)return;const p=document.getElementById('ppImportPreview');
+ if(inicial){
+  I.lista=ppSugerirLista(I.proveedor,I.res,I.archivo);
+  const rec=CAT.config['lista:'+I.proveedor+'|'+I.lista]||{};
+  I.iva=I.res.ivaIncluido!==null?I.res.ivaIncluido:(rec.iva_incluido??true);I.descuento=Number(rec.descuento)||0;I.agregarCRM=!ppProveedorCRM(I.proveedor);
+ }
+ const listasProv=[...new Set(CAT.productos.filter(x=>x.proveedor===I.proveedor).map(x=>x.lista).filter(Boolean))];
+ const filas=ppFilasImport();const ex=new Map(CAT.productos.filter(x=>x.proveedor===I.proveedor).map(x=>[x.clave,x]));
+ let nuevos=0,act=0,suben=0,bajan=0;const raras=[];
+ filas.forEach(f=>{const x=ex.get(f.clave);if(!x){nuevos++}else{act++;if(f.costo>ppR2(x.costo))suben++;else if(f.costo<ppR2(x.costo))bajan++;const v=x.costo>0?(f.costo-x.costo)/x.costo*100:0;if(Math.abs(v)>60)raras.push([f,`antes ${money(x.costo)} (${v>0?'+':''}${v.toFixed(0)}%)`])}if(f.costo<50)raras.push([f,'costo muy bajo'])});
+ const claves=new Set(filas.map(f=>f.clave));const noFiguran=CAT.productos.filter(x=>x.proveedor===I.proveedor&&x.lista===I.lista&&x.activo&&!x.manual&&!claves.has(x.clave)).length;
+ const r=I.res;
+ document.getElementById('ppImportEstado').innerHTML=`✓ <b>${filas.length}</b> productos leídos de <b>${esc(I.archivo)}</b> (${r.paginas} pág.) · formato: <b>${esc(r.formatoNombre)}</b>${r.fechaLista?` · fecha de la lista ${ppFechaCorta(r.fechaLista)}`:''}.`;
+ p.classList.remove('hidden');
+ p.innerHTML=`<div class="space-y-3 border rounded-lg p-3">
+ <div class="grid md:grid-cols-4 gap-3">
+  <div><label class="small">Nombre de la lista</label><input id="ppImpLista" list="ppImpListas" class="border p-2 rounded w-full" value="${esc(I.lista)}" onchange="PP_IMPORT.lista=this.value.trim()||'General';ppMostrarPreviewImport()"><datalist id="ppImpListas">${listasProv.map(l=>`<option value="${esc(l)}">`).join('')}</datalist><div class="small">Mismo nombre = reemplaza esa lista.</div></div>
+  <div><label class="small">Los precios de la lista…</label><select id="ppImpIva" class="border p-2 rounded w-full" onchange="PP_IMPORT.iva=this.value==='1';ppMostrarPreviewImport()"><option value="1" ${I.iva?'selected':''}>ya incluyen IVA</option><option value="0" ${!I.iva?'selected':''}>son + IVA (sumar 21%)</option></select>${r.ivaIncluido!==null?`<div class="small">Detectado en el PDF: ${r.ivaIncluido?'IVA incluido':'+ IVA'}.</div>`:''}</div>
+  <div><label class="small">Descuento del proveedor %</label><input id="ppImpDesc" type="number" min="0" max="90" step="0.5" class="border p-2 rounded w-full" value="${I.descuento}" onchange="PP_IMPORT.descuento=Math.min(90,Math.max(0,Number(this.value)||0));ppMostrarPreviewImport()"><div class="small">Ej.: 15 si pagás de contado.</div></div>
+  <div><label class="small">Formato</label><select class="border p-2 rounded w-full" onchange="ppCambiarFormatoImport(this.value)" ${I.paginas?'':'disabled'}>${Object.entries(CATL.FORMATOS).map(([k,v])=>`<option value="${k}" ${k===r.formato?'selected':''}>${esc(v)}</option>`).join('')}${r.formato==='planilla'?'<option selected>Planilla</option>':''}</select></div>
+ </div>
+ ${I.agregarCRM!==undefined&&!ppProveedorCRM(I.proveedor)?`<label class="text-sm"><input type="checkbox" ${I.agregarCRM?'checked':''} onchange="PP_IMPORT.agregarCRM=this.checked"> Agregar "${esc(I.proveedor)}" también a Proveedores (Compras)</label>`:''}
+ <div class="flex flex-wrap gap-2 text-sm"><span class="cat-badge cat-b-azul">${nuevos} nuevos</span><span class="cat-badge">${act} ya estaban</span><span class="cat-badge cat-b-rojo">▲ ${suben} suben</span><span class="cat-badge cat-b-verde">▼ ${bajan} bajan</span>${noFiguran?`<span class="cat-badge cat-b-ambar">${noFiguran} de la lista "${esc(I.lista)}" ya no figuran (se marcan, no se borran)</span>`:''}${r.sinPrecio?`<span class="cat-badge">${r.sinPrecio} sin precio (se omiten)</span>`:''}</div>
+ ${raras.length?`<details class="text-sm"><summary>⚠️ ${raras.length} precio(s) para revisar</summary><div class="small mt-1">${raras.slice(0,40).map(([f,m])=>`${esc(f.producto)} → ${money(f.costo)} · ${esc(m)}`).join('<br>')}</div></details>`:''}
+ ${r.descartadas.length?`<details class="text-sm"><summary>${r.descartadas.length} renglón(es) con precio que no se pudieron leer</summary><div class="small mt-1 font-mono">${r.descartadas.slice(0,40).map(esc).join('<br>')}</div></details>`:''}
+ <div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr><th class="p-2 text-left">Código</th><th class="p-2 text-left">Producto</th><th class="p-2 text-left">Categoría · marca</th><th class="p-2 text-right">Precio lista</th><th class="p-2 text-right">Tu costo</th><th class="p-2 text-right">Público</th></tr></thead><tbody>${filas.slice(0,15).map(f=>`<tr class="border-b"><td class="p-2 font-mono small">${esc(f.codigo||'-')}</td><td class="p-2">${esc(f.producto)}${f.sin_stock?' <span class="cat-badge cat-b-rojo">Sin stock</span>':''}</td><td class="p-2 small">${esc(f.categoria)}${f.marca?' · '+esc(f.marca):''}</td><td class="p-2 text-right">${money(f.precio_lista)}</td><td class="p-2 text-right font-semibold">${money(f.costo)}</td><td class="p-2 text-right">${f.referencia?money(f.referencia):'-'}</td></tr>`).join('')}</tbody></table></div>
+ ${filas.length>15?`<div class="small">Vista previa de 15 de ${filas.length}.</div>`:''}
+ <div class="flex flex-wrap gap-2"><button id="ppBtnImportar" onclick="ppConfirmarImportacion()" class="bg-emerald-600 px-4 py-2 rounded-lg font-semibold">✓ Importar ${filas.length} productos</button><button onclick="ppCancelarImportacion()" class="bg-slate-700 px-4 py-2 rounded-lg">Cancelar</button></div></div>`;
+}
+function ppCambiarFormatoImport(f){const I=PP_IMPORT;if(!I||!I.paginas)return;I.res=CATL.leer(I.paginas,f);ppMostrarPreviewImport()}
+function ppFilasImport(){
+ const I=PP_IMPORT;const fac=(I.iva?1:1.21),desc=1-(Number(I.descuento)||0)/100;
+ return I.res.filas.map(f=>({clave:ppClave(f.codigo,f.producto),codigo:f.codigo||'',producto:f.producto,marca:CATU.marca(f.producto,f.marcaHint),categoria:CATU.categoria(f.producto,f.rubro),rubro:f.rubro||'',
+  precio_lista:ppR2(f.precio),iva_incluido:!!I.iva,descuento:Number(I.descuento)||0,costo:ppR2(f.precio*fac*desc),referencia:f.referencia>0?ppR2(f.referencia*fac):0,lista3:Number.isFinite(f.lista3)?ppR2(f.lista3*fac):null,cant_minima:f.cantMin||null,sin_stock:!!f.sinStock}));
+}
+function ppCancelarImportacion(){PP_IMPORT=null;const p=document.getElementById('ppImportPreview');if(p){p.innerHTML='';p.classList.add('hidden')}const f=document.getElementById('ppImportArchivo');if(f)f.value='';document.getElementById('ppImportEstado').textContent='Importación cancelada.'}
+async function ppConfirmarImportacion(){
+ const I=PP_IMPORT;if(!I)return;const filas=ppFilasImport();const btn=document.getElementById('ppBtnImportar');if(btn){btn.disabled=true;btn.textContent='⏳ Importando…'}
+ const importId='imp-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7);const tot={nuevos:0,actualizados:0,suben:0,bajan:0,desactivados:0};
+ try{
+  for(let i=0;i<filas.length;i+=800){const r=await rpc('crm_catalogo_importar_v1',{p_proveedor:I.proveedor,p_lista:I.lista,p_import_id:importId,p_archivo:I.archivo,p_fecha_lista:I.res.fechaLista||'',p_filas:filas.slice(i,i+800),p_final:i+800>=filas.length});Object.keys(tot).forEach(k=>tot[k]+=Number(r[k])||0)}
+  try{await catGuardarConfig('lista:'+I.proveedor+'|'+I.lista,{iva_incluido:!!I.iva,descuento:Number(I.descuento)||0,formato:I.res.formato})}catch(e){console.warn(e)}
+  if(I.agregarCRM&&!ppProveedorCRM(I.proveedor)){try{await dbInsert('proveedores',{nombre:I.proveedor,contacto:''});await cargarSupabase(true,['proveedores'])}catch(e){console.warn('No se pudo agregar el proveedor al CRM',e)}}
+  await catIniciar(true);ppCancelarImportacion();
+  document.getElementById('ppImportEstado').innerHTML=`✓ <b>${esc(I.proveedor)} · ${esc(I.lista)}</b>: ${tot.nuevos} nuevos, ${tot.actualizados} actualizados (▲ ${tot.suben} subieron, ▼ ${tot.bajan} bajaron)${tot.desactivados?`, ${tot.desactivados} ya no figuran`:''}.`;
+  const s=document.getElementById('ppFiltroProveedor');if(s)s.value=I.proveedor;const o=document.getElementById('ppOrden');if(o&&tot.suben)o.value='suba';ppRender();
+ }catch(e){console.error(e);alert('No se pudo importar la lista: '+e.message+'\n\nSi se cortó a mitad de camino, volvé a importar el mismo archivo: no se duplica nada.');if(btn){btn.disabled=false;btn.textContent='✓ Reintentar importación'}}
+}
+
+/* ---------- Pasar el catálogo viejo (guardado en el navegador) a Supabase ---------- */
+function ppLocalLeer(){let p=[],d=[];try{p=JSON.parse(localStorage.getItem(PP_OLD_KEY)||'[]')}catch(_){}try{d=JSON.parse(localStorage.getItem(PP_OLD_PEDIDOS)||'[]')}catch(_){}
+ p=Array.isArray(p)?p.filter(x=>x&&x.producto&&x.proveedor):[];d=Array.isArray(d)?d:[];return {p,d}}
+function ppLocalPendiente(){try{if(localStorage.getItem(PP_MIGRADO))return null}catch(_){return null}const {p,d}=ppLocalLeer();return p.length||d.length?{productos:p.length,pedidos:d.length}:null}
+async function ppMigrarLocal(){
+ const {p,d}=ppLocalLeer();if(!confirm(`Se van a subir ${p.length} producto(s) y ${d.length} pedido(s) a Supabase.\n\nLo guardado en este navegador no se borra.`))return;
+ try{
+  const porProv={};p.forEach(x=>(porProv[x.proveedor]??=[]).push(x));
+  for(const [prov,items] of Object.entries(porProv)){
+   const filas=items.map(x=>({clave:ppClave(x.codigo,x.producto),codigo:x.codigo||'',producto:String(x.producto),marca:CATU.marca(x.producto),categoria:CATU.categoria(x.producto),precio_lista:ppR2(x.costo),iva_incluido:true,descuento:0,costo:ppR2(x.costo),referencia:ppR2(x.referencia||0),lista3:Number.isFinite(Number(x.lista3))&&x.lista3!==null?ppR2(x.lista3):null,sin_stock:!!x.sinStock}));
+   for(let i=0;i<filas.length;i+=800)await rpc('crm_catalogo_importar_v1',{p_proveedor:prov,p_lista:'',p_import_id:'local',p_archivo:'Catálogo anterior (navegador)',p_fecha_lista:(items[0].actualizado||'').slice(0,10),p_filas:filas.slice(i,i+800),p_final:false});
+  }
+  await catIniciar(true);
+  const buscar=(prov,cod,prod)=>CAT.productos.find(z=>z.proveedor===prov&&z.clave===ppClave(cod,prod));
+  for(const x of p.filter(x=>x.margen!==null&&x.margen!==undefined&&x.margen!=='')){const z=buscar(x.proveedor,x.codigo,x.producto);if(z){await supabaseClient.from('catalogo_productos').update({margen:Number(x.margen)}).eq('id',z.id)}}
+  const peds=d.filter(x=>x&&x.producto).map(x=>{const z=buscar(x.proveedor,x.codigo,x.producto);return {producto_id:z?.id||null,proveedor:x.proveedor||'Sin proveedor',codigo:x.codigo||'',producto:x.producto,cantidad:Math.max(1,Number(x.cantidad)||1),costo:ppR2(x.costo)}});
+  if(peds.length){const {error}=await supabaseClient.from('catalogo_pedidos').insert(peds);if(error)throw error}
+  const mg=Number(localStorage.getItem(PP_OLD_MARGEN));if(Number.isFinite(mg)&&mg>=0&&localStorage.getItem(PP_OLD_MARGEN)!==null&&CAT.config.margen_general===undefined)await catGuardarConfig('margen_general',mg);
+  try{localStorage.setItem(PP_MIGRADO,new Date().toISOString())}catch(_){}
+  await catIniciar(true);ppRender();alert('Catálogo subido a Supabase correctamente.');
+ }catch(e){console.error(e);alert('No se pudo subir el catálogo: '+e.message)}
+}
+
 
 /* --- COMPRAS & PROVEEDORES --- */
 function actualizarSelectProveedores(){
@@ -3998,7 +4750,7 @@ function renderListaOperativa(tipo,contenedorId){
  const tag=tipo==='compra'?LISTA_COMPRA:LISTA_PENDIENTE, el=document.getElementById(contenedorId);if(!el)return;
  const items=state.recordatorios.filter(r=>r.cliente===tag).slice().sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')));
  if(tipo==='compra'){
-  el.innerHTML=items.map(r=>`<div class="compra-check-row"><input type="checkbox" class="compra-check" data-id="${r.id}" onchange="actualizarComprasSeleccionadas()"><button type="button" onclick="editarItemOperativo('${r.id}')" class="compra-check-text" title="Modificar o eliminar"><span class="compra-item-contenido">${esc(r.texto)}</span><span class="compra-item-fecha">📅 ${esc(r.fecha||'Sin fecha')}</span></button></div>`).join('')||`<div class="text-slate-400 text-sm p-2">No hay compras pendientes.</div>`;
+  el.innerHTML=items.map(r=>`<div class="compra-check-row"><input type="checkbox" class="compra-check" data-id="${r.id}" onchange="actualizarComprasSeleccionadas()"><button type="button" onclick="editarItemOperativo('${r.id}')" class="compra-check-text" title="Modificar o eliminar"><span class="compra-item-contenido">${esc(r.texto)}</span><span class="compra-item-fecha">📅 ${esc(r.fecha||'Sin fecha')}</span></button><button type="button" class="compra-buscar" title="Buscar en el catálogo de proveedores" onclick="ppBuscarEnCatalogo(${ppJs(r.texto)})">🔍</button></div>`).join('')||`<div class="text-slate-400 text-sm p-2">No hay compras pendientes.</div>`;
   actualizarComprasSeleccionadas(); return;
  }
  el.innerHTML=items.map(r=>`<button type="button" onclick="editarItemOperativo('${r.id}')" class="item-operativo w-full text-left border rounded-lg p-3"><div class="flex justify-between gap-3 items-center"><span>${esc(r.texto)}</span><span class="small shrink-0">✏️ Editar</span></div></button>`).join('')||`<div class="text-slate-400 text-sm p-2">No hay pendientes cargados.</div>`;
@@ -4316,7 +5068,7 @@ window.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>document.getEleme
   /* ── 2) Buscador global (Ctrl/Cmd + K) ──────────────────────────── */
   var MODULOS = [
     ['dashboard','Inicio','home'], ['taller','Taller','wrench'], ['ventas','Ventas','cart'], ['caja','Caja','wallet'],
-    ['crm','CRM','users'], ['stock','Stock','package'], ['compras','Compras','truck'], ['reportes','Reportes','chart']
+    ['crm','CRM','users'], ['stock','Stock','package'], ['compras','Compras','truck'], ['catalogoProveedores','Proveedores y Productos','truck'], ['reportes','Reportes','chart']
   ];
   function ir(t, foco){
     try { tab(t) } catch (e) { console.error(e) }
@@ -4357,6 +5109,9 @@ window.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>document.getEleme
     });
     cap((state.stock || []).filter(function(s){ return match([s.marca, s.modelo, s.nroSerie, s.variante].join(' ')) }), 4).forEach(function(s){
       push('Stock', 'package', [s.marca, s.modelo].filter(Boolean).join(' '), [s.variante, s.nroSerie, s.cantidad + ' en stock'].filter(Boolean).join(' · '), function(){ ir('stock') });
+    });
+    if (typeof CAT !== 'undefined' && CAT.cargado) cap(CAT.productos.filter(function(p){ return p.activo && match([p.producto, p.codigo, p.proveedor, p.marca].join(' ')) }), 5).forEach(function(p){
+      push('Catálogo de proveedores', 'truck', p.producto, [p.proveedor, money_(p.costo)].filter(Boolean).join(' · '), function(){ ppBuscarEnCatalogo(p.producto) });
     });
     return out;
   }
