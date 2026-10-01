@@ -3767,6 +3767,7 @@ CATL.detectar=function(paginas){
  if(/Rubro:/i.test(t)&&/Precio Final/i.test(t))return 'rubros';
  if(/PRECIO UNIT/i.test(t)&&/CANT\./i.test(t))return 'zambitoOferta';
  if(/PRECIOS EN PESOS/i.test(t)&&/Cantidad/i.test(t))return 'zambito';
+ if(/Img\.\s*Cod\.\s*Producto/i.test(t))return 'nunez';
  return 'generico';
 };
 CATL.fecha=function(paginas){
@@ -3845,6 +3846,32 @@ CATL.zambitoOferta=function(paginas){
  }
  return {filas,descartadas:desc};
 };
+/* Núñez: Img. Cod. Producto Pago Inmediato — CODIGO DESCRIPCION PRECIO, con categorías "Rubro / Subrubro"
+   sin $ y descripciones que a veces se parten en 2-3 renglones antes del precio. */
+CATL.nunez=function(paginas){
+ const filas=[],desc=[];let rubro='',ultima=null;
+ const esEncabezado=l=>/^(Listado de precios|Los precios incluyen impuestos|Img\.\s*Cod\.\s*Producto)/i.test(l);
+ const esCodigo=s=>/\d/.test(s)||/^[A-Z0-9.-]+$/.test(s); // con dígito, o todo mayúsculas (ej. "OF-HERALCOL")
+ for(const p of paginas)for(const r of CATL.renglones(p.items)){
+  const l=r.texto;
+  if(!l||esEncabezado(l))continue;
+  // línea completa: CODIGO DESCRIPCION PRECIO
+  let m=l.match(/^([A-Za-z0-9][A-Za-z0-9.-]{1,13})\s+(.+?)\s+([\d.]+,\d{2})\s*$/);
+  if(m&&esCodigo(m[1])){filas.push({codigo:m[1],producto:CATL.limpiar(m[2]),precio:CATL.numAR(m[3]),rubro});ultima=null;continue}
+  // línea de solo precio: cierra el producto pendiente (descripción partida en varios renglones)
+  m=l.match(/^([\d.]+,\d{2})\s*$/);
+  if(m&&ultima){ultima.precio=CATL.numAR(m[1]);filas.push(ultima);ultima=null;continue}
+  // línea que empieza un producto pero el precio quedó en el/los renglones siguientes
+  m=l.match(/^([A-Za-z0-9][A-Za-z0-9.-]{1,13})\s+(.+)$/);
+  if(m&&esCodigo(m[1])){ultima={codigo:m[1],producto:CATL.limpiar(m[2]),rubro};continue}
+  // continuación de una descripción partida
+  if(ultima){ultima.producto=CATL.limpiar(ultima.producto+' '+l);continue}
+  // encabezado de rubro/subrubro (ej. "Accesorios / Agarres de Potencia"), sin dígitos ni precio
+  if(!/\d/.test(l)){rubro=l.trim();continue}
+  desc.push(l);
+ }
+ return {filas,descartadas:desc};
+};
 /* Genérico: intenta "PRODUCTO (COD) n n n" o "PRODUCTO ... PRECIO". */
 CATL.generico=function(paginas){
  const a=CATL.argentina(paginas);if(a.filas.length>5)return a;
@@ -3856,7 +3883,7 @@ CATL.generico=function(paginas){
  }
  return {filas,descartadas:desc};
 };
-CATL.FORMATOS={argentina:'La Argentina (Nº1 público · Nº2 costo)',barbatelli:'Barbatelli (2 columnas, sin código)',rubros:'Lista por rubros (Bicipartes AM)',zambito:'Zambito (código · cantidad · precio)',zambitoOferta:'Zambito ofertas (precio unitario · contado)',generico:'Formato genérico'};
+CATL.FORMATOS={argentina:'La Argentina (Nº1 público · Nº2 costo)',barbatelli:'Barbatelli (2 columnas, sin código)',rubros:'Lista por rubros (Bicipartes AM)',zambito:'Zambito (código · cantidad · precio)',zambitoOferta:'Zambito ofertas (precio unitario · contado)',nunez:'Núñez (código · descripción · precio final)',generico:'Formato genérico'};
 CATL.leer=function(paginas,formato){
  formato=formato||CATL.detectar(paginas);
  const r=(CATL[formato]||CATL.generico)(paginas);
@@ -4166,7 +4193,7 @@ function ppFichaProveedor(nombre){
  const totalCompras=compras.reduce((s,c)=>s+(Number(c.total)||0),0);
  abrirModal('🏭 '+nombre,`<div class="space-y-3">
  <div class="border rounded-lg p-3 text-sm">${crm?`<b>Contacto:</b> ${esc(crm.contacto||'-')}`:'<span class="text-slate-500">No está cargado en Proveedores (Compras).</span>'}${tel?`<div class="mt-2"><a class="bg-emerald-600 px-3 py-2 rounded inline-block" target="_blank" href="${waLink(tel)}">💬 WhatsApp</a></div>`:''}<div class="small mt-2">Compras registradas: ${compras.length} · total ${money(totalCompras)}</div></div>
- <div class="overflow-x-auto"><table class="w-full cat-comp-tabla"><thead><tr><th class="text-left">Lista</th><th class="text-right">Productos</th><th class="text-left">Fecha</th><th class="text-left">Archivo</th></tr></thead><tbody>${[...listas.entries()].map(([k,o])=>`<tr><td>${esc(k)}</td><td class="text-right">${o.act}${o.inact?` <span class="small">(+${o.inact} que ya no figuran)</span>`:''}</td><td>${ppFechaCorta(o.fecha)}${ppDiasDesde(o.fecha)>30?' ⚠️':''}</td><td class="small">${esc(o.archivo)}</td></tr>`).join('')||'<tr><td colspan="4" class="small">Sin productos en el catálogo.</td></tr>'}</tbody></table></div>
+ <div class="overflow-x-auto"><table class="w-full cat-comp-tabla"><thead><tr><th class="text-left">Lista</th><th class="text-right">Productos</th><th class="text-left">Fecha</th><th class="text-left">Archivo</th><th></th></tr></thead><tbody>${[...listas.entries()].map(([k,o])=>`<tr><td>${esc(k)}</td><td class="text-right">${o.act}${o.inact?` <span class="small">(+${o.inact} que ya no figuran)</span>`:''}</td><td>${ppFechaCorta(o.fecha)}${ppDiasDesde(o.fecha)>30?' ⚠️':''}</td><td class="small">${esc(o.archivo)}</td><td class="text-right"><button class="text-rose-600" title="Eliminar esta lista" onclick="ppQuitarLista(${ppJs(nombre)},${ppJs(k)})">🗑</button></td></tr>`).join('')||'<tr><td colspan="5" class="small">Sin productos en el catálogo.</td></tr>'}</tbody></table></div>
  <div class="grid grid-cols-1 gap-2">
   <button class="bg-blue-600 px-4 py-2 rounded font-semibold" onclick="cerrarModal();document.getElementById('ppFiltroProveedor').value=${ppJs(nombre)};ppRender()">Ver sus productos</button>
   ${inact?`<button class="bg-slate-700 px-4 py-2 rounded" onclick="ppQuitarInactivos(${ppJs(nombre)})">🧹 Quitar los ${inact} que ya no figuran en sus listas</button>`:''}
@@ -4177,6 +4204,11 @@ function ppFichaProveedor(nombre){
 }
 async function ppQuitarInactivos(nombre){const ids=CAT.productos.filter(x=>x.proveedor===nombre&&!x.activo).map(x=>x.id);if(!confirm(`¿Quitar ${ids.length} producto(s) de ${nombre} que ya no figuran en sus listas?`))return;try{await ppBorrarVarios(ids);cerrarModal();ppRender();ppToast('Productos quitados del catálogo.')}catch(e){alert('No se pudo: '+e.message)}}
 async function ppQuitarSinLista(nombre){const ids=CAT.productos.filter(x=>x.proveedor===nombre&&!x.lista&&!x.manual).map(x=>x.id);if(!confirm(`¿Quitar ${ids.length} producto(s) de ${nombre} que venían del catálogo anterior y no aparecieron en ninguna lista importada?`))return;try{await ppBorrarVarios(ids);cerrarModal();ppRender();ppToast('Productos quitados del catálogo.')}catch(e){alert('No se pudo: '+e.message)}}
+async function ppQuitarLista(nombre,lista){
+ const ids=CAT.productos.filter(x=>x.proveedor===nombre&&(x.lista||'(sin lista)')===lista).map(x=>x.id);if(!ids.length)return;
+ if(!confirm(`¿Eliminar la lista "${lista}" de ${nombre}?\n\nSe van a borrar sus ${ids.length} producto(s) del catálogo. No afecta las otras listas de este proveedor ni las compras ya registradas. Podés volver a importar esta lista cuando quieras.`))return;
+ try{await ppBorrarVarios(ids);cerrarModal();ppRender();ppToast(`Lista "${lista}" eliminada (${ids.length} producto(s)).`)}catch(e){alert('No se pudo: '+e.message)}
+}
 async function ppQuitarProveedorCatalogo(nombre){
  const n=CAT.productos.filter(x=>x.proveedor===nombre).length;
  if(!confirm(`¿Quitar los ${n} productos de "${nombre}" del catálogo?\n\nEl proveedor sigue en Compras y sus compras no se tocan. Podés volver a importar su lista cuando quieras.`))return;
