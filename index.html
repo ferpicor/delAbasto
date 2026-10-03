@@ -4859,9 +4859,17 @@ function reportes(){
 
  const agrupar=document.getElementById('rAgrupar')?.value||'dia';let flujo={};ms.forEach(m=>{const k=clavePeriodo(m.fecha,agrupar);flujo[k]??={e:0,s:0};if(m.tipo==='Entrada')flujo[k].e+=m.monto;else flujo[k].s+=m.monto});
  reporteFlujo.innerHTML=Object.entries(flujo).sort((a,b)=>b[0].localeCompare(a[0])).map(([k,x])=>`<tr class="border-b"><td class="p-2">${k}</td><td class="p-2 text-right text-emerald-700">${money(x.e)}</td><td class="p-2 text-right text-rose-700">${money(x.s)}</td><td class="p-2 text-right">${money(x.e+x.s)}</td><td class="p-2 text-right font-bold">${money(x.e-x.s)}</td></tr>`).join('')||'<tr><td colspan="5" class="p-4 text-center text-slate-400">Sin movimientos.</td></tr>';
- // Ventas por marca/modelo
+ // Ventas por marca/modelo + rentabilidad estimada en Reportes
  let bicis={};vs.filter(v=>v.marca||v.modelo).forEach(v=>{const k=(v.marca||'Sin marca')+' · '+(v.modelo||'Sin modelo');bicis[k]??={cant:0,total:0};bicis[k].cant+=Number(v.cantidad)||0;bicis[k].total+=Number(v.total)||0});
- const rb=document.getElementById('reporteBicicletas');if(rb)rb.innerHTML=Object.entries(bicis).sort((a,b)=>b[1].cant-a[1].cant).map(([k,x])=>`<div class="flex justify-between border-b py-2 text-sm"><span>${esc(k)}<br><span class="small text-slate-500">${x.cant} bicicleta(s)</span></span><b>${money(x.total)}</b></div>`).join('')||'<p class="text-slate-400">Sin ventas con marca/modelo en este período.</p>';
+ const rb=document.getElementById('reporteBicicletas');
+ if(rb){
+  const filas=Object.entries(bicis).sort((a,b)=>b[1].cant-a[1].cant);
+  if(!filas.length){rb.innerHTML='<p class="text-slate-400">Sin ventas con marca/modelo en este período.</p>';}
+  else{
+   rb.innerHTML=`<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2 text-left">Marca / modelo</th><th class="p-2 text-right">Cantidad</th><th class="p-2 text-right">Facturación</th><th class="p-2 text-right">Costo unitario</th><th class="p-2 text-right">Costo total</th><th class="p-2 text-right">Ganancia / unidad</th><th class="p-2 text-right">Ganancia</th></tr></thead><tbody>`+filas.map(([k,x],i)=>{const key='rBiciCosto_'+i;return `<tr class="border-b"><td class="p-2 font-semibold">${esc(k)}</td><td class="p-2 text-right">${x.cant}</td><td class="p-2 text-right money">${money(x.total)}</td><td class="p-2 text-right"><input id="${key}" type="number" min="0" step="0.01" class="border p-2 rounded-lg w-28 text-right" placeholder="$ costo" oninput="recalcularRentabilidadBicisReporte()" data-cant="${x.cant}" data-total="${x.total}"></td><td id="${key}_ct" class="p-2 text-right money">—</td><td id="${key}_gu" class="p-2 text-right money">—</td><td id="${key}_g" class="p-2 text-right font-bold money">—</td></tr>`}).join('')+`</tbody></table></div><div id="rBiciRentResumen" class="mt-3 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-sm"></div>`;
+   recalcularRentabilidadBicisReporte();
+  }
+ }
  renderResumenMensualBicicletas();
  // Compras a proveedores: operaciones, unidades y monto por proveedor
  const cs=filtrarCompras();let prov={};cs.forEach(c=>{const k=c.proveedor||'Sin proveedor';prov[k]??={ops:0,cant:0,total:0};prov[k].ops++;prov[k].cant+=Number(c.cantidad)||0;prov[k].total+=Number(c.total)||0});
@@ -4875,6 +4883,25 @@ function reportes(){
  if(puede('admin'))renderAuditoria();
  renderCharts(ms,flujo,conceptos);
 }
+function recalcularRentabilidadBicisReporte(){
+ const inputs=[...document.querySelectorAll('#reporteBicicletas input[id^="rBiciCosto_"]')];
+ let fact=0,costos=0,gan=0,unidades=0,conCosto=0;
+ inputs.forEach(inp=>{
+  const cant=Number(inp.dataset.cant)||0,total=Number(inp.dataset.total)||0,costo=Number(inp.value);
+  const base=inp.id,ct=document.getElementById(base+'_ct'),gu=document.getElementById(base+'_gu'),g=document.getElementById(base+'_g');
+  fact+=total;unidades+=cant;
+  if(inp.value!==''&&Number.isFinite(costo)&&costo>=0){
+   const costoTotal=costo*cant,ganancia=total-costoTotal,ganUnidad=cant?ganancia/cant:0;
+   costos+=costoTotal;gan+=ganancia;conCosto++;
+   if(ct)ct.textContent=money(costoTotal);if(gu)gu.textContent=money(ganUnidad);if(g){g.textContent=money(ganancia);g.className='p-2 text-right font-bold money '+(ganancia>=0?'text-emerald-600':'text-rose-600')}
+  }else{if(ct)ct.textContent='—';if(gu)gu.textContent='—';if(g){g.textContent='—';g.className='p-2 text-right font-bold money'}}
+ });
+ const r=document.getElementById('rBiciRentResumen');if(!r)return;
+ if(!conCosto){r.innerHTML=`<b>${unidades}</b> bicicleta(s) · Facturación <b>${money(fact)}</b><br><span class="small">Ingresá el costo unitario de cada modelo para calcular costo total, ganancia y margen.</span>`;return}
+ const margen=fact?gan/fact*100:0,completo=conCosto===inputs.length;
+ r.innerHTML=`<div class="grid grid-cols-2 lg:grid-cols-5 gap-2"><div><span class="small">Bicicletas</span><b>${unidades}</b></div><div><span class="small">Facturación</span><b>${money(fact)}</b></div><div><span class="small">Costo cargado</span><b>${money(costos)}</b></div><div><span class="small">Ganancia${completo?'':' parcial'}</span><b class="${gan>=0?'text-emerald-600':'text-rose-600'}">${money(gan)}</b></div><div><span class="small">Margen${completo?'':' parcial'}</span><b>${margen.toFixed(2)}%</b></div></div>${completo?'':'<div class="small text-amber-700 mt-2">⚠️ Faltan costos unitarios en uno o más modelos; la ganancia mostrada es parcial.</div>'}`;
+}
+
 function renderCharts(ms,flujo,conceptos){
  const labels=Object.keys(flujo).sort();if(chartFin)chartFin.destroy();chartFin=new Chart(document.getElementById('chartFin'),{type:'bar',data:{labels,datasets:[{label:'Entradas',data:labels.map(d=>flujo[d].e)},{label:'Salidas',data:labels.map(d=>flujo[d].s)},{label:'Saldo',type:'line',data:labels.map(d=>flujo[d].e-flujo[d].s),tension:.25}]},options:{responsive:true,maintainAspectRatio:false}});
  const cats=Object.keys(conceptos);if(chartConcept)chartConcept.destroy();chartConcept=new Chart(document.getElementById('chartConcept'),{type:'bar',data:{labels:cats,datasets:[{label:'Entradas',data:cats.map(k=>conceptos[k].e)},{label:'Salidas',data:cats.map(k=>conceptos[k].s)}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y'}});
