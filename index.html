@@ -1652,8 +1652,8 @@ const MAPEO_TABLAS={
  productos_servicios:['productos',x=>({id:x.id,nombre:x.nombre||'',precio:Number(x.precio)||0,costo:Number(x.costo)||0,tipo:x.tipo||'Producto/Accesorio'})],
  facturas:['facturas',x=>({id:x.id,origenTipo:x.origen_tipo||'',origenId:x.origen_id||'',clienteId:x.cliente_id||null,cliente:x.cliente_nombre||'Consumidor final',telefono:x.cliente_telefono||'',email:x.cliente_email||'',direccion:x.cliente_direccion||'',docTipo:Number(x.doc_tipo)||0,documento:x.doc_nro||'',condicionIva:Number(x.condicion_iva_receptor)||5,concepto:Number(x.concepto)||1,servicioDesde:x.servicio_desde||'',servicioHasta:x.servicio_hasta||'',vencimientoPago:x.vencimiento_pago||'',descripcion:x.descripcion||'',importe:Number(x.importe)||0,cuenta:x.cuenta_arca||'abasto2',ptoVta:Number(x.pto_vta)||4,tipo:Number(x.cbte_tipo)||11,numero:x.cbte_nro||'',cae:x.cae||'',caeVencimiento:x.cae_vencimiento||'',fecha:x.factura_fecha||x.created_at||'',estado:x.estado||'pendiente',asocTipo:Number(x.cbte_asoc_tipo)||0,asocPtoVta:Number(x.cbte_asoc_pto_vta)||0,asocNro:Number(x.cbte_asoc_nro)||0,alicuota:Number(x.alicuota_iva)||21})],
  marcas_modelos:['marcasModelos',x=>({id:x.id,marca:x.marca||'',modelo:x.modelo||''})],
- modelos_armado:['modelosArmado',x=>({id:x.id,nombre:x.nombre||'',partes:Array.isArray(x.partes)?x.partes:[],activo:x.activo!==false})],
- armados:['armados',x=>({id:x.id,cliente:x.cliente||'',telefono:x.telefono||'',modeloId:x.modelo_id||null,modeloNombre:x.modelo_nombre||'',notas:x.notas||'',partesEstado:Array.isArray(x.partes_estado)?x.partes_estado:[],entregado:!!x.entregado,entregadoAt:x.entregado_at||'',fecha:x.fecha||'',created_at:x.created_at||new Date().toISOString()})]
+ modelos_armado:['modelosArmado',x=>({id:x.id,nombre:x.nombre||'',partes:(Array.isArray(x.partes)?x.partes:[]).map(armadoParteNorm),precioVenta:Number(x.precio_venta)||0,manoObra:Number(x.mano_obra)||0,activo:x.activo!==false})],
+ armados:['armados',x=>({id:x.id,cliente:x.cliente||'',telefono:x.telefono||'',modeloId:x.modelo_id||null,modeloNombre:x.modelo_nombre||'',notas:x.notas||'',partesEstado:(Array.isArray(x.partes_estado)?x.partes_estado:[]).map(armadoParteEstadoNorm),precioVenta:Number(x.precio_venta)||0,manoObra:Number(x.mano_obra)||0,entregado:!!x.entregado,entregadoAt:x.entregado_at||'',fecha:x.fecha||'',created_at:x.created_at||new Date().toISOString()})]
 };
 let cargaEnCurso=null;
 async function cargarSupabase(silencioso=false,soloTablas=null){
@@ -2819,7 +2819,7 @@ async function guardarVenta(){
   if(document.getElementById('vCrearService'))document.getElementById('vCrearService').checked=false;
   if(document.getElementById('vFechaService')){document.getElementById('vFechaService').value='';document.getElementById('vFechaService').disabled=true}
   if(armadoModelo){
-   try{await dbInsert('armados',{cliente:v.cliente,telefono:v.telefono,modelo_id:armadoModelo.id,modelo_nombre:armadoModelo.nombre,notas:v.notas||'',partes_estado:armadoModelo.partes.map(p=>({parte:p,tengo:false,enCompras:false})),fecha:fechaLocalHoy(),entregado:false})}catch(er){console.warn('Venta guardada, pero no se pudo crear el armado:',er)}
+   try{await dbInsert('armados',{cliente:v.cliente,telefono:v.telefono,modelo_id:armadoModelo.id,modelo_nombre:armadoModelo.nombre,notas:v.notas||'',partes_estado:armadoPartesEstado(armadoModelo),precio_venta:armadoModelo.precioVenta||0,mano_obra:armadoModelo.manoObra||0,fecha:fechaLocalHoy(),entregado:false})}catch(er){console.warn('Venta guardada, pero no se pudo crear el armado:',er)}
   }
   if(document.getElementById('vCrearArmado'))document.getElementById('vCrearArmado').checked=false;
   if(document.getElementById('vArmadoModelo')){document.getElementById('vArmadoModelo').value='';document.getElementById('vArmadoModelo').disabled=true}
@@ -4305,7 +4305,7 @@ function ppFichaProveedor(nombre){
  const totalCompras=compras.reduce((s,c)=>s+(Number(c.total)||0),0);
  abrirModal('🏭 '+nombre,`<div class="space-y-3">
  <div class="border rounded-lg p-3 text-sm">${crm?`<b>Contacto:</b> ${esc(crm.contacto||'-')}`:'<span class="text-slate-500">No está cargado en Proveedores (Compras).</span>'}${tel?`<div class="mt-2"><a class="bg-emerald-600 px-3 py-2 rounded inline-block" target="_blank" href="${waLink(tel)}">💬 WhatsApp</a></div>`:''}<div class="small mt-2">Compras registradas: ${compras.length} · total ${money(totalCompras)}</div></div>
- <div class="overflow-x-auto"><table class="w-full cat-comp-tabla"><thead><tr><th class="text-left">Lista</th><th class="text-right">Productos</th><th class="text-left">Fecha</th><th class="text-left">Archivo</th><th></th></tr></thead><tbody>${[...listas.entries()].map(([k,o])=>`<tr><td>${esc(k)}</td><td class="text-right">${o.act}${o.inact?` <span class="small">(+${o.inact} que ya no figuran)</span>`:''}</td><td>${ppFechaCorta(o.fecha)}${ppDiasDesde(o.fecha)>30?' ⚠️':''}</td><td class="small">${esc(o.archivo)}</td><td class="text-right"><button class="text-rose-600" title="Eliminar esta lista" onclick="ppQuitarLista(${ppJs(nombre)},${ppJs(k)})">🗑</button></td></tr>`).join('')||'<tr><td colspan="5" class="small">Sin productos en el catálogo.</td></tr>'}</tbody></table></div>
+ <div class="overflow-x-auto"><table class="w-full cat-comp-tabla"><thead><tr><th class="text-left">Lista</th><th class="text-right">Productos</th><th class="text-left">Fecha</th><th class="text-left">Archivo</th><th></th></tr></thead><tbody>${[...listas.entries()].map(([k,o])=>`<tr><td>${esc(k)}</td><td class="text-right">${o.act}${o.inact?` <span class="small">(+${o.inact} que ya no figuran)</span>`:''}</td><td>${ppFechaCorta(o.fecha)}${ppDiasDesde(o.fecha)>30?' ⚠️':''}</td><td class="small">${esc(o.archivo)}</td><td class="text-right whitespace-nowrap"><button class="text-blue-600" title="Editar IVA y descuento de esta lista" onclick="ppEditarLista(${ppJs(nombre)},${ppJs(k)})">✏️</button> <button class="text-rose-600" title="Eliminar esta lista" onclick="ppQuitarLista(${ppJs(nombre)},${ppJs(k)})">🗑</button></td></tr>`).join('')||'<tr><td colspan="5" class="small">Sin productos en el catálogo.</td></tr>'}</tbody></table></div>
  <div class="grid grid-cols-1 gap-2">
   <button class="bg-blue-600 px-4 py-2 rounded font-semibold" onclick="cerrarModal();document.getElementById('ppFiltroProveedor').value=${ppJs(nombre)};ppRender()">Ver sus productos</button>
   ${inact?`<button class="bg-slate-700 px-4 py-2 rounded" onclick="ppQuitarInactivos(${ppJs(nombre)})">🧹 Quitar los ${inact} que ya no figuran en sus listas</button>`:''}
@@ -4316,6 +4316,28 @@ function ppFichaProveedor(nombre){
 }
 async function ppQuitarInactivos(nombre){const ids=CAT.productos.filter(x=>x.proveedor===nombre&&!x.activo).map(x=>x.id);if(!confirm(`¿Quitar ${ids.length} producto(s) de ${nombre} que ya no figuran en sus listas?`))return;try{await ppBorrarVarios(ids);cerrarModal();ppRender();ppToast('Productos quitados del catálogo.')}catch(e){alert('No se pudo: '+e.message)}}
 async function ppQuitarSinLista(nombre){const ids=CAT.productos.filter(x=>x.proveedor===nombre&&!x.lista&&!x.manual).map(x=>x.id);if(!confirm(`¿Quitar ${ids.length} producto(s) de ${nombre} que venían del catálogo anterior y no aparecieron en ninguna lista importada?`))return;try{await ppBorrarVarios(ids);cerrarModal();ppRender();ppToast('Productos quitados del catálogo.')}catch(e){alert('No se pudo: '+e.message)}}
+function ppEditarLista(nombre,lista){
+ const ps=CAT.productos.filter(x=>x.proveedor===nombre&&(x.lista||'(sin lista)')===lista&&!x.manual);if(!ps.length)return alert('Esta lista no tiene productos importados para recalcular.');
+ const ref=ps[0],iva=ref.iva_incluido!==false,desc=Number(ref.descuento)||0;
+ abrirModal('✏️ Lista "'+lista+'" · '+nombre,`<div class="space-y-3">
+  <div class="small text-slate-500">Se recalcula el costo de los ${ps.length} producto(s) de esta lista con estos valores. No hace falta volver a importar el archivo.</div>
+  <div><label class="small">Los precios de la lista…</label><select id="ppElIva" class="border p-2 rounded w-full"><option value="1" ${iva?'selected':''}>Ya incluyen IVA</option><option value="0" ${iva?'':'selected'}>Son + IVA (se suma 21%)</option></select></div>
+  <div><label class="small">Descuento del proveedor %</label><input id="ppElDesc" type="number" min="0" max="90" step="0.5" class="border p-2 rounded w-full" value="${desc}"><div class="small">Ej.: 15 si pagás de contado. 0 = sin descuento.</div></div>
+  <button id="ppElBtn" class="bg-emerald-600 px-4 py-2 rounded w-full font-semibold" onclick="ppGuardarEditarLista(${ppJs(nombre)},${ppJs(lista)})">💾 Guardar y recalcular</button></div>`);
+}
+async function ppGuardarEditarLista(nombre,lista){
+ const ps=CAT.productos.filter(x=>x.proveedor===nombre&&(x.lista||'(sin lista)')===lista&&!x.manual);if(!ps.length)return;
+ const iva=document.getElementById('ppElIva').value==='1',desc=Math.min(90,Math.max(0,Number(document.getElementById('ppElDesc').value)||0));
+ const fac=iva?1:1.21,d=1-desc/100,b=document.getElementById('ppElBtn');if(b){b.disabled=true;b.textContent='⏳ Recalculando...'}
+ try{
+  const filas=ps.map(x=>{const of=x.iva_incluido===false?1.21:1;const ref=Number(x.referencia)>0?ppR2(Number(x.referencia)/of*fac):0;const l3=x.lista3!=null&&Number.isFinite(Number(x.lista3))?ppR2(Number(x.lista3)/of*fac):null;
+   return {proveedor:x.proveedor,clave:x.clave,producto:x.producto,iva_incluido:iva,descuento:desc,costo:ppR2(Number(x.precio_lista)*fac*d),referencia:ref,lista3:l3,actualizado_at:new Date().toISOString()}});
+  for(let i=0;i<filas.length;i+=300){const {error}=await supabaseClient.from('catalogo_productos').upsert(filas.slice(i,i+300),{onConflict:'proveedor,clave'});if(error)throw error}
+  ps.forEach((x,i)=>{const f=filas[i];x.iva_incluido=iva;x.descuento=desc;x.costo=f.costo;x.referencia=f.referencia;x.lista3=f.lista3});
+  try{await catGuardarConfig('lista:'+nombre+'|'+(lista==='(sin lista)'?'':lista),{iva_incluido:iva,descuento:desc})}catch(e){console.warn(e)}
+  catIndexar();cerrarModal();ppRender();ppToast(`Lista "${lista}" recalculada (${ps.length} productos).`)
+ }catch(e){alert('No se pudo recalcular: '+e.message);if(b){b.disabled=false;b.textContent='💾 Guardar y recalcular'}}
+}
 async function ppQuitarLista(nombre,lista){
  const ids=CAT.productos.filter(x=>x.proveedor===nombre&&(x.lista||'(sin lista)')===lista).map(x=>x.id);if(!ids.length)return;
  if(!confirm(`¿Eliminar la lista "${lista}" de ${nombre}?\n\nSe van a borrar sus ${ids.length} producto(s) del catálogo. No afecta las otras listas de este proveedor ni las compras ya registradas. Podés volver a importar esta lista cuando quieras.`))return;
@@ -4925,44 +4947,126 @@ function otsListasSinRetirar(){
 }
 function recordatoriosPendientes(){return (state.recordatorios||[]).filter(r=>!r.hecho&&!esItemOperativo(r)).sort((a,b)=>String(a.fecha||'9999').localeCompare(String(b.fecha||'9999')))}
 
-/* v8: Bicis a armar — modelos (plantilla de partes) + armados (cliente + checklist de esa bici). */
+/* v8: Bicis a armar — modelos (partes vinculadas al catálogo + precio + armado) y bicis con costo congelado. */
+const ARMADO_MARGEN_KEY='abasto_armado_margen_min';
+function armadoMargenMin(){const raw=localStorage.getItem(ARMADO_MARGEN_KEY);const n=Number(raw);return raw!==null&&Number.isFinite(n)?n:30}
+function armadoParteNorm(p){
+ if(typeof p==='string')return {parte:p,productoId:null,cantidad:1};
+ return {parte:String(p?.parte||''),productoId:p?.productoId||p?.producto_id||null,cantidad:Number(p?.cantidad)||1};
+}
+function armadoParteEstadoNorm(p){
+ return {parte:String(p?.parte||''),tengo:!!p?.tengo,enCompras:!!p?.enCompras,productoId:p?.productoId||null,cantidad:Number(p?.cantidad)||1,costo:(p?.costo===null||p?.costo===undefined||p?.costo==='')?null:Number(p.costo)};
+}
 function modeloArmadoPorId(id){return state.modelosArmado.find(m=>String(m.id)===String(id))}
-function abrirGestionModelosArmado(){
- const filas=state.modelosArmado.slice().sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(m=>`<div class="flex justify-between items-center border-b py-2 text-sm"><span>${esc(m.nombre)} <span class="small text-slate-400">(${m.partes.length} partes)</span></span><span class="flex gap-2"><button onclick="editarModeloArmado('${m.id}')" class="text-blue-600" title="Editar">✏️</button><button type="button" data-delete-table="modelos_armado" data-delete-id="${m.id}" data-after-delete="modelosArmado" class="text-rose-600 delete-btn" title="Eliminar">🗑️</button></span></div>`).join('')||'<div class="text-slate-400 text-sm py-2">Todavía no cargaste ningún modelo.</div>';
- abrirModal('⚙️ Modelos de armado',`<div class="space-y-3"><p class="small text-slate-500">Cada modelo tiene su propia lista de partes. Al crear una bici a armar, elegís el modelo y se genera el checklist automáticamente.</p><div>${filas}</div><button onclick="editarModeloArmado(null)" class="bg-blue-600 text-white px-4 py-2 rounded-lg w-full font-semibold">➕ Nuevo modelo</button></div>`);
+function armadoPartesEstado(m){return m.partes.map(p=>({parte:p.parte,tengo:false,enCompras:false,productoId:p.productoId||null,cantidad:p.cantidad||1,costo:null}))}
+/* Costo actual de una línea (cantidad incluida): el más barato del grupo de equivalentes. null = sin producto vigente. */
+function armadoCostoVivo(p){
+ if(!p.productoId||!CAT.cargado)return null;
+ const x=CAT.porId.get(String(p.productoId));if(!x||!x.activo)return null;
+ const g=x.grupo&&CAT.grupos.get(x.grupo);const c=(g&&g.length)?Math.min(x.costo,g[0].costo):x.costo;
+ return ppR2(c*(Number(p.cantidad)||1));
 }
-function editarModeloArmado(id){
+/* Si la línea tiene costo guardado (congelado o escrito a mano) se usa ese; si no, el actual del catálogo. */
+function armadoResumen(partes,precio,manoObra){
+ let rep=0,sin=0;
+ partes.forEach(p=>{const c=(p.costo!==null&&p.costo!==undefined)?Number(p.costo):armadoCostoVivo(p);if(c===null||c===undefined||isNaN(c))sin++;else rep+=c});
+ const mo=Number(manoObra)||0,pv=Number(precio)||0,total=ppR2(rep+mo),gan=ppR2(pv-total);
+ return {rep:ppR2(rep),mo,total,pv,gan,mg:pv>0?gan/pv*100:null,sin};
+}
+function armadoMargenHTML(r){
+ if(r.mg===null)return '<span class="text-slate-400">Sin precio de venta</span>';
+ const bajo=r.mg<armadoMargenMin();
+ return `<b class="${bajo?'text-rose-600':'text-emerald-600'}">${money(r.gan)} · ${r.mg.toFixed(1).replace('.',',')}%</b>${bajo?` <span class="small text-rose-600">(bajo el mínimo de ${armadoMargenMin()}%)</span>`:''}`;
+}
+async function abrirGestionModelosArmado(){
+ await catIniciar();
+ const filas=state.modelosArmado.slice().sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(m=>{
+  const r=armadoResumen(m.partes,m.precioVenta,m.manoObra);
+  return `<div class="border-b py-2 text-sm"><div class="flex justify-between items-center"><span><b>${esc(m.nombre)}</b> <span class="small text-slate-400">(${m.partes.length} partes)</span></span><span class="flex gap-2"><button onclick="editarModeloArmado('${m.id}')" class="text-blue-600" title="Editar">✏️</button><button type="button" data-delete-table="modelos_armado" data-delete-id="${m.id}" data-after-delete="modelosArmado" class="text-rose-600 delete-btn" title="Eliminar">🗑️</button></span></div><div class="small mt-1">Costo ${money(r.total)} · Precio ${m.precioVenta>0?money(m.precioVenta):'—'} · Ganancia ${armadoMargenHTML(r)}${r.sin?` · <span class="text-amber-600">${r.sin} parte(s) sin costo</span>`:''}</div></div>`;
+ }).join('')||'<div class="text-slate-400 text-sm py-2">Todavía no cargaste ningún modelo.</div>';
+ abrirModal('⚙️ Modelos de armado',`<div class="space-y-3"><p class="small text-slate-500">Cada modelo tiene sus partes (vinculadas a productos del catálogo), el costo de armado y el precio de venta. El precio nunca cambia solo: lo modificás vos.</p><div class="flex items-center gap-2 text-sm"><label class="small text-slate-500">Margen mínimo (aviso en rojo)</label><input type="number" min="0" max="95" class="border p-1 rounded w-20 text-center" value="${armadoMargenMin()}" onchange="localStorage.setItem(ARMADO_MARGEN_KEY,String(Math.max(0,Number(this.value)||0)));abrirGestionModelosArmado()">%</div><div>${filas}</div><button onclick="editarModeloArmado(null)" class="bg-blue-600 text-white px-4 py-2 rounded-lg w-full font-semibold">➕ Nuevo modelo</button></div>`);
+}
+let MA=null;
+async function editarModeloArmado(id){
+ await catIniciar();
  const m=id?modeloArmadoPorId(id):null;
- const body=`<div class="space-y-3">
+ MA={id:m?m.id:null,partes:m?m.partes.map(p=>({...p})):[]};
+ abrirModal(m?'✏️ Editar modelo':'➕ Nuevo modelo',`<div class="space-y-3">
   <div><label class="small text-slate-500">Nombre del modelo</label><input id="maNombre" class="border p-2 rounded w-full" value="${m?esc(m.nombre):''}" placeholder="Ej: Rondinella R28"></div>
-  <div><label class="small text-slate-500">Partes (una por línea)</label><textarea id="maPartes" rows="10" class="border p-2 rounded w-full font-mono text-sm" placeholder="Cuadro&#10;Horquilla&#10;Juego de ruedas&#10;Cubiertas&#10;Cámaras&#10;Cadena&#10;Frenos&#10;Cambios&#10;Manubrio&#10;Puños&#10;Asiento&#10;Pedales">${m?esc(m.partes.join('\n')):''}</textarea></div>
-  <button onclick="guardarModeloArmado(${m?`'${m.id}'`:'null'})" class="bg-emerald-600 text-white px-4 py-2 rounded-lg w-full font-semibold">💾 Guardar modelo</button>
- </div>`;
- abrirModal(m?'✏️ Editar modelo':'➕ Nuevo modelo',body);
+  <div class="grid grid-cols-2 gap-2"><div><label class="small text-slate-500">Precio de venta</label><input id="maPrecio" type="number" min="0" oninput="maResumen()" class="border p-2 rounded w-full" value="${m&&m.precioVenta?m.precioVenta:''}"></div><div><label class="small text-slate-500">Armado (mano de obra)</label><input id="maMano" type="number" min="0" oninput="maResumen()" class="border p-2 rounded w-full" value="${m&&m.manoObra?m.manoObra:''}"></div></div>
+  <div class="small text-slate-500">Partes: elegí el producto del catálogo para que sume al costo (si no lo vinculás, la parte queda en el checklist pero no suma).</div>
+  <div id="maPartes" class="space-y-2"></div>
+  <div class="flex gap-2 flex-wrap"><button type="button" onclick="maAgregar()" class="bg-slate-700 text-white px-3 py-2 rounded text-sm">➕ Parte</button></div>
+  <details><summary class="cursor-pointer text-sm">📋 Agregar varias partes de una vez</summary><textarea id="maVarias" rows="5" class="border p-2 rounded w-full mt-2 text-sm" placeholder="Una por línea: Cuadro, Horquilla, Juego de ruedas..."></textarea><button type="button" onclick="maAgregarVarias()" class="bg-slate-700 text-white px-3 py-1 rounded text-sm mt-1">Agregar</button></details>
+  <div id="maResumen" class="bg-slate-50 border rounded-lg p-3 text-sm"></div>
+  <button onclick="maGuardar()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg w-full font-semibold">💾 Guardar modelo</button>
+ </div>`);
+ maRenderPartes();maResumen();
 }
-async function guardarModeloArmado(id){
+function maRenderPartes(){
+ const el=document.getElementById('maPartes');if(!el||!MA)return;
+ el.innerHTML=MA.partes.map((p,i)=>{
+  const x=p.productoId?CAT.porId.get(String(p.productoId)):null;
+  const vinc=p.productoId
+   ?(x&&x.activo?`<div class="small">🔗 ${esc(x.producto)} · ${esc(x.proveedor)} · ${money(x.costo)} <button type="button" class="text-rose-600" title="Quitar vínculo" onclick="maDesvincular(${i})">✖</button></div>`:`<div class="small text-rose-600">⚠️ Ese producto ya no figura en el catálogo <button type="button" class="text-rose-600" title="Quitar vínculo" onclick="maDesvincular(${i})">✖</button></div>`)
+   :`<input class="border p-1 rounded w-full text-sm" placeholder="🔎 Buscar producto en el catálogo (opcional)" oninput="maBuscar(${i},this.value)"><div id="maRes${i}" class="text-sm"></div>`;
+  return `<div class="border rounded-lg p-2"><div class="flex gap-2 items-center"><input class="border p-1 rounded flex-1" placeholder="Parte (ej: Cubiertas)" value="${esc(p.parte)}" oninput="MA.partes[${i}].parte=this.value"><input type="number" min="1" class="border p-1 rounded w-16 text-center" title="Cantidad" value="${p.cantidad||1}" oninput="MA.partes[${i}].cantidad=Math.max(1,Number(this.value)||1);maResumen()"><button type="button" class="text-rose-600" title="Quitar parte" onclick="maQuitar(${i})">🗑</button></div><div class="mt-1">${vinc}</div></div>`;
+ }).join('')||'<div class="small text-slate-400">Agregá las partes del modelo.</div>';
+}
+function maAgregar(){MA.partes.push({parte:'',productoId:null,cantidad:1});maRenderPartes();maResumen()}
+function maAgregarVarias(){
+ const t=document.getElementById('maVarias');if(!t)return;
+ t.value.split('\n').map(s=>s.trim()).filter(Boolean).forEach(s=>MA.partes.push({parte:s,productoId:null,cantidad:1}));
+ t.value='';maRenderPartes();maResumen();
+}
+function maQuitar(i){MA.partes.splice(i,1);maRenderPartes();maResumen()}
+function maDesvincular(i){MA.partes[i].productoId=null;maRenderPartes();maResumen()}
+function maBuscar(i,txt){
+ const el=document.getElementById('maRes'+i);if(!el)return;
+ const tokens=String(CATU.norm(txt||'')).split(/\s+/).filter(Boolean);
+ if(!tokens.length){el.innerHTML='';return}
+ const res=CAT.productos.filter(x=>x.activo&&tokens.every(t=>String(x._n).includes(t))).sort((a,b)=>a.costo-b.costo).slice(0,8);
+ el.innerHTML=res.map(x=>`<button type="button" class="block w-full text-left border rounded p-1 mt-1" onclick="maElegir(${i},'${x.id}')">${esc(x.producto)} <span class="small">· ${esc(x.proveedor)}${x.codigo?' · '+esc(x.codigo):''} · <b>${money(x.costo)}</b></span></button>`).join('')||'<div class="small text-slate-400 mt-1">Sin resultados.</div>';
+}
+function maElegir(i,id){
+ const x=CAT.porId.get(String(id));if(!x)return;
+ MA.partes[i].productoId=x.id;if(!String(MA.partes[i].parte||'').trim())MA.partes[i].parte=x.producto;
+ maRenderPartes();maResumen();
+}
+function maResumen(){
+ const el=document.getElementById('maResumen');if(!el||!MA)return;
+ const r=armadoResumen(MA.partes,document.getElementById('maPrecio')?.value,document.getElementById('maMano')?.value);
+ el.innerHTML=`<div class="flex justify-between"><span>Repuestos</span><b>${money(r.rep)}</b></div><div class="flex justify-between"><span>Armado</span><b>${money(r.mo)}</b></div><div class="flex justify-between border-t mt-1 pt-1"><span>Costo total</span><b>${money(r.total)}</b></div><div class="flex justify-between"><span>Precio de venta</span><b>${r.pv>0?money(r.pv):'—'}</b></div><div class="flex justify-between"><span>Ganancia</span><span>${armadoMargenHTML(r)}</span></div>${r.sin?`<div class="small text-amber-600 mt-1">${r.sin} parte(s) sin producto vinculado o sin vigencia: no suman al costo.</div>`:''}`;
+}
+async function maGuardar(){
  const nombre=document.getElementById('maNombre').value.trim();
- const partes=document.getElementById('maPartes').value.split('\n').map(s=>s.trim()).filter(Boolean);
+ const partes=MA.partes.filter(p=>String(p.parte||'').trim()).map(p=>({parte:p.parte.trim(),productoId:p.productoId||null,cantidad:Math.max(1,Number(p.cantidad)||1)}));
  if(!nombre)return alert('Falta el nombre del modelo.');
  if(!partes.length)return alert('Agregá al menos una parte.');
+ const payload={nombre,partes,precio_venta:Math.max(0,Number(document.getElementById('maPrecio').value)||0),mano_obra:Math.max(0,Number(document.getElementById('maMano').value)||0)};
  try{
-  if(id)await dbUpdate('modelos_armado',id,{nombre,partes});
-  else await dbInsert('modelos_armado',{nombre,partes});
+  if(MA.id)await dbUpdate('modelos_armado',MA.id,payload);else await dbInsert('modelos_armado',payload);
   await cargarSupabase(true,['modelos_armado']);abrirGestionModelosArmado();
  }catch(e){alert('No se pudo guardar el modelo: '+e.message)}
 }
-function nuevoArmado(){
+async function nuevoArmado(){
+ await catIniciar();
  const opciones=state.modelosArmado.filter(m=>m.activo).sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(m=>`<option value="${m.id}">${esc(m.nombre)} (${m.partes.length} partes)</option>`).join('');
  if(!opciones)return alert('Primero cargá al menos un modelo en "⚙️ Modelos".');
- const body=`<div class="space-y-3">
+ abrirModal('🚲 Nueva bici a armar',`<div class="space-y-3">
   <div><label class="small text-slate-500">Cliente</label><input id="arCliente" class="border p-2 rounded w-full" placeholder="Nombre del cliente"></div>
   <div><label class="small text-slate-500">WhatsApp (opcional)</label><input id="arTelefono" class="border p-2 rounded w-full" placeholder="WhatsApp"></div>
-  <div><label class="small text-slate-500">Modelo</label><select id="arModelo" class="border p-2 rounded w-full"><option value="">— Elegir modelo —</option>${opciones}</select></div>
+  <div><label class="small text-slate-500">Modelo</label><select id="arModelo" onchange="arModeloCambio()" class="border p-2 rounded w-full"><option value="">— Elegir modelo —</option>${opciones}</select></div>
+  <div class="grid grid-cols-2 gap-2"><div><label class="small text-slate-500">Precio de venta</label><input id="arPrecio" type="number" min="0" class="border p-2 rounded w-full"></div><div><label class="small text-slate-500">Armado (mano de obra)</label><input id="arMano" type="number" min="0" class="border p-2 rounded w-full"></div></div>
   <div><label class="small text-slate-500">Modificaciones / notas</label><textarea id="arNotas" rows="2" class="border p-2 rounded w-full" placeholder="Ej: puños y asiento marrón, canasto"></textarea></div>
   <div><label class="small text-slate-500">Fecha</label><input id="arFecha" type="date" class="border p-2 rounded w-full" value="${fechaLocalHoy()}"></div>
   <button onclick="guardarArmado()" class="bg-blue-600 text-white px-4 py-2 rounded-lg w-full font-semibold">💾 Guardar</button>
- </div>`;
- abrirModal('🚲 Nueva bici a armar',body);
+ </div>`);
+}
+function arModeloCambio(){
+ const m=modeloArmadoPorId(document.getElementById('arModelo').value);
+ document.getElementById('arPrecio').value=m&&m.precioVenta?m.precioVenta:'';
+ document.getElementById('arMano').value=m&&m.manoObra?m.manoObra:'';
 }
 async function guardarArmado(){
  const cliente=document.getElementById('arCliente').value.trim();
@@ -4970,7 +5074,7 @@ async function guardarArmado(){
  if(!cliente)return alert('Falta el nombre del cliente.');
  if(!modeloId)return alert('Elegí un modelo.');
  const m=modeloArmadoPorId(modeloId);if(!m)return alert('Ese modelo ya no existe.');
- const payload={cliente,telefono:document.getElementById('arTelefono').value.trim(),modelo_id:m.id,modelo_nombre:m.nombre,notas:document.getElementById('arNotas').value.trim(),partes_estado:m.partes.map(p=>({parte:p,tengo:false,enCompras:false})),fecha:document.getElementById('arFecha').value||fechaLocalHoy(),entregado:false};
+ const payload={cliente,telefono:document.getElementById('arTelefono').value.trim(),modelo_id:m.id,modelo_nombre:m.nombre,notas:document.getElementById('arNotas').value.trim(),partes_estado:armadoPartesEstado(m),precio_venta:Math.max(0,Number(document.getElementById('arPrecio').value)||0),mano_obra:Math.max(0,Number(document.getElementById('arMano').value)||0),fecha:document.getElementById('arFecha').value||fechaLocalHoy(),entregado:false};
  try{await dbInsert('armados',payload);await cargarSupabase(true,['armados']);cerrarModal()}catch(e){alert('No se pudo guardar: '+e.message)}
 }
 function armadoPorId(id){return state.armados.find(a=>String(a.id)===String(id))}
@@ -4980,34 +5084,57 @@ function renderArmadosDash(){
  el.innerHTML=activos.map(a=>{
   const total=a.partesEstado.length,listas=a.partesEstado.filter(p=>p.tengo).length;
   const completo=total>0&&listas===total;
-  return `<button type="button" onclick="abrirFichaArmado('${a.id}')" class="item-operativo w-full text-left border rounded-lg p-3"><div class="flex justify-between gap-3 items-center"><span><b>${esc(a.cliente)}</b> — ${esc(a.modeloNombre)}${a.notas?`<br><span class="small text-slate-500">${esc(a.notas)}</span>`:''}</span><span class="small shrink-0 ${completo?'text-emerald-600 font-semibold':''}">${completo?'✅ Completo':`${listas}/${total} partes`}</span></div></button>`;
+  const r=armadoResumen(a.partesEstado,a.precioVenta,a.manoObra);
+  const mg=(a.precioVenta>0&&r.sin===0&&r.mg!==null)?` · <span class="${r.mg<armadoMargenMin()?'text-rose-600':'text-emerald-600'}">${r.mg.toFixed(0)}%</span>`:'';
+  return `<button type="button" onclick="abrirFichaArmado('${a.id}')" class="item-operativo w-full text-left border rounded-lg p-3"><div class="flex justify-between gap-3 items-center"><span><b>${esc(a.cliente)}</b> — ${esc(a.modeloNombre)}${a.notas?`<br><span class="small text-slate-500">${esc(a.notas)}</span>`:''}</span><span class="small shrink-0 ${completo?'text-emerald-600 font-semibold':''}">${completo?'✅ Completo':`${listas}/${total} partes`}${mg}</span></div></button>`;
  }).join('')||'<div class="text-slate-400 text-sm p-2">No hay bicis a armar pendientes.</div>';
 }
-function abrirFichaArmado(id){
+async function abrirFichaArmado(id){
+ await catIniciar();
  const a=armadoPorId(id);if(!a)return;
- const filas=a.partesEstado.map((p,i)=>`<div class="flex justify-between items-center border-b py-2 text-sm"><label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" ${p.tengo?'checked':''} onchange="toggleParteArmado('${a.id}',${i},this.checked)"> <span class="${p.tengo?'line-through text-slate-400':''}">${esc(p.parte)}</span></label>${p.tengo?'':(p.enCompras?'<span class="small text-amber-600">🛒 En compras</span>':`<button onclick="parteACompras('${a.id}',${i})" class="bg-emerald-50 text-emerald-700 px-2 py-1 rounded text-xs" title="Mandar a Compras">🛒 Falta</button>`)}</div>`).join('');
- const body=`<div class="space-y-3">
+ const filas=a.partesEstado.map((p,i)=>{
+  const vivo=armadoCostoVivo(p);
+  return `<div class="border-b py-2 text-sm"><div class="flex justify-between items-center gap-2"><label class="flex items-center gap-2 cursor-pointer min-w-0"><input type="checkbox" ${p.tengo?'checked':''} onchange="toggleParteArmado('${a.id}',${i},this.checked)"> <span class="${p.tengo?'line-through text-slate-400':''}">${esc(p.parte)}${p.cantidad>1?` <span class="small">×${p.cantidad}</span>`:''}</span></label><span class="flex items-center gap-1 shrink-0"><input type="number" min="0" step="0.01" class="border p-1 rounded w-24 text-right text-sm" value="${p.costo===null?'':p.costo}" placeholder="${vivo===null?'costo':vivo}" title="Costo de esta línea. Se congela al marcar Tengo; podés corregirlo." onchange="setCostoParteArmado('${a.id}',${i},this.value)">${p.tengo?'':(p.enCompras?'<span class="small text-amber-600">🛒 En compras</span>':`<button onclick="parteACompras('${a.id}',${i})" class="bg-emerald-50 text-emerald-700 px-2 py-1 rounded text-xs" title="Mandar a Compras">🛒 Falta</button>`)}</span></div></div>`;
+ }).join('');
+ const r=armadoResumen(a.partesEstado,a.precioVenta,a.manoObra);
+ abrirModal('🚲 '+a.cliente,`<div class="space-y-3">
   <div class="bg-slate-50 border rounded-lg p-3 text-sm"><b>${esc(a.cliente)}</b> — ${esc(a.modeloNombre)}${a.telefono?`<br>📱 ${esc(a.telefono)}`:''}${a.notas?`<br><span class="text-slate-500">${esc(a.notas)}</span>`:''}</div>
   <div>${filas}</div>
+  <div class="grid grid-cols-2 gap-2"><div><label class="small text-slate-500">Precio de venta</label><input type="number" min="0" class="border p-2 rounded w-full" value="${a.precioVenta||''}" onchange="setCampoArmado('${a.id}','precio_venta',this.value)"></div><div><label class="small text-slate-500">Armado (mano de obra)</label><input type="number" min="0" class="border p-2 rounded w-full" value="${a.manoObra||''}" onchange="setCampoArmado('${a.id}','mano_obra',this.value)"></div></div>
+  <div class="bg-slate-50 border rounded-lg p-3 text-sm"><div class="flex justify-between"><span>Repuestos</span><b>${money(r.rep)}</b></div><div class="flex justify-between"><span>Armado</span><b>${money(r.mo)}</b></div><div class="flex justify-between border-t mt-1 pt-1"><span>Costo total</span><b>${money(r.total)}</b></div><div class="flex justify-between"><span>Precio de venta</span><b>${r.pv>0?money(r.pv):'—'}</b></div><div class="flex justify-between"><span>Ganancia</span><span>${armadoMargenHTML(r)}</span></div>${r.sin?`<div class="small text-amber-600 mt-1">${r.sin} línea(s) sin costo: escribilo a mano para que sume.</div>`:''}<div class="small text-slate-500 mt-1">El costo se congela al marcar "Tengo" y no cambia con las listas nuevas.</div></div>
   <div class="grid grid-cols-2 gap-2">
    <button onclick="marcarEntregadoArmado('${a.id}')" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold">✅ Marcar entregada</button>
    <button type="button" data-delete-table="armados" data-delete-id="${a.id}" data-after-delete="armados" class="delete-btn bg-rose-50 text-rose-700 px-4 py-2 rounded-lg font-semibold">🗑️ Eliminar</button>
   </div>
- </div>`;
- abrirModal('🚲 '+esc(a.cliente),body);
+ </div>`);
+}
+async function guardarPartesArmado(a,partes){
+ await dbUpdate('armados',a.id,{partes_estado:partes});await cargarSupabase(true,['armados']);abrirFichaArmado(a.id);
 }
 async function toggleParteArmado(armadoId,idx,tengo){
  const a=armadoPorId(armadoId);if(!a)return;
- const partes=a.partesEstado.map((p,i)=>i===idx?{...p,tengo,enCompras:tengo?false:p.enCompras}:p);
- try{await dbUpdate('armados',a.id,{partes_estado:partes});await cargarSupabase(true,['armados']);abrirFichaArmado(armadoId)}catch(e){alert('No se pudo actualizar: '+e.message)}
+ const partes=a.partesEstado.map((p,i)=>{
+  if(i!==idx)return p;
+  if(tengo)return {...p,tengo:true,enCompras:false,costo:(p.costo!==null?p.costo:armadoCostoVivo(p))};
+  return {...p,tengo:false,costo:null};
+ });
+ try{await guardarPartesArmado(a,partes)}catch(e){alert('No se pudo actualizar: '+e.message)}
+}
+async function setCostoParteArmado(armadoId,idx,valor){
+ const a=armadoPorId(armadoId);if(!a)return;
+ const v=String(valor).trim()===''?null:Math.max(0,Number(valor)||0);
+ try{await guardarPartesArmado(a,a.partesEstado.map((p,i)=>i===idx?{...p,costo:v}:p))}catch(e){alert('No se pudo actualizar: '+e.message)}
+}
+async function setCampoArmado(armadoId,campo,valor){
+ const a=armadoPorId(armadoId);if(!a)return;
+ try{await dbUpdate('armados',a.id,{[campo]:Math.max(0,Number(valor)||0)});await cargarSupabase(true,['armados']);abrirFichaArmado(a.id)}catch(e){alert('No se pudo actualizar: '+e.message)}
 }
 async function parteACompras(armadoId,idx){
  const a=armadoPorId(armadoId);if(!a)return;
  const p=a.partesEstado[idx];if(!p)return;
  try{
-  await dbInsert('recordatorios',{fecha:fechaLocalHoy(),cliente:LISTA_COMPRA,texto:`${p.parte} — para ${a.cliente} (${a.modeloNombre})`});
-  const partes=a.partesEstado.map((x,i)=>i===idx?{...x,enCompras:true}:x);
-  await dbUpdate('armados',a.id,{partes_estado:partes});
+  await dbInsert('recordatorios',{fecha:fechaLocalHoy(),cliente:LISTA_COMPRA,texto:`${p.parte}${p.cantidad>1?' x'+p.cantidad:''} — para ${a.cliente} (${a.modeloNombre})`});
+  await dbUpdate('armados',a.id,{partes_estado:a.partesEstado.map((x,i)=>i===idx?{...x,enCompras:true}:x)});
   await cargarSupabase(true,['armados','recordatorios']);abrirFichaArmado(armadoId)
  }catch(e){alert('No se pudo mandar a Compras: '+e.message)}
 }
