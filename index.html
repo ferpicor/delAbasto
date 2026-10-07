@@ -1020,6 +1020,10 @@ html body .item-operativo .small{color:var(--acc-tx)}
     </div>
   </div>
  </div>
+ <div class="card p-5 lista-operativa-panel">
+   <div class="flex justify-between items-start gap-3 mb-3"><div><h3 class="font-semibold text-lg">🚲 Bicis a armar</h3><p class="small mt-1">Armados pendientes de entrega, con su checklist de partes.</p></div><div class="flex gap-2 shrink-0"><button onclick="abrirGestionModelosArmado()" class="bg-slate-700 text-white px-3 py-2 rounded-lg text-sm" title="Crear o editar la lista de partes de cada modelo">⚙️ Modelos</button><button onclick="nuevoArmado()" class="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm">➕ Agregar</button></div></div>
+   <div id="armadosDash" class="space-y-2"></div>
+ </div>
  <div class="grid lg:grid-cols-2 gap-4"><div id="recordatoriosServicePanelDash" class="card p-5 recordatorios-panel-destacado"><div class="flex justify-between items-center mb-4"><div><h3 class="font-semibold text-lg">🚲 Recordatorios de service</h3><p class="small mt-1">Se crean automáticamente al vender una bicicleta.</p></div></div><div id="recordatoriosServiceDash" class="space-y-3"></div></div><div id="recordatoriosPanelDash" class="card p-5 recordatorios-panel-destacado"><div class="flex justify-between items-center mb-4"><div><h3 class="font-semibold text-lg">🔔 Recordatorios personales</h3><p class="small mt-1">Tareas y recordatorios cargados manualmente.</p></div><button onclick="abrirRecordatorio()" class="bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm">➕ Recordatorio</button></div><div id="recordatoriosDash" class="space-y-3"></div></div></div>
 </section>
 
@@ -1092,6 +1096,11 @@ html body .item-operativo .small{color:var(--acc-tx)}
  <label class="flex items-center gap-2 font-semibold"><input id="vCrearService" type="checkbox" onchange="this.dataset.tocado='1';document.getElementById('vFechaService').disabled=!this.checked"> 🔔 Crear alerta de service para esta bicicleta</label>
  <div class="grid md:grid-cols-2 gap-2 mt-2"><input id="vFechaService" type="date" disabled class="border p-2 rounded-lg"><input id="vTextoService" class="border p-2 rounded-lg" value="Recordar al cliente el service de su bicicleta" placeholder="Mensaje / motivo"></div>
  <p class="small text-slate-500 mt-1">La alerta aparece en el Dashboard y permite abrir WhatsApp con el mensaje listo.</p>
+  </div>
+  <div class="border rounded-lg p-3 bg-cyan-50 mt-3">
+ <label class="flex items-center gap-2 font-semibold"><input id="vCrearArmado" type="checkbox" onchange="document.getElementById('vArmadoModelo').disabled=!this.checked"> 🚲 Es una bici armada por nosotros: agregar a "Bicis a armar"</label>
+ <div class="grid md:grid-cols-1 gap-2 mt-2"><select id="vArmadoModelo" disabled class="border p-2 rounded-lg w-full"><option value="">— Elegir modelo —</option></select></div>
+ <p class="small text-slate-500 mt-1">Crea el armado con el checklist de partes de ese modelo, usando el cliente de esta venta. Lo administrás después en "Bicis a armar".</p>
   </div>
   </div>
   <button id="btnRegistrarVenta" onclick="guardarVenta()" class="mt-4 bg-emerald-600 text-white px-4 py-2 rounded-lg w-full md:w-auto">💰 Registrar venta</button>
@@ -1369,7 +1378,7 @@ html body .item-operativo .small{color:var(--acc-tx)}
  </div>
  <div class="card p-4 border-l-4 border-l-amber-500">
   <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
-   <div><h3 class="font-semibold">📈 Rentabilidad comercial</h3><p class="small text-slate-500">Se calcula aparte de Caja para no contar dos veces una venta. Criterio devengado: ventas por fecha de venta y taller por fecha de entrega de la OT (importe total y costo de repuestos de las OT entregadas), más las reparaciones rápidas cobradas en Caja con concepto Taller (sin costo cargado).</p></div>
+   <div><h3 class="font-semibold">📈 Rentabilidad comercial</h3><p class="small text-slate-500">Se calcula aparte de Caja para no contar dos veces una venta. Criterio devengado: ventas por fecha de venta y taller por fecha de entrega de la OT (importe total y costo de repuestos de las OT entregadas).</p></div>
    <span class="small bg-amber-50 text-amber-800 px-2 py-1 rounded">No incluye egresos generales de Caja</span>
   </div>
  </div>
@@ -1380,24 +1389,12 @@ html body .item-operativo .small{color:var(--acc-tx)}
   <div class="card p-3"><span class="small">Ganancia bruta</span><div id="rGanancia" class="text-xl font-bold text-emerald-600">$0</div></div>
   <div class="card p-3"><span class="small">Margen bruto</span><div id="rMargen" class="text-xl font-bold text-blue-600">0%</div></div>
  </div>
- <div class="card p-4">
-  <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-3"><div><h3 class="font-semibold">💵 Ingresos por rubro</h3><p class="small text-slate-500">Dinero cobrado en Caja en el período (señas y cobros incluidos).</p></div><div class="text-sm">Total cobrado: <b id="rRubrosTotal" class="money">$0</b></div></div>
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-   <div class="card p-3 border-l-4 border-l-violet-500"><span class="small">🔧 Taller</span><div id="rResumenReparaciones" class="text-2xl font-bold money">$0</div>
-    <div class="mt-2 space-y-1 text-sm">
-     <div class="flex justify-between gap-2"><span>Órdenes de trabajo</span><b id="rTallerOT" class="money">$0</b></div>
-     <div id="rTallerOTDet" class="small text-slate-500">0 cobros · 0 OT entregadas</div>
-     <div class="flex justify-between gap-2 mt-1"><span>Reparaciones rápidas (sin OT)</span><b id="rTallerRapidas" class="money">$0</b></div>
-     <div id="rTallerRapidasDet" class="small text-slate-500">0 cobros · ticket promedio $0</div>
-    </div></div>
-   <div class="card p-3 border-l-4 border-l-blue-500"><span class="small">🚲 Bicicletas</span><div id="rResumenBicis" class="text-2xl font-bold money">$0</div>
-    <div class="mt-2 space-y-1 text-sm"><div id="rResumenBicisCobros" class="small text-slate-500">0 cobros de ventas</div><div id="rResumenBicisUnidades" class="small text-slate-500">0 bicicletas vendidas en el período</div><div class="small text-slate-500">Solo ventas cargadas desde el módulo Ventas.</div></div></div>
-   <div class="card p-3 border-l-4 border-l-emerald-500"><span class="small">🛍️ Ventas Mostrador</span><div id="rResumenMostrador" class="text-2xl font-bold money">$0</div>
-    <div class="mt-2 space-y-1 text-sm"><div id="rResumenMostradorDet" class="small text-slate-500">0 cobros</div><div class="small text-slate-500">Cargado en Caja con concepto Ventas Mostrador.</div></div></div>
-  </div>
-  <p class="small text-slate-500 mt-3">Otras entradas de Caja fuera de estos rubros: <b id="rResumenOtros">$0</b></p>
-  <div id="rRubrosAviso" class="hidden mt-2 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm"></div>
+ <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+  <div class="card p-3 border-l-4 border-l-blue-500"><span class="small">🚲 Ventas Bicicletas</span><div id="rResumenBicis" class="text-xl font-bold">0 ops · $0</div><div id="rResumenBicisUnidades" class="small text-slate-500">0 bicicletas</div></div>
+  <div class="card p-3 border-l-4 border-l-emerald-500"><span class="small">🛍️ Ventas Mostrador</span><div id="rResumenMostrador" class="text-xl font-bold">0 ops · $0</div><div class="small text-slate-500">Cobrado en Caja con concepto Ventas Mostrador</div></div>
+  <div class="card p-3 border-l-4 border-l-violet-500"><span class="small">🔧 Taller</span><div id="rResumenReparaciones" class="text-xl font-bold">0 OT · $0</div><div class="small text-slate-500">Cobros de OT + Caja (Taller / Reparaciones)</div></div>
  </div>
+ <p class="small text-slate-500 -mt-1">Ingresos por rubro = dinero cobrado según Caja en el período (señas y cobros incluidos). Otras entradas de Caja fuera de estos rubros: <b id="rResumenOtros">$0</b></p>
  <div class="card p-3 bg-slate-50"><div class="flex justify-between gap-3"><span class="text-sm font-semibold">Facturación comercial total</span><div id="rFact" class="text-lg font-bold">$0</div></div><p class="small text-slate-500 mt-1">Este total no suma movimientos de Caja: Caja se analiza arriba como flujo de dinero.</p></div>
  <div class="grid lg:grid-cols-2 gap-4"><div class="card p-4"><h3 class="font-semibold mb-3">Entradas, salidas y saldo de Caja</h3><div class="h-72"><canvas id="chartFin"></canvas></div></div><div class="card p-4"><h3 class="font-semibold mb-3">Movimiento por concepto</h3><div class="h-72"><canvas id="chartConcept"></canvas></div></div></div>
  <div class="card p-4 overflow-x-auto"><div class="flex justify-between items-center gap-3"><h3 class="font-semibold">📅 Flujo de Caja agrupado</h3><button id="btnToggleFlujo" type="button" onclick="toggleFlujoCaja()" class="bg-slate-700 px-3 py-2 rounded-lg text-sm">Ver detalle ▼</button></div><div id="detalleFlujoCaja" class="hidden mt-3"><table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2 text-left">Período</th><th class="p-2 text-right">Entradas</th><th class="p-2 text-right">Salidas</th><th class="p-2 text-right">Movido</th><th class="p-2 text-right">Saldo</th></tr></thead><tbody id="reporteFlujo"></tbody></table></div></div>
@@ -1406,9 +1403,9 @@ html body .item-operativo .small{color:var(--acc-tx)}
   <div class="card p-4"><h3 class="font-semibold mb-3">💳 Por medio de pago</h3><div id="reporteMedios" class="max-h-80 overflow-auto"></div></div>
   <div class="card p-4"><h3 class="font-semibold mb-3">📅 Resumen por día</h3><div id="reporteDias" class="max-h-80 overflow-auto"></div></div>
  </div>
- <div class="grid lg:grid-cols-2 gap-4">
-  <div class="card p-4"><h3 class="font-semibold mb-3">🚲 Bicicletas vendidas por marca / modelo</h3><div id="reporteBicicletasMensual" class="mb-3"></div><div id="reporteBicicletas" class="max-h-80 overflow-auto"></div></div>
-  <div class="card p-4"><h3 class="font-semibold mb-3">🥧 Distribución de Caja</h3><div class="h-72"><canvas id="chartTortaConceptos"></canvas></div></div>
+ <div class="grid lg:grid-cols-2 gap-4 items-start">
+  <div class="card p-4 flex flex-col" style="max-height:26rem"><h3 class="font-semibold mb-3 shrink-0">🚲 Bicicletas vendidas por marca / modelo</h3><div id="reporteBicicletasMensual" class="mb-3 shrink-0"></div><div id="reporteBicicletas" class="flex-1 min-h-0 overflow-auto"></div></div>
+  <div class="card p-4"><h3 class="font-semibold mb-3">🥧 Distribución de Caja</h3><div class="h-56"><canvas id="chartTortaConceptos"></canvas></div></div>
  </div>
  <div class="grid lg:grid-cols-2 gap-4">
   <div class="card p-4"><h3 class="font-semibold mb-3">📦 Compras a proveedores</h3><div id="reporteProveedores" class="max-h-80 overflow-auto"></div></div>
@@ -1429,23 +1426,16 @@ const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 let appIniciada=false;
 let realtimeIniciado=false;
-const SYNC_TABLES=['caja','clientes','conceptos','inventario_bicicletas','taller','ventas','compras','proveedores','arqueos','recordatorios','productos_servicios','facturas','marcas_modelos'];
+const SYNC_TABLES=['caja','clientes','conceptos','inventario_bicicletas','taller','ventas','compras','proveedores','arqueos','recordatorios','productos_servicios','facturas','marcas_modelos','modelos_armado','armados'];
 let state={
- movimientos:[], ventas:[], clientes:[], ots:[], stock:[], compras:[], proveedores:[], arqueos:[], recordatorios:[], conceptos:[], productos:[], facturas:[], marcasModelos:[]
+ movimientos:[], ventas:[], clientes:[], ots:[], stock:[], compras:[], proveedores:[], arqueos:[], recordatorios:[], conceptos:[], productos:[], facturas:[], marcasModelos:[], modelosArmado:[], armados:[]
 };
 let chartFin=null,chartConcept=null,chartTortaConceptos=null,chartDash=null, periodoActual='mes';
 let recargaTimer=null;
 
 function id(){return Date.now()+Math.floor(Math.random()*999)}
 function money(n){return '$'+Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2})}
-function fecha(x){
- if(!x)return '-';
- const s=String(x);
- // Fecha sola (AAAA-MM-DD o AAAAMMDD): se muestra tal cual, sin pasar por UTC (antes quedaba un día atrás a las 21:00).
- let m=s.match(/^(\d{4})-?(\d{2})-?(\d{2})$/);
- if(m)return `${+m[3]}/${+m[2]}/${m[1].slice(2)}`;
- return new Date(x).toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'});
-}
+function fecha(x){return x?new Date(x).toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short'}):'-'}
 function pad2(n){return String(n).padStart(2,'0')}
 function fechaLocalHoy(){const d=new Date();return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`}
 function fechaHoraLocal(fechaElegida){const n=new Date();const f=fechaElegida||fechaLocalHoy();return `${f}T${pad2(n.getHours())}:${pad2(n.getMinutes())}:${pad2(n.getSeconds())}-03:00`}
@@ -1530,7 +1520,7 @@ function guardarConfiguracion(){
  localStorage.setItem('abasto_config',JSON.stringify(appCfg));alert('Configuración guardada en este dispositivo.');
 }
 function exportRowsClientes(){
- return state.clientes.map(c=>{const d=datosClienteCRM(c);return {Nombre:c.nombre||'',WhatsApp:c.telefono||'',Email:c.email||'',Documento:c.documento||'',Direccion:c.direccion||'',Segmento:c.segmento||'',Bicicletas:d.bicis.length+d.cajaBicis.length,Mostrador:d.mostrador.length+d.cajaMostrador.length,Taller:d.ots.length+d.cajaTaller.length,'Total pagado':d.pagado,'Saldo pendiente':d.deuda,'Total facturado':d.totalFacturado,Notas:c.notas||''}})
+ return state.clientes.map(c=>{const d=datosClienteCRM(c);return {Nombre:c.nombre||'',WhatsApp:c.telefono||'',Email:c.email||'',Documento:c.documento||'',Direccion:c.direccion||'',Segmento:c.segmento||'',Bicicletas:d.bicis.length,Mostrador:d.mostrador.length+(d.cajaDirecta?.length||0),Taller:d.ots.length,'Total pagado':d.pagado,'Saldo pendiente':d.deuda,'Total facturado':d.totalFacturado,Notas:c.notas||''}})
 }
 function exportarClientesExcel(){const rows=exportRowsClientes();if(!rows.length)return alert('No hay clientes para exportar.');const ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Clientes');XLSX.writeFile(wb,'clientes_crm_'+isoDate(new Date())+'.xlsx')}
 function exportarClientesCSV(){const rows=exportRowsClientes();if(!rows.length)return alert('No hay clientes para exportar.');const ws=XLSX.utils.json_to_sheet(rows),csv=XLSX.utils.sheet_to_csv(ws),blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='clientes_crm_'+isoDate(new Date())+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
@@ -1661,7 +1651,9 @@ const MAPEO_TABLAS={
  recordatorios:['recordatorios',x=>({id:x.id,fecha:x.fecha||'',cliente:x.cliente||'',texto:x.texto||'',hecho:!!x.hecho,created_at:x.created_at||new Date().toISOString()})],
  productos_servicios:['productos',x=>({id:x.id,nombre:x.nombre||'',precio:Number(x.precio)||0,costo:Number(x.costo)||0,tipo:x.tipo||'Producto/Accesorio'})],
  facturas:['facturas',x=>({id:x.id,origenTipo:x.origen_tipo||'',origenId:x.origen_id||'',clienteId:x.cliente_id||null,cliente:x.cliente_nombre||'Consumidor final',telefono:x.cliente_telefono||'',email:x.cliente_email||'',direccion:x.cliente_direccion||'',docTipo:Number(x.doc_tipo)||0,documento:x.doc_nro||'',condicionIva:Number(x.condicion_iva_receptor)||5,concepto:Number(x.concepto)||1,servicioDesde:x.servicio_desde||'',servicioHasta:x.servicio_hasta||'',vencimientoPago:x.vencimiento_pago||'',descripcion:x.descripcion||'',importe:Number(x.importe)||0,cuenta:x.cuenta_arca||'abasto2',ptoVta:Number(x.pto_vta)||4,tipo:Number(x.cbte_tipo)||11,numero:x.cbte_nro||'',cae:x.cae||'',caeVencimiento:x.cae_vencimiento||'',fecha:x.factura_fecha||x.created_at||'',estado:x.estado||'pendiente',asocTipo:Number(x.cbte_asoc_tipo)||0,asocPtoVta:Number(x.cbte_asoc_pto_vta)||0,asocNro:Number(x.cbte_asoc_nro)||0,alicuota:Number(x.alicuota_iva)||21})],
- marcas_modelos:['marcasModelos',x=>({id:x.id,marca:x.marca||'',modelo:x.modelo||''})]
+ marcas_modelos:['marcasModelos',x=>({id:x.id,marca:x.marca||'',modelo:x.modelo||''})],
+ modelos_armado:['modelosArmado',x=>({id:x.id,nombre:x.nombre||'',partes:Array.isArray(x.partes)?x.partes:[],activo:x.activo!==false})],
+ armados:['armados',x=>({id:x.id,cliente:x.cliente||'',telefono:x.telefono||'',modeloId:x.modelo_id||null,modeloNombre:x.modelo_nombre||'',notas:x.notas||'',partesEstado:Array.isArray(x.partes_estado)?x.partes_estado:[],entregado:!!x.entregado,entregadoAt:x.entregado_at||'',fecha:x.fecha||'',created_at:x.created_at||new Date().toISOString()})]
 };
 let cargaEnCurso=null;
 async function cargarSupabase(silencioso=false,soloTablas=null){
@@ -1732,7 +1724,7 @@ const RENDER_SECCION={
  crm:()=>renderCRM(), stock:()=>renderStock(), compras:()=>renderCompras(), reportes:()=>reportes(), configuracion:()=>{}
 };
 function renderActivo(){
- try{actualizarSelectConceptos();actualizarSelectProveedores();actualizarSelectProductos();actualizarCatalogosMarcaModelo();actualizarSelectsStockMovimientos()}catch(e){console.error(e)}
+ try{actualizarSelectConceptos();actualizarSelectProveedores();actualizarSelectProductos();actualizarCatalogosMarcaModelo();actualizarSelectsStockMovimientos();actualizarSelectArmadoVenta()}catch(e){console.error(e)}
  try{(RENDER_SECCION[tabActual]||RENDER_SECCION.dashboard)()}catch(e){console.error('Error al dibujar',tabActual,e)}
 }
 function refresh(){renderActivo()}
@@ -1997,8 +1989,7 @@ async function cobrarOT(i){
 /* --- CAJA & CONCEPTOS --- */
 function actualizarSelectConceptos(){
  const sel=document.getElementById('mConcepto'); if(!sel)return;
- // Ventas Bicicletas no se ofrece a mano: solo lo genera el módulo Ventas.
- const lista=[...CONCEPTOS_SISTEMA.filter(c=>c!==CONCEPTO_BICIS),...state.conceptos.map(x=>x.nombre).filter(n=>!CONCEPTOS_SISTEMA.some(c=>c.toLowerCase()===n.trim().toLowerCase()))];
+ const lista=[...CONCEPTOS_SISTEMA,...state.conceptos.map(x=>x.nombre).filter(n=>!CONCEPTOS_SISTEMA.some(c=>c.toLowerCase()===n.trim().toLowerCase()))];
  sel.innerHTML=(lista.length?lista:['General']).map(c=>`<option>${esc(c)}</option>`).join('');
 }
 function abrirGestionConceptos(){
@@ -2052,7 +2043,7 @@ function editarMov(i){
  const m=state.movimientos.find(x=>String(x.id)===String(i));if(!m)return;
  if(!puede('editarCaja'))return alert('Tu usuario no puede modificar movimientos de Caja.');
  const vinc=movVinculado(m);
- const conceptos=[...new Set([m.concepto,...CONCEPTOS_SISTEMA,...state.conceptos.map(x=>x.nombre)].filter(Boolean))].filter(c=>c!==CONCEPTO_BICIS||c===m.concepto||vinc);
+ const conceptos=[...new Set([m.concepto,...CONCEPTOS_SISTEMA,...state.conceptos.map(x=>x.nombre)].filter(Boolean))];
  const opcionesConcepto=conceptos.map(x=>`<option value="${esc(x)}" ${x===m.concepto?'selected':''}>${esc(x)}</option>`).join('');
  const body=`<div class="space-y-3">
   ${vinc?`<div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">Este movimiento pertenece a ${m.origenTipo==='venta'?'una venta':'una OT'}. El tipo y el monto no se editan acá (desincronizarían el saldo): para corregirlo usá <b>Anular cobro</b> y volvé a cobrar.</div>`:''}
@@ -2233,22 +2224,17 @@ function datosClienteCRM(c){
  const pagadoTaller=ots.reduce((a,o)=>a+(Number(o.sena)||0)+(Number(o.pagado)||0),0);
  const deudaTaller=ots.reduce((a,o)=>a+saldoOT(o),0);
  const totalCajaDirecta=cajaDirecta.reduce((a,m)=>a+(Number(m.monto)||0),0);
- // Cobros de Caja sin venta/OT: se clasifican por su concepto (Taller, Ventas Bicicletas o el resto = Mostrador).
- const cajaTaller=cajaDirecta.filter(m=>m.concepto===CONCEPTO_TALLER);
- const cajaBicis=cajaDirecta.filter(m=>m.concepto===CONCEPTO_BICIS);
- const cajaMostrador=cajaDirecta.filter(m=>m.concepto!==CONCEPTO_TALLER&&m.concepto!==CONCEPTO_BICIS);
- const sumaMov=l=>l.reduce((a,m)=>a+(Number(m.monto)||0),0);
  const totalOperaciones=vs.reduce((a,v)=>a+(Number(v.total)||0),0)+ots.reduce((a,o)=>a+(Number(o.presupuesto)||0),0)+totalCajaDirecta;
- const totalBicis=bicis.reduce((a,v)=>a+(Number(v.total)||0),0)+sumaMov(cajaBicis);
- const totalMostrador=mostrador.reduce((a,v)=>a+(Number(v.total)||0),0)+sumaMov(cajaMostrador);
- const totalTaller=ots.reduce((a,o)=>a+(Number(o.presupuesto)||0),0)+sumaMov(cajaTaller);
- return {vs,ots,cobrosOT,fs,cajaDirecta,cajaTaller,cajaBicis,cajaMostrador,bicis,mostrador,pagado:pagadoVentas+pagadoTaller+totalCajaDirecta,deuda:deudaVentas+deudaTaller,deudaVentas,deudaTaller,totalOperaciones,totalBicis,totalMostrador,totalTaller,totalFacturado:fs.reduce((a,f)=>a+(esNotaCredito(f.tipo)?-1:1)*(Number(f.importe)||0),0)};
+ const totalBicis=bicis.reduce((a,v)=>a+(Number(v.total)||0),0);
+ const totalMostrador=mostrador.reduce((a,v)=>a+(Number(v.total)||0),0);
+ const totalTaller=ots.reduce((a,o)=>a+(Number(o.presupuesto)||0),0);
+ return {vs,ots,cobrosOT,fs,cajaDirecta,bicis,mostrador,pagado:pagadoVentas+pagadoTaller+totalCajaDirecta,deuda:deudaVentas+deudaTaller,deudaVentas,deudaTaller,totalOperaciones,totalBicis,totalMostrador,totalTaller,totalFacturado:fs.reduce((a,f)=>a+(esNotaCredito(f.tipo)?-1:1)*(Number(f.importe)||0),0)};
 }
 function badgesOrigenCliente(d){
  const b=[];
- if(d.bicis.length||d.cajaBicis.length)b.push('<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">🚲 Bicicleta</span>');
- if(d.ots.length||d.cajaTaller.length)b.push('<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800">🔧 Taller</span>');
- if(d.mostrador.length||d.cajaMostrador.length)b.push('<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-violet-100 text-violet-800">🛍️ Mostrador</span>');
+ if(d.bicis.length)b.push('<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">🚲 Bicicleta</span>');
+ if(d.ots.length)b.push('<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800">🔧 Taller</span>');
+ if(d.mostrador.length||(d.cajaDirecta&&d.cajaDirecta.length))b.push('<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-violet-100 text-violet-800">🛍️ Mostrador</span>');
  return b.join(' ')||'<span class="text-slate-400 text-xs">Sin clasificar</span>';
 }
 
@@ -2293,7 +2279,20 @@ function emailClientePorId(id){
 }
 async function invocarGmail(payload){
  const {data,error}=await supabaseClient.functions.invoke('gmail-send',{body:payload});
- if(error)throw new Error(error.message||'No se pudo invocar gmail-send.');
+ if(error){
+  // supabase-js oculta el cuerpo real del error en "non-2xx": lo leemos de la respuesta.
+  let detalle='';
+  try{
+   const r=error.context;
+   if(r&&typeof r.text==='function'){
+    const t=await r.text();
+    try{const j=JSON.parse(t);detalle=j.error||j.message||j.msg||t}catch(_){detalle=t}
+    detalle=`[HTTP ${r.status||'?'}] ${String(detalle).slice(0,500)}`;
+   }
+  }catch(_){}
+  console.error('gmail-send error',error,detalle);
+  throw new Error(detalle||error.message||'No se pudo invocar gmail-send.');
+ }
  if(!data?.ok)throw new Error(data?.error||'Gmail rechazó el envío.');
  return data;
 }
@@ -2359,9 +2358,9 @@ function renderCRM(){
  const q=(buscarCli?.value||'').toLowerCase();
  tablaCRM.innerHTML=state.clientes.filter(c=>(c.nombre+' '+c.telefono+' '+c.email+' '+(c.documento||'')).toLowerCase().includes(q)).map(c=>{
   const d=datosClienteCRM(c);
-  const cantidadOps=d.vs.length+d.ots.length+d.cobrosOT.length+d.cajaDirecta.length;
+  const cantidadOps=d.vs.length+d.ots.length+d.cobrosOT.length;
   const _ts=f=>{const t=new Date(f).getTime();return Number.isFinite(t)?t:0};
-  const last=[...d.vs,...d.ots,...d.cobrosOT,...d.cajaDirecta,...d.fs].map(x=>x.fecha).filter(Boolean).reduce((a,f)=>(!a||_ts(f)>_ts(a))?f:a,null)||c.fecha;
+  const last=[...d.vs,...d.ots,...d.cobrosOT,...d.fs].map(x=>x.fecha).filter(Boolean).reduce((a,f)=>(!a||_ts(f)>_ts(a))?f:a,null)||c.fecha;
   const facturada=d.fs.length>0;
   return `<tr class="border-b"><td class="p-2 font-semibold">${esc(c.nombre)}<br><span class="small">${esc(c.email)}</span></td><td class="p-2">${normalizarTelefono(c.telefono)?`<a class="text-blue-600" target="_blank" rel="noopener" href="${esc(waLink(c.telefono))}">${esc(c.telefono)}</a>`:esc(c.telefono||'-')}</td><td class="p-2">${esc(c.segmento)}</td><td class="p-2"><div class="flex gap-1 flex-wrap">${badgesOrigenCliente(d)}</div></td><td class="p-2">${cantidadOps}</td><td class="p-2 font-semibold text-emerald-700">${money(d.pagado)}</td><td class="p-2 font-bold ${d.deuda>0?'text-red-600':'text-slate-400'}">${money(d.deuda)}</td><td class="p-2 small">${fecha(last)}</td><td class="p-2"><div class="flex gap-1 flex-wrap items-center">${facturada?'<span class="inline-block w-3 h-3 rounded-full bg-green-500 ring-2 ring-green-100" title="Cliente con factura ARCA emitida"></span>':''}<button onclick="editarCliente('${c.id}')" class="bg-blue-600 text-white px-2 py-1 rounded text-xs" title="Editar / modificar contacto">✏️</button><button onclick="imprimirFichaCliente('${c.id}')" class="bg-slate-800 text-white px-2 py-1 rounded text-xs" title="Imprimir ficha">🖨️</button><button onclick="enviarFichaClienteEmail('${c.id}')" class="bg-cyan-700 text-white px-2 py-1 rounded text-xs" title="Enviar ficha por email">✉️</button><button onclick="historialCliente('${c.id}')" class="bg-indigo-600 text-white px-2 py-1 rounded text-xs" title="Historial compras, facturas y service">📜</button><button onclick="crmWP('${c.id}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs" title="Recordar">💬</button><button type="button" data-delete-table="clientes" data-delete-id="${c.id}" class="text-rose-600 delete-btn" title="Eliminar">🗑️</button></div></td></tr>`
  }).join('')||'<tr><td colspan="9" class="p-4 text-center">Sin clientes.</td></tr>';
@@ -2422,7 +2421,7 @@ function historialCliente(i){
     <div class="bg-white border rounded p-2 col-span-2"><b>📌 Saldo pendiente</b><br><span class="text-lg font-bold ${saldoPendiente>0?'text-red-600':'text-emerald-700'}">${money(saldoPendiente)}</span></div>
    </div>
    ${pendientes.length?`<div class="mt-3 border rounded-lg p-3"><b class="text-sm">Saldos pendientes</b><div class="mt-2 space-y-1">${pendientes.map(p=>`<div class="flex justify-between items-center gap-3 text-xs"><span>${p.tipo} ${esc(p.detalle)}</span><span class="flex items-center gap-2"><b class="text-red-600">${money(p.monto)}</b>${p.accion?`<button onclick="${esc(p.accion)}" class="bg-emerald-600 text-white px-2 py-1 rounded text-xs">${p.tipo==='🔧'?'🔧 Ir a la OT':'💵 Cobrar'}</button>`:''}</span></div>`).join('')}</div></div>`:''}
-   <div class="mt-3 flex gap-1 flex-wrap"><b class="mr-1">Tipo de cliente:</b>${badgesOrigenCliente(dcrm)}</div><div class="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs"><div class="bg-blue-50 rounded p-2"><span>Bicicletas</span><b class="block">${money(dcrm.totalBicis)}</b></div><div class="bg-violet-50 rounded p-2"><span>Mostrador</span><b class="block">${money(dcrm.totalMostrador)}</b></div><div class="bg-orange-50 rounded p-2"><span>Taller</span><b class="block">${money(dcrm.totalTaller)}</b></div><div class="bg-emerald-50 rounded p-2"><span>Total pagado</span><b class="block text-emerald-700">${money(totalGastado)}</b></div></div><p class="mt-2"><b>💰 Total pagado:</b> <span class="text-emerald-700 font-bold">${money(totalGastado)}</span></p>${saldoPendiente>0?`<p class="mt-1"><b>🔴 Resto pendiente a pagar:</b> <span class="text-red-600 font-bold">${money(saldoPendiente)}</span></p>`:''}
+   <div class="mt-3 flex gap-1 flex-wrap"><b class="mr-1">Tipo de cliente:</b>${badgesOrigenCliente(dcrm)}</div><div class="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs"><div class="bg-blue-50 rounded p-2"><span>Bicicletas</span><b class="block">${money(dcrm.totalBicis)}</b></div><div class="bg-violet-50 rounded p-2"><span>Mostrador</span><b class="block">${money(dcrm.totalMostrador+(dcrm.cajaDirecta||[]).reduce((a,m)=>a+(Number(m.monto)||0),0))}</b></div><div class="bg-orange-50 rounded p-2"><span>Taller</span><b class="block">${money(dcrm.totalTaller)}</b></div><div class="bg-emerald-50 rounded p-2"><span>Total pagado</span><b class="block text-emerald-700">${money(totalGastado)}</b></div></div><p class="mt-2"><b>💰 Total pagado:</b> <span class="text-emerald-700 font-bold">${money(totalGastado)}</span></p>${saldoPendiente>0?`<p class="mt-1"><b>🔴 Resto pendiente a pagar:</b> <span class="text-red-600 font-bold">${money(saldoPendiente)}</span></p>`:''}
   </div>
   ${cuentaCorrienteHTML(vs,ots)}
   <div>
@@ -2698,6 +2697,13 @@ function marcasCatalogo(){return [...new Set(catalogoMarcaModeloCompleto().map(x
 function modelosCatalogo(marca){return [...new Set(catalogoMarcaModeloCompleto().filter(x=>!marca||x.marca===marca).map(x=>x.modelo).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'))}
 function llenarSelectMarca(id){const el=document.getElementById(id);if(!el)return;const actual=el.value;el.innerHTML='<option value="">— Elegir marca —</option>'+marcasCatalogo().map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('')+'<option value="__manual__">✍️ Otra / escribir manualmente</option>';if([...el.options].some(o=>o.value===actual))el.value=actual}
 function llenarSelectModelo(id,marca){const el=document.getElementById(id);if(!el)return;const actual=el.value;el.innerHTML='<option value="">— Elegir modelo —</option>'+modelosCatalogo(marca).map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('')+'<option value="__manual__">✍️ Otro / escribir manualmente</option>';if([...el.options].some(o=>o.value===actual))el.value=actual}
+function actualizarSelectArmadoVenta(){
+ const sel=document.getElementById('vArmadoModelo');if(!sel)return;
+ const actual=sel.value;
+ const opciones=(state.modelosArmado||[]).filter(m=>m.activo).sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(m=>`<option value="${m.id}">${esc(m.nombre)} (${m.partes.length} partes)</option>`).join('');
+ sel.innerHTML='<option value="">— Elegir modelo —</option>'+opciones;
+ if([...sel.options].some(o=>o.value===actual))sel.value=actual;
+}
 function actualizarCatalogosMarcaModelo(){llenarSelectMarca('vMarca');llenarSelectMarca('sMarca');const vm=document.getElementById('vMarca')?.value;const sm=document.getElementById('sMarca')?.value;llenarSelectModelo('vModelo',vm&&vm!=='__manual__'?vm:'');llenarSelectModelo('sModelo',sm&&sm!=='__manual__'?sm:'')}
 function cambiarMarcaVenta(){const m=vMarca.value;vMarcaManual.classList.toggle('hidden',m!=='__manual__');if(m!=='__manual__')vMarcaManual.value='';llenarSelectModelo('vModelo',m==='__manual__'?'':m);vModeloManual.classList.add('hidden');vModeloManual.value=''}
 function cambiarModeloVenta(){vModeloManual.classList.toggle('hidden',vModelo.value!=='__manual__');if(vModelo.value!=='__manual__')vModeloManual.value=''}
@@ -2803,14 +2809,22 @@ async function guardarVenta(){
   const crearService=tipoVenta==='Bicicleta'&&document.getElementById('vCrearService')?.checked;
   const fechaService=document.getElementById('vFechaService')?.value||'';
   const textoService=document.getElementById('vTextoService')?.value.trim()||appCfg.tituloService||'Recordar al cliente el service de su bicicleta';
+  const crearArmado=tipoVenta==='Bicicleta'&&document.getElementById('vCrearArmado')?.checked;
+  const armadoModeloId=document.getElementById('vArmadoModelo')?.value||'';
+  const armadoModelo=crearArmado&&armadoModeloId?modeloArmadoPorId(armadoModeloId):null;
   ['vCliente','vTelefono','vEmail','vDocumento','vMarca','vModelo','vProducto','vCosto','vPrecio','vNotas','vNroSerie','vMargen','vMarcaManual','vModeloManual','vFecha'].forEach(x=>document.getElementById(x).value='');vMarcaManual.classList.add('hidden');vModeloManual.classList.add('hidden');vSena.value=0;vCantidad.value=1;vProductoSelect.value='';if(document.getElementById('vStockOrigen'))document.getElementById('vStockOrigen').value='';const ac=document.getElementById('vACuenta');if(ac)ac.checked=false;actualizarResumenPagoVenta();
   if(crearService&&fechaService){
    try{await dbInsert('recordatorios',{fecha:fechaService,cliente:v.cliente,texto:'[SERVICE] '+textoService+' · '+descripcionVenta(v)+(v.nro_serie?' · Serie '+v.nro_serie:'')})}catch(er){console.warn('Venta guardada, pero no se pudo crear la alerta de service:',er)}
   }
   if(document.getElementById('vCrearService'))document.getElementById('vCrearService').checked=false;
   if(document.getElementById('vFechaService')){document.getElementById('vFechaService').value='';document.getElementById('vFechaService').disabled=true}
-  await cargarSupabase(true,['ventas','caja','inventario_bicicletas','clientes','recordatorios']);
-  alert((saldo>0?'Venta registrada. Saldo pendiente: '+money(saldo):'Venta registrada y sincronizada.')+(crearService&&fechaService?'\n\n🔔 Alerta de service creada para '+fechaService+'.':''));
+  if(armadoModelo){
+   try{await dbInsert('armados',{cliente:v.cliente,telefono:v.telefono,modelo_id:armadoModelo.id,modelo_nombre:armadoModelo.nombre,notas:v.notas||'',partes_estado:armadoModelo.partes.map(p=>({parte:p,tengo:false,enCompras:false})),fecha:fechaLocalHoy(),entregado:false})}catch(er){console.warn('Venta guardada, pero no se pudo crear el armado:',er)}
+  }
+  if(document.getElementById('vCrearArmado'))document.getElementById('vCrearArmado').checked=false;
+  if(document.getElementById('vArmadoModelo')){document.getElementById('vArmadoModelo').value='';document.getElementById('vArmadoModelo').disabled=true}
+  await cargarSupabase(true,['ventas','caja','inventario_bicicletas','clientes','recordatorios','armados']);
+  alert((saldo>0?'Venta registrada. Saldo pendiente: '+money(saldo):'Venta registrada y sincronizada.')+(crearService&&fechaService?'\n\n🔔 Alerta de service creada para '+fechaService+'.':'')+(armadoModelo?'\n\n🚲 Se agregó a "Bicis a armar".':''));
  }catch(e){console.error(e);alert('No se pudo registrar la venta. No se guardó nada en Ventas, Caja ni Stock.\n\n'+e.message);await cargarSupabase(true,['ventas','caja','inventario_bicicletas'])}
  finally{if(btnV)btnV.disabled=false}
 }
@@ -4646,6 +4660,8 @@ async function eliminarRegistro(tabla,id,afterDelete=''){
   if(afterDelete==='conceptos')renderListasConceptosModal();
   if(afterDelete==='proveedores'){renderListaProvModal();actualizarSelectProveedores();renderCompras();}
   if(afterDelete==='productos'){renderListaProductosModal();actualizarSelectProductos();}
+  if(afterDelete==='modelosArmado')abrirGestionModelosArmado();
+  if(afterDelete==='armados')cerrarModal();
   syncStatus('☁️ Sincronizado',true);
   alert(Number(res?.caja_eliminados)>0?`Registro eliminado. También se borraron ${res.caja_eliminados} movimiento(s) de Caja vinculados.`:'Registro eliminado correctamente.');
  }catch(e){
@@ -4742,18 +4758,6 @@ function fechaDevengoOT(o){
  return ult||o.fecha;
 }
 function ingresoOT(o){return (Number(o.presupuesto)||0)>0?Number(o.presupuesto):(Number(o.sena)||0)+(Number(o.pagado)||0)}
-/* Rubro de un movimiento de Caja para Reportes. */
-function contextoRubros(){return {otIds:new Set(state.ots.map(o=>String(o.id))),ventaIds:new Set(state.ventas.map(v=>String(v.id)))}}
-function rubroMovimiento(m,ctx){
- const d=String(m.descripcion||''),ref=(d.match(/\bref:([\w-]+)/)||[])[1];
- if(m.origenTipo==='taller'||(!m.origenTipo&&((ref&&ctx.otIds.has(ref))||/\b(Cobro|Seña)\s+OT\s+#/i.test(d))))return 'taller_ot';
- if(m.origenTipo==='venta'||(!m.origenTipo&&ctx.ventaIds.has(String(idVentaDeDescripcion(d)||''))))return 'bicis';
- if(m.origenTipo)return 'otros';
- if(m.concepto===CONCEPTO_TALLER)return 'taller_rapida';
- if(m.concepto===CONCEPTO_MOSTRADOR)return 'mostrador';
- if(m.concepto===CONCEPTO_BICIS)return 'bicis_sin_venta';
- return 'otros';
-}
 function filtrarCompras(){const [f,t]=rango();return state.compras.filter(c=>{const d=new Date(c.fecha);return d>=f&&d<=t})}
 function actualizarFiltrosReportes(){
  const sel=document.getElementById('rConceptoFiltro');if(!sel)return;
@@ -4815,40 +4819,23 @@ function reportes(){
  // con su importe total y su costo. Antes se mezclaba lo facturado (ventas) con lo cobrado (taller)
  // y los repuestos contaban aunque la OT no se hubiera terminado. Los rubros de abajo siguen siendo "cobrado según Caja".
  const otsPeriodo=state.ots.filter(o=>{const fd=fechaDevengoOT(o);if(!fd)return false;const d=new Date(fd);return d>=f&&d<=t});
- // Reparaciones rápidas: entradas de Caja con concepto Taller sin OT vinculada (sin costo cargado).
- const ctxR=contextoRubros();
- const rapidasPeriodo=filtrarMovPeriodo().filter(m=>m.tipo==='Entrada'&&rubroMovimiento(m,ctxR)==='taller_rapida');
- const ingresosTaller=otsPeriodo.reduce((s,o)=>s+ingresoOT(o),0)+rapidasPeriodo.reduce((s,m)=>s+m.monto,0);
+ const ingresosTaller=otsPeriodo.reduce((s,o)=>s+ingresoOT(o),0);
  // INGRESOS POR RUBRO: dinero efectivamente cobrado, según Caja (conceptos ya unificados).
- // Rubros: Taller = cobros de OT + rápidas (concepto Taller sin OT); Bicicletas = solo cobros de ventas del módulo Ventas;
- // Mostrador = concepto Ventas Mostrador cargado en Caja. Los ajustes de seña (salidas vinculadas) restan en su rubro.
- const ctx=contextoRubros();
- const R={taller_ot:{n:0,monto:0},taller_rapida:{n:0,monto:0},bicis:{n:0,monto:0},mostrador:{n:0,monto:0},bicis_sin_venta:{n:0,monto:0},otros:{n:0,monto:0}};
- ms.forEach(m=>{const r=rubroMovimiento(m,ctx);if(m.tipo==='Entrada'){R[r].n++;R[r].monto+=m.monto}else if(r==='taller_ot'||r==='bicis'){R[r].monto-=m.monto}});
- const rTal={n:R.taller_ot.n+R.taller_rapida.n,monto:R.taller_ot.monto+R.taller_rapida.monto},rBic=R.bicis,rMos=R.mostrador;
+ const rubro=c=>{const l=ms.filter(m=>m.tipo==='Entrada'&&m.concepto===c);return {n:l.length,monto:l.reduce((s,m)=>s+m.monto,0)}};
+ const rBic=rubro(CONCEPTO_BICIS),rMos=rubro(CONCEPTO_MOSTRADOR),rTal=rubro(CONCEPTO_TALLER);
  const unidadesBicis=vs.reduce((s,v)=>s+(Number(v.cantidad)||0),0);
- const otrosIngresos=R.otros.monto+R.bicis_sin_venta.monto;
- const setTxt=(id,t)=>{const e=document.getElementById(id);if(e)e.textContent=t};
- setTxt('rResumenReparaciones',money(rTal.monto));
- setTxt('rTallerOT',money(R.taller_ot.monto));
- setTxt('rTallerRapidas',money(R.taller_rapida.monto));
- setTxt('rTallerRapidasDet',R.taller_rapida.n+' cobro(s) · ticket promedio '+money(R.taller_rapida.n?R.taller_rapida.monto/R.taller_rapida.n:0));
- setTxt('rResumenBicis',money(rBic.monto));
- setTxt('rResumenBicisCobros',rBic.n+' cobro(s) de ventas (señas y saldos)');
- setTxt('rResumenBicisUnidades',unidadesBicis+' bicicleta(s) vendida(s) en el período');
- setTxt('rResumenMostrador',money(rMos.monto));
- setTxt('rResumenMostradorDet',rMos.n+' cobro(s)');
- setTxt('rResumenOtros',money(otrosIngresos));
- setTxt('rRubrosTotal',money(rTal.monto+rBic.monto+rMos.monto+otrosIngresos));
- const aviso=document.getElementById('rRubrosAviso');
- if(aviso){aviso.classList.toggle('hidden',!R.bicis_sin_venta.n);aviso.innerHTML=R.bicis_sin_venta.n?`⚠️ Hay <b>${R.bicis_sin_venta.n}</b> movimiento(s) por <b>${money(R.bicis_sin_venta.monto)}</b> cargados a mano en Caja con concepto Ventas Bicicletas. No cuentan como bicicletas (no salieron del módulo Ventas): están sumados en "Otras entradas". Si eran ventas de bicicletas, cargalas desde Ventas; si eran otra cosa, cambiales el concepto.`:''}
+ const otrosIngresos=ms.filter(m=>m.tipo==='Entrada'&&!CONCEPTOS_SISTEMA.includes(m.concepto)).reduce((s,m)=>s+m.monto,0);
+ if(document.getElementById('rResumenBicis'))rResumenBicis.textContent=rBic.n+' mov. · '+money(rBic.monto);
+ if(document.getElementById('rResumenBicisUnidades'))rResumenBicisUnidades.textContent=unidadesBicis+' bicicleta(s) vendida(s) en el período';
+ if(document.getElementById('rResumenMostrador'))rResumenMostrador.textContent=rMos.n+' mov. · '+money(rMos.monto);
+ if(document.getElementById('rResumenReparaciones'))rResumenReparaciones.textContent=rTal.n+' mov. · '+money(rTal.monto);
+ if(document.getElementById('rResumenOtros'))rResumenOtros.textContent=money(otrosIngresos);
  const costoTaller=otsPeriodo.reduce((s,o)=>s+(Number(o.costo)||0),0);
  const fact=ventasProductos+ingresosTaller;
  const cost=costoVentas+costoTaller;
  const gan=fact-cost;
  rVentasProductos.textContent=money(ventasProductos);
  rIngresosTaller.textContent=money(ingresosTaller);
- {const e=document.getElementById('rTallerOTDet');if(e)e.textContent=R.taller_ot.n+' cobro(s) · '+otsPeriodo.length+' OT entregada(s)';}
  rFact.textContent=money(fact);rCosto.textContent=money(cost);rGanancia.textContent=money(gan);rMargen.textContent=(fact?gan/fact*100:0).toFixed(2)+'%';
  rGanancia.className='text-xl font-bold '+(gan>=0?'text-emerald-600':'text-rose-600');
 
@@ -4859,17 +4846,9 @@ function reportes(){
 
  const agrupar=document.getElementById('rAgrupar')?.value||'dia';let flujo={};ms.forEach(m=>{const k=clavePeriodo(m.fecha,agrupar);flujo[k]??={e:0,s:0};if(m.tipo==='Entrada')flujo[k].e+=m.monto;else flujo[k].s+=m.monto});
  reporteFlujo.innerHTML=Object.entries(flujo).sort((a,b)=>b[0].localeCompare(a[0])).map(([k,x])=>`<tr class="border-b"><td class="p-2">${k}</td><td class="p-2 text-right text-emerald-700">${money(x.e)}</td><td class="p-2 text-right text-rose-700">${money(x.s)}</td><td class="p-2 text-right">${money(x.e+x.s)}</td><td class="p-2 text-right font-bold">${money(x.e-x.s)}</td></tr>`).join('')||'<tr><td colspan="5" class="p-4 text-center text-slate-400">Sin movimientos.</td></tr>';
- // Ventas por marca/modelo + rentabilidad estimada en Reportes
+ // Ventas por marca/modelo
  let bicis={};vs.filter(v=>v.marca||v.modelo).forEach(v=>{const k=(v.marca||'Sin marca')+' · '+(v.modelo||'Sin modelo');bicis[k]??={cant:0,total:0};bicis[k].cant+=Number(v.cantidad)||0;bicis[k].total+=Number(v.total)||0});
- const rb=document.getElementById('reporteBicicletas');
- if(rb){
-  const filas=Object.entries(bicis).sort((a,b)=>b[1].cant-a[1].cant);
-  if(!filas.length){rb.innerHTML='<p class="text-slate-400">Sin ventas con marca/modelo en este período.</p>';}
-  else{
-   rb.innerHTML=`<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2 text-left">Marca / modelo</th><th class="p-2 text-right">Cantidad</th><th class="p-2 text-right">Facturación</th><th class="p-2 text-right">Costo unitario</th><th class="p-2 text-right">Costo total</th><th class="p-2 text-right">Ganancia / unidad</th><th class="p-2 text-right">Ganancia</th></tr></thead><tbody>`+filas.map(([k,x],i)=>{const key='rBiciCosto_'+i;return `<tr class="border-b"><td class="p-2 font-semibold">${esc(k)}</td><td class="p-2 text-right">${x.cant}</td><td class="p-2 text-right money">${money(x.total)}</td><td class="p-2 text-right"><input id="${key}" type="number" min="0" step="0.01" class="border p-2 rounded-lg w-28 text-right" placeholder="$ costo" oninput="recalcularRentabilidadBicisReporte()" data-cant="${x.cant}" data-total="${x.total}"></td><td id="${key}_ct" class="p-2 text-right money">—</td><td id="${key}_gu" class="p-2 text-right money">—</td><td id="${key}_g" class="p-2 text-right font-bold money">—</td></tr>`}).join('')+`</tbody></table></div><div id="rBiciRentResumen" class="mt-3 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-sm"></div>`;
-   recalcularRentabilidadBicisReporte();
-  }
- }
+ const rb=document.getElementById('reporteBicicletas');if(rb)rb.innerHTML=Object.entries(bicis).sort((a,b)=>b[1].cant-a[1].cant).map(([k,x])=>`<div class="flex justify-between border-b py-2 text-sm"><span>${esc(k)}<br><span class="small text-slate-500">${x.cant} bicicleta(s)</span></span><b>${money(x.total)}</b></div>`).join('')||'<p class="text-slate-400">Sin ventas con marca/modelo en este período.</p>';
  renderResumenMensualBicicletas();
  // Compras a proveedores: operaciones, unidades y monto por proveedor
  const cs=filtrarCompras();let prov={};cs.forEach(c=>{const k=c.proveedor||'Sin proveedor';prov[k]??={ops:0,cant:0,total:0};prov[k].ops++;prov[k].cant+=Number(c.cantidad)||0;prov[k].total+=Number(c.total)||0});
@@ -4883,25 +4862,6 @@ function reportes(){
  if(puede('admin'))renderAuditoria();
  renderCharts(ms,flujo,conceptos);
 }
-function recalcularRentabilidadBicisReporte(){
- const inputs=[...document.querySelectorAll('#reporteBicicletas input[id^="rBiciCosto_"]')];
- let fact=0,costos=0,gan=0,unidades=0,conCosto=0;
- inputs.forEach(inp=>{
-  const cant=Number(inp.dataset.cant)||0,total=Number(inp.dataset.total)||0,costo=Number(inp.value);
-  const base=inp.id,ct=document.getElementById(base+'_ct'),gu=document.getElementById(base+'_gu'),g=document.getElementById(base+'_g');
-  fact+=total;unidades+=cant;
-  if(inp.value!==''&&Number.isFinite(costo)&&costo>=0){
-   const costoTotal=costo*cant,ganancia=total-costoTotal,ganUnidad=cant?ganancia/cant:0;
-   costos+=costoTotal;gan+=ganancia;conCosto++;
-   if(ct)ct.textContent=money(costoTotal);if(gu)gu.textContent=money(ganUnidad);if(g){g.textContent=money(ganancia);g.className='p-2 text-right font-bold money '+(ganancia>=0?'text-emerald-600':'text-rose-600')}
-  }else{if(ct)ct.textContent='—';if(gu)gu.textContent='—';if(g){g.textContent='—';g.className='p-2 text-right font-bold money'}}
- });
- const r=document.getElementById('rBiciRentResumen');if(!r)return;
- if(!conCosto){r.innerHTML=`<b>${unidades}</b> bicicleta(s) · Facturación <b>${money(fact)}</b><br><span class="small">Ingresá el costo unitario de cada modelo para calcular costo total, ganancia y margen.</span>`;return}
- const margen=fact?gan/fact*100:0,completo=conCosto===inputs.length;
- r.innerHTML=`<div class="grid grid-cols-2 lg:grid-cols-5 gap-2"><div><span class="small">Bicicletas</span><b>${unidades}</b></div><div><span class="small">Facturación</span><b>${money(fact)}</b></div><div><span class="small">Costo cargado</span><b>${money(costos)}</b></div><div><span class="small">Ganancia${completo?'':' parcial'}</span><b class="${gan>=0?'text-emerald-600':'text-rose-600'}">${money(gan)}</b></div><div><span class="small">Margen${completo?'':' parcial'}</span><b>${margen.toFixed(2)}%</b></div></div>${completo?'':'<div class="small text-amber-700 mt-2">⚠️ Faltan costos unitarios en uno o más modelos; la ganancia mostrada es parcial.</div>'}`;
-}
-
 function renderCharts(ms,flujo,conceptos){
  const labels=Object.keys(flujo).sort();if(chartFin)chartFin.destroy();chartFin=new Chart(document.getElementById('chartFin'),{type:'bar',data:{labels,datasets:[{label:'Entradas',data:labels.map(d=>flujo[d].e)},{label:'Salidas',data:labels.map(d=>flujo[d].s)},{label:'Saldo',type:'line',data:labels.map(d=>flujo[d].e-flujo[d].s),tension:.25}]},options:{responsive:true,maintainAspectRatio:false}});
  const cats=Object.keys(conceptos);if(chartConcept)chartConcept.destroy();chartConcept=new Chart(document.getElementById('chartConcept'),{type:'bar',data:{labels:cats,datasets:[{label:'Entradas',data:cats.map(k=>conceptos[k].e)},{label:'Salidas',data:cats.map(k=>conceptos[k].s)}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y'}});
@@ -4964,6 +4924,99 @@ function otsListasSinRetirar(){
   .map(o=>({o,dias:Math.floor((Date.now()-new Date(o.fechaLista||o.fecha).getTime())/864e5)})).sort((a,b)=>b.dias-a.dias);
 }
 function recordatoriosPendientes(){return (state.recordatorios||[]).filter(r=>!r.hecho&&!esItemOperativo(r)).sort((a,b)=>String(a.fecha||'9999').localeCompare(String(b.fecha||'9999')))}
+
+/* v8: Bicis a armar — modelos (plantilla de partes) + armados (cliente + checklist de esa bici). */
+function modeloArmadoPorId(id){return state.modelosArmado.find(m=>String(m.id)===String(id))}
+function abrirGestionModelosArmado(){
+ const filas=state.modelosArmado.slice().sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(m=>`<div class="flex justify-between items-center border-b py-2 text-sm"><span>${esc(m.nombre)} <span class="small text-slate-400">(${m.partes.length} partes)</span></span><span class="flex gap-2"><button onclick="editarModeloArmado('${m.id}')" class="text-blue-600" title="Editar">✏️</button><button type="button" data-delete-table="modelos_armado" data-delete-id="${m.id}" data-after-delete="modelosArmado" class="text-rose-600 delete-btn" title="Eliminar">🗑️</button></span></div>`).join('')||'<div class="text-slate-400 text-sm py-2">Todavía no cargaste ningún modelo.</div>';
+ abrirModal('⚙️ Modelos de armado',`<div class="space-y-3"><p class="small text-slate-500">Cada modelo tiene su propia lista de partes. Al crear una bici a armar, elegís el modelo y se genera el checklist automáticamente.</p><div>${filas}</div><button onclick="editarModeloArmado(null)" class="bg-blue-600 text-white px-4 py-2 rounded-lg w-full font-semibold">➕ Nuevo modelo</button></div>`);
+}
+function editarModeloArmado(id){
+ const m=id?modeloArmadoPorId(id):null;
+ const body=`<div class="space-y-3">
+  <div><label class="small text-slate-500">Nombre del modelo</label><input id="maNombre" class="border p-2 rounded w-full" value="${m?esc(m.nombre):''}" placeholder="Ej: Rondinella R28"></div>
+  <div><label class="small text-slate-500">Partes (una por línea)</label><textarea id="maPartes" rows="10" class="border p-2 rounded w-full font-mono text-sm" placeholder="Cuadro&#10;Horquilla&#10;Juego de ruedas&#10;Cubiertas&#10;Cámaras&#10;Cadena&#10;Frenos&#10;Cambios&#10;Manubrio&#10;Puños&#10;Asiento&#10;Pedales">${m?esc(m.partes.join('\n')):''}</textarea></div>
+  <button onclick="guardarModeloArmado(${m?`'${m.id}'`:'null'})" class="bg-emerald-600 text-white px-4 py-2 rounded-lg w-full font-semibold">💾 Guardar modelo</button>
+ </div>`;
+ abrirModal(m?'✏️ Editar modelo':'➕ Nuevo modelo',body);
+}
+async function guardarModeloArmado(id){
+ const nombre=document.getElementById('maNombre').value.trim();
+ const partes=document.getElementById('maPartes').value.split('\n').map(s=>s.trim()).filter(Boolean);
+ if(!nombre)return alert('Falta el nombre del modelo.');
+ if(!partes.length)return alert('Agregá al menos una parte.');
+ try{
+  if(id)await dbUpdate('modelos_armado',id,{nombre,partes});
+  else await dbInsert('modelos_armado',{nombre,partes});
+  await cargarSupabase(true,['modelos_armado']);abrirGestionModelosArmado();
+ }catch(e){alert('No se pudo guardar el modelo: '+e.message)}
+}
+function nuevoArmado(){
+ const opciones=state.modelosArmado.filter(m=>m.activo).sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(m=>`<option value="${m.id}">${esc(m.nombre)} (${m.partes.length} partes)</option>`).join('');
+ if(!opciones)return alert('Primero cargá al menos un modelo en "⚙️ Modelos".');
+ const body=`<div class="space-y-3">
+  <div><label class="small text-slate-500">Cliente</label><input id="arCliente" class="border p-2 rounded w-full" placeholder="Nombre del cliente"></div>
+  <div><label class="small text-slate-500">WhatsApp (opcional)</label><input id="arTelefono" class="border p-2 rounded w-full" placeholder="WhatsApp"></div>
+  <div><label class="small text-slate-500">Modelo</label><select id="arModelo" class="border p-2 rounded w-full"><option value="">— Elegir modelo —</option>${opciones}</select></div>
+  <div><label class="small text-slate-500">Modificaciones / notas</label><textarea id="arNotas" rows="2" class="border p-2 rounded w-full" placeholder="Ej: puños y asiento marrón, canasto"></textarea></div>
+  <div><label class="small text-slate-500">Fecha</label><input id="arFecha" type="date" class="border p-2 rounded w-full" value="${fechaLocalHoy()}"></div>
+  <button onclick="guardarArmado()" class="bg-blue-600 text-white px-4 py-2 rounded-lg w-full font-semibold">💾 Guardar</button>
+ </div>`;
+ abrirModal('🚲 Nueva bici a armar',body);
+}
+async function guardarArmado(){
+ const cliente=document.getElementById('arCliente').value.trim();
+ const modeloId=document.getElementById('arModelo').value;
+ if(!cliente)return alert('Falta el nombre del cliente.');
+ if(!modeloId)return alert('Elegí un modelo.');
+ const m=modeloArmadoPorId(modeloId);if(!m)return alert('Ese modelo ya no existe.');
+ const payload={cliente,telefono:document.getElementById('arTelefono').value.trim(),modelo_id:m.id,modelo_nombre:m.nombre,notas:document.getElementById('arNotas').value.trim(),partes_estado:m.partes.map(p=>({parte:p,tengo:false,enCompras:false})),fecha:document.getElementById('arFecha').value||fechaLocalHoy(),entregado:false};
+ try{await dbInsert('armados',payload);await cargarSupabase(true,['armados']);cerrarModal()}catch(e){alert('No se pudo guardar: '+e.message)}
+}
+function armadoPorId(id){return state.armados.find(a=>String(a.id)===String(id))}
+function renderArmadosDash(){
+ const el=document.getElementById('armadosDash');if(!el)return;
+ const activos=state.armados.filter(a=>!a.entregado).sort((a,b)=>String(a.fecha||'').localeCompare(String(b.fecha||'')));
+ el.innerHTML=activos.map(a=>{
+  const total=a.partesEstado.length,listas=a.partesEstado.filter(p=>p.tengo).length;
+  const completo=total>0&&listas===total;
+  return `<button type="button" onclick="abrirFichaArmado('${a.id}')" class="item-operativo w-full text-left border rounded-lg p-3"><div class="flex justify-between gap-3 items-center"><span><b>${esc(a.cliente)}</b> — ${esc(a.modeloNombre)}${a.notas?`<br><span class="small text-slate-500">${esc(a.notas)}</span>`:''}</span><span class="small shrink-0 ${completo?'text-emerald-600 font-semibold':''}">${completo?'✅ Completo':`${listas}/${total} partes`}</span></div></button>`;
+ }).join('')||'<div class="text-slate-400 text-sm p-2">No hay bicis a armar pendientes.</div>';
+}
+function abrirFichaArmado(id){
+ const a=armadoPorId(id);if(!a)return;
+ const filas=a.partesEstado.map((p,i)=>`<div class="flex justify-between items-center border-b py-2 text-sm"><label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" ${p.tengo?'checked':''} onchange="toggleParteArmado('${a.id}',${i},this.checked)"> <span class="${p.tengo?'line-through text-slate-400':''}">${esc(p.parte)}</span></label>${p.tengo?'':(p.enCompras?'<span class="small text-amber-600">🛒 En compras</span>':`<button onclick="parteACompras('${a.id}',${i})" class="bg-emerald-50 text-emerald-700 px-2 py-1 rounded text-xs" title="Mandar a Compras">🛒 Falta</button>`)}</div>`).join('');
+ const body=`<div class="space-y-3">
+  <div class="bg-slate-50 border rounded-lg p-3 text-sm"><b>${esc(a.cliente)}</b> — ${esc(a.modeloNombre)}${a.telefono?`<br>📱 ${esc(a.telefono)}`:''}${a.notas?`<br><span class="text-slate-500">${esc(a.notas)}</span>`:''}</div>
+  <div>${filas}</div>
+  <div class="grid grid-cols-2 gap-2">
+   <button onclick="marcarEntregadoArmado('${a.id}')" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold">✅ Marcar entregada</button>
+   <button type="button" data-delete-table="armados" data-delete-id="${a.id}" data-after-delete="armados" class="delete-btn bg-rose-50 text-rose-700 px-4 py-2 rounded-lg font-semibold">🗑️ Eliminar</button>
+  </div>
+ </div>`;
+ abrirModal('🚲 '+esc(a.cliente),body);
+}
+async function toggleParteArmado(armadoId,idx,tengo){
+ const a=armadoPorId(armadoId);if(!a)return;
+ const partes=a.partesEstado.map((p,i)=>i===idx?{...p,tengo,enCompras:tengo?false:p.enCompras}:p);
+ try{await dbUpdate('armados',a.id,{partes_estado:partes});await cargarSupabase(true,['armados']);abrirFichaArmado(armadoId)}catch(e){alert('No se pudo actualizar: '+e.message)}
+}
+async function parteACompras(armadoId,idx){
+ const a=armadoPorId(armadoId);if(!a)return;
+ const p=a.partesEstado[idx];if(!p)return;
+ try{
+  await dbInsert('recordatorios',{fecha:fechaLocalHoy(),cliente:LISTA_COMPRA,texto:`${p.parte} — para ${a.cliente} (${a.modeloNombre})`});
+  const partes=a.partesEstado.map((x,i)=>i===idx?{...x,enCompras:true}:x);
+  await dbUpdate('armados',a.id,{partes_estado:partes});
+  await cargarSupabase(true,['armados','recordatorios']);abrirFichaArmado(armadoId)
+ }catch(e){alert('No se pudo mandar a Compras: '+e.message)}
+}
+async function marcarEntregadoArmado(id){
+ const a=armadoPorId(id);if(!a)return;
+ if(!confirm(`¿Marcar la bici de ${a.cliente} como entregada?`))return;
+ try{await dbUpdate('armados',a.id,{entregado:true,entregado_at:fechaHoraLocal()});await cargarSupabase(true,['armados']);cerrarModal()}catch(e){alert('No se pudo marcar como entregada: '+e.message)}
+}
+
 function dashboard(){
  const vs=filtrarVentasPeriodo(),ms=filtrarMovPeriodo(),en=ms.filter(m=>m.tipo==='Entrada').reduce((s,m)=>s+m.monto,0),sa=ms.filter(m=>m.tipo==='Salida').reduce((s,m)=>s+m.monto,0);
  dVentas.textContent=money(vs.reduce((s,v)=>s+v.total,0));dCaja.textContent=money(en-sa);const elPend=document.getElementById('dTallerPendientes'),elEnt=document.getElementById('dTallerEntregadas'),elTot=document.getElementById('dTallerTotal'),elOld=document.getElementById('dTaller');
@@ -4989,6 +5042,7 @@ function dashboard(){
  if(puede('caja')&&!state.arqueos.some(a=>a.tipo==='apertura'&&isoDate(a.fecha)===hoyK))al.push(`<div class="bg-slate-50 p-2 rounded">🧾 Todavía no se hizo la apertura de caja de hoy. <button onclick="tab('caja');abrirArqueo()" class="text-blue-600 font-semibold">Abrir caja</button></div>`);
  alertas.innerHTML=al.join('')||'<div class="text-slate-400">Sin alertas críticas.</div>';
  renderListaOperativa('pendiente','pendientesDash');renderListaOperativa('compra','comprasDash');
+ renderArmadosDash();
  renderRecordatoriosSeparados();
  // v7: el gráfico de 14 días usa todos los movimientos (antes, con "Este mes", los días del mes anterior salían en 0).
  let days={}; for(let i=13;i>=0;i--){let d=new Date();d.setDate(d.getDate()-i);days[isoDate(d)]=0}
