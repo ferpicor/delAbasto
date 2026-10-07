@@ -4950,17 +4950,19 @@ function recordatoriosPendientes(){return (state.recordatorios||[]).filter(r=>!r
 /* v8: Bicis a armar — modelos (partes vinculadas al catálogo + precio + armado) y bicis con costo congelado. */
 const ARMADO_MARGEN_KEY='abasto_armado_margen_min';
 function armadoMargenMin(){const raw=localStorage.getItem(ARMADO_MARGEN_KEY);const n=Number(raw);return raw!==null&&Number.isFinite(n)?n:30}
+function armadoNumONull(v){return (v===null||v===undefined||v===''||isNaN(Number(v)))?null:Number(v)}
 function armadoParteNorm(p){
- if(typeof p==='string')return {parte:p,productoId:null,cantidad:1};
- return {parte:String(p?.parte||''),productoId:p?.productoId||p?.producto_id||null,cantidad:Number(p?.cantidad)||1};
+ if(typeof p==='string')return {parte:p,productoId:null,cantidad:1,costoManual:null};
+ return {parte:String(p?.parte||''),productoId:p?.productoId||p?.producto_id||null,cantidad:Number(p?.cantidad)||1,costoManual:armadoNumONull(p?.costoManual)};
 }
 function armadoParteEstadoNorm(p){
- return {parte:String(p?.parte||''),tengo:!!p?.tengo,enCompras:!!p?.enCompras,productoId:p?.productoId||null,cantidad:Number(p?.cantidad)||1,costo:(p?.costo===null||p?.costo===undefined||p?.costo==='')?null:Number(p.costo)};
+ return {parte:String(p?.parte||''),tengo:!!p?.tengo,enCompras:!!p?.enCompras,productoId:p?.productoId||null,cantidad:Number(p?.cantidad)||1,costoManual:armadoNumONull(p?.costoManual),costo:(p?.costo===null||p?.costo===undefined||p?.costo==='')?null:Number(p.costo)};
 }
 function modeloArmadoPorId(id){return state.modelosArmado.find(m=>String(m.id)===String(id))}
-function armadoPartesEstado(m){return m.partes.map(p=>({parte:p.parte,tengo:false,enCompras:false,productoId:p.productoId||null,cantidad:p.cantidad||1,costo:null}))}
+function armadoPartesEstado(m){return m.partes.map(p=>({parte:p.parte,tengo:false,enCompras:false,productoId:p.productoId||null,cantidad:p.cantidad||1,costoManual:armadoNumONull(p.costoManual),costo:null}))}
 /* Costo actual de una línea (cantidad incluida): el más barato del grupo de equivalentes. null = sin producto vigente. */
 function armadoCostoVivo(p){
+ if(armadoNumONull(p.costoManual)!==null)return ppR2(Number(p.costoManual)*(Number(p.cantidad)||1));
  if(!p.productoId||!CAT.cargado)return null;
  const x=CAT.porId.get(String(p.productoId));if(!x||!x.activo)return null;
  const g=x.grupo&&CAT.grupos.get(x.grupo);const c=(g&&g.length)?Math.min(x.costo,g[0].costo):x.costo;
@@ -4994,11 +4996,11 @@ async function editarModeloArmado(id){
  abrirModal(m?'✏️ Editar modelo':'➕ Nuevo modelo',`<div class="space-y-3">
   <div><label class="small text-slate-500">Nombre del modelo</label><input id="maNombre" class="border p-2 rounded w-full" value="${m?esc(m.nombre):''}" placeholder="Ej: Rondinella R28"></div>
   <div class="grid grid-cols-2 gap-2"><div><label class="small text-slate-500">Precio de venta</label><input id="maPrecio" type="number" min="0" oninput="maResumen()" class="border p-2 rounded w-full" value="${m&&m.precioVenta?m.precioVenta:''}"></div><div><label class="small text-slate-500">Armado (mano de obra)</label><input id="maMano" type="number" min="0" oninput="maResumen()" class="border p-2 rounded w-full" value="${m&&m.manoObra?m.manoObra:''}"></div></div>
-  <div class="small text-slate-500">Partes: elegí el producto del catálogo para que sume al costo (si no lo vinculás, la parte queda en el checklist pero no suma).</div>
+  <div id="maResumen" class="bg-slate-50 border rounded-lg p-2 text-sm shadow" style="position:sticky;top:0;z-index:20"></div>
+  <div class="small text-slate-500">Partes: cargá el costo manual (por unidad) o vinculá un producto del catálogo. La cantidad multiplica. Sin costo ni vínculo, la parte no suma.</div>
   <div id="maPartes" class="space-y-2"></div>
   <div class="flex gap-2 flex-wrap"><button type="button" onclick="maAgregar()" class="bg-slate-700 text-white px-3 py-2 rounded text-sm">➕ Parte</button></div>
   <details><summary class="cursor-pointer text-sm">📋 Agregar varias partes de una vez</summary><textarea id="maVarias" rows="5" class="border p-2 rounded w-full mt-2 text-sm" placeholder="Una por línea: Cuadro, Horquilla, Juego de ruedas..."></textarea><button type="button" onclick="maAgregarVarias()" class="bg-slate-700 text-white px-3 py-1 rounded text-sm mt-1">Agregar</button></details>
-  <div id="maResumen" class="bg-slate-50 border rounded-lg p-3 text-sm"></div>
   <button onclick="maGuardar()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg w-full font-semibold">💾 Guardar modelo</button>
  </div>`);
  maRenderPartes();maResumen();
@@ -5010,13 +5012,15 @@ function maRenderPartes(){
   const vinc=p.productoId
    ?(x&&x.activo?`<div class="small">🔗 ${esc(x.producto)} · ${esc(x.proveedor)} · ${money(x.costo)} <button type="button" class="text-rose-600" title="Quitar vínculo" onclick="maDesvincular(${i})">✖</button></div>`:`<div class="small text-rose-600">⚠️ Ese producto ya no figura en el catálogo <button type="button" class="text-rose-600" title="Quitar vínculo" onclick="maDesvincular(${i})">✖</button></div>`)
    :`<input class="border p-1 rounded w-full text-sm" placeholder="🔎 Buscar producto en el catálogo (opcional)" oninput="maBuscar(${i},this.value)"><div id="maRes${i}" class="text-sm"></div>`;
-  return `<div class="border rounded-lg p-2"><div class="flex gap-2 items-center"><input class="border p-1 rounded flex-1" placeholder="Parte (ej: Cubiertas)" value="${esc(p.parte)}" oninput="MA.partes[${i}].parte=this.value"><input type="number" min="1" class="border p-1 rounded w-16 text-center" title="Cantidad" value="${p.cantidad||1}" oninput="MA.partes[${i}].cantidad=Math.max(1,Number(this.value)||1);maResumen()"><button type="button" class="text-rose-600" title="Quitar parte" onclick="maQuitar(${i})">🗑</button></div><div class="mt-1">${vinc}</div></div>`;
+  return `<div class="border rounded-lg p-2"><div class="flex gap-2 items-center"><input class="border p-1 rounded flex-1" placeholder="Parte (ej: Cubiertas)" value="${esc(p.parte)}" oninput="MA.partes[${i}].parte=this.value"><input type="number" min="1" class="border p-1 rounded w-16 text-center" title="Cantidad" value="${p.cantidad||1}" oninput="MA.partes[${i}].cantidad=Math.max(1,Number(this.value)||1);maResumen();maSub(${i})"><button type="button" class="text-rose-600" title="Quitar parte" onclick="maQuitar(${i})">🗑</button></div><div class="mt-1 flex gap-2 items-center"><input type="number" min="0" step="any" class="border p-1 rounded w-28 text-sm" title="Costo manual por unidad (si lo completás, pisa al del catálogo)" placeholder="${x&&x.activo?'Cat. '+money(x.costo):'Costo c/u'}" value="${p.costoManual!==null&&p.costoManual!==undefined?p.costoManual:''}" oninput="MA.partes[${i}].costoManual=armadoNumONull(this.value);maResumen();maSub(${i})"><span id="maSub${i}" class="small text-slate-500"></span></div><div class="mt-1">${vinc}</div></div>`;
  }).join('')||'<div class="small text-slate-400">Agregá las partes del modelo.</div>';
+ MA.partes.forEach((_,i)=>maSub(i));
 }
-function maAgregar(){MA.partes.push({parte:'',productoId:null,cantidad:1});maRenderPartes();maResumen()}
+function maSub(i){const el=document.getElementById('maSub'+i);if(!el||!MA||!MA.partes[i])return;const c=armadoCostoVivo(MA.partes[i]);el.innerHTML=c===null?'<span class="text-amber-600">sin costo</span>':'Línea: <b>'+money(c)+'</b>'+(armadoNumONull(MA.partes[i].costoManual)!==null?' (manual)':'')}
+function maAgregar(){MA.partes.push({parte:'',productoId:null,cantidad:1,costoManual:null});maRenderPartes();maResumen()}
 function maAgregarVarias(){
  const t=document.getElementById('maVarias');if(!t)return;
- t.value.split('\n').map(s=>s.trim()).filter(Boolean).forEach(s=>MA.partes.push({parte:s,productoId:null,cantidad:1}));
+ t.value.split('\n').map(s=>s.trim()).filter(Boolean).forEach(s=>MA.partes.push({parte:s,productoId:null,cantidad:1,costoManual:null}));
  t.value='';maRenderPartes();maResumen();
 }
 function maQuitar(i){MA.partes.splice(i,1);maRenderPartes();maResumen()}
@@ -5025,8 +5029,10 @@ function maBuscar(i,txt){
  const el=document.getElementById('maRes'+i);if(!el)return;
  const tokens=String(CATU.norm(txt||'')).split(/\s+/).filter(Boolean);
  if(!tokens.length){el.innerHTML='';return}
- const res=CAT.productos.filter(x=>x.activo&&tokens.every(t=>String(x._n).includes(t))).sort((a,b)=>a.costo-b.costo).slice(0,8);
- el.innerHTML=res.map(x=>`<button type="button" class="block w-full text-left border rounded p-1 mt-1" onclick="maElegir(${i},'${x.id}')">${esc(x.producto)} <span class="small">· ${esc(x.proveedor)}${x.codigo?' · '+esc(x.codigo):''} · <b>${money(x.costo)}</b></span></button>`).join('')||'<div class="small text-slate-400 mt-1">Sin resultados.</div>';
+ const todos=CAT.productos.filter(x=>x.activo&&tokens.every(t=>String(x._n).includes(t))).sort((a,b)=>a.costo-b.costo);
+ const res=todos.slice(0,40);
+ el.innerHTML=(todos.length?`<div class="small text-slate-500 mt-1">${todos.length>40?'Mostrando los 40 más baratos de '+todos.length+' — agregá más palabras para afinar':todos.length+' resultado(s)'}</div>`:'')+`<div style="max-height:240px;overflow:auto">`+res.map(x=>`<button type="button" class="block w-full text-left border rounded p-1 mt-1" onclick="maElegir(${i},'${x.id}')">${esc(x.producto)} <span class="small">· ${esc(x.proveedor)}${x.codigo?' · '+esc(x.codigo):''} · <b>${money(x.costo)}</b></span></button>`).join('')+`</div>`||'<div class="small text-slate-400 mt-1">Sin resultados.</div>';
+ if(!todos.length)el.innerHTML='<div class="small text-slate-400 mt-1">Sin resultados.</div>';
 }
 function maElegir(i,id){
  const x=CAT.porId.get(String(id));if(!x)return;
@@ -5036,11 +5042,11 @@ function maElegir(i,id){
 function maResumen(){
  const el=document.getElementById('maResumen');if(!el||!MA)return;
  const r=armadoResumen(MA.partes,document.getElementById('maPrecio')?.value,document.getElementById('maMano')?.value);
- el.innerHTML=`<div class="flex justify-between"><span>Repuestos</span><b>${money(r.rep)}</b></div><div class="flex justify-between"><span>Armado</span><b>${money(r.mo)}</b></div><div class="flex justify-between border-t mt-1 pt-1"><span>Costo total</span><b>${money(r.total)}</b></div><div class="flex justify-between"><span>Precio de venta</span><b>${r.pv>0?money(r.pv):'—'}</b></div><div class="flex justify-between"><span>Ganancia</span><span>${armadoMargenHTML(r)}</span></div>${r.sin?`<div class="small text-amber-600 mt-1">${r.sin} parte(s) sin producto vinculado o sin vigencia: no suman al costo.</div>`:''}`;
+ el.innerHTML=`<div class="grid grid-cols-3 gap-x-3 gap-y-1"><div class="small text-slate-500">Repuestos<br><b class="text-sm">${money(r.rep)}</b></div><div class="small text-slate-500">Armado<br><b class="text-sm">${money(r.mo)}</b></div><div class="small text-slate-500">Costo total<br><b class="text-sm">${money(r.total)}</b></div><div class="small text-slate-500">Precio venta<br><b class="text-sm">${r.pv>0?money(r.pv):'—'}</b></div><div class="small text-slate-500 col-span-2">Ganancia · margen<br>${armadoMargenHTML(r)}</div></div>${r.sin?`<div class="small text-amber-600 mt-1">${r.sin} parte(s) sin costo: no suman.</div>`:''}`;
 }
 async function maGuardar(){
  const nombre=document.getElementById('maNombre').value.trim();
- const partes=MA.partes.filter(p=>String(p.parte||'').trim()).map(p=>({parte:p.parte.trim(),productoId:p.productoId||null,cantidad:Math.max(1,Number(p.cantidad)||1)}));
+ const partes=MA.partes.filter(p=>String(p.parte||'').trim()).map(p=>({parte:p.parte.trim(),productoId:p.productoId||null,cantidad:Math.max(1,Number(p.cantidad)||1),costoManual:armadoNumONull(p.costoManual)}));
  if(!nombre)return alert('Falta el nombre del modelo.');
  if(!partes.length)return alert('Agregá al menos una parte.');
  const payload={nombre,partes,precio_venta:Math.max(0,Number(document.getElementById('maPrecio').value)||0),mano_obra:Math.max(0,Number(document.getElementById('maMano').value)||0)};
