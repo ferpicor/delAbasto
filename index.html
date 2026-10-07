@@ -3878,6 +3878,7 @@ CATL.detectar=function(paginas){
  if(/BARBATELLI|OVIDIO LAGOS/i.test(t))return 'barbatelli';
  if(/Rubro:/i.test(t)&&/Precio Final/i.test(t))return 'rubros';
  if(/PRECIO UNIT/i.test(t)&&/CANT\./i.test(t))return 'zambitoOferta';
+ if(/C[oó]digo y descripci[oó]n/i.test(t)&&/Bulto/i.test(t))return 'zambitoExtracto';
  if(/PRECIOS EN PESOS/i.test(t)&&/Cantidad/i.test(t))return 'zambito';
  if(/Img\.\s*Cod\.\s*Producto/i.test(t))return 'nunez';
  return 'generico';
@@ -3946,6 +3947,40 @@ CATL.zambito=function(paginas){
  }
  return {filas,descartadas:desc};
 };
+/* Zambito "Extracto" (catálogo por rubros, 2 columnas): CÓDIGO Descripción.....  PRECIO(11,072.345)  BULTO(5 u).
+   Los rubros son títulos tipo "AC1 Aceite" que abarcan las dos columnas. */
+CATL.zambitoExtracto=function(paginas){
+ const filas=[],desc=[];let rubro='';
+ const reCab=/^(C[oó]digo y descripci[oó]n|Extracto$|P[aá]gina\s+\d)/i;
+ const rePrecio=/(?<![\d,])(\d{1,3}(?:,\d{3})*\.\d{3})(?!\d)/;
+ for(const p of paginas){
+  const corte=297,items=p.items;
+  const hdrs=CATL.renglones(items,null,24).map(r=>({y:r.y,m:r.texto.match(/^[A-Z]{2}\d\s+(\S.*)$/)})).filter(h=>h.m).map(h=>({y:h.y,nombre:h.m[1].trim()}));
+  const rubroInicio=rubro;
+  for(const [a,b] of [[null,corte],[corte,null]]){
+   let rec=null;const cerrar=()=>{if(rec){recs.push(rec);rec=null}};const recs=[];
+   for(const r of CATL.renglones(items,a,b)){
+    const l=r.texto.replace(/^([A-Z]{2,4}\d[A-Z0-9]{1,5}?)(?=[A-Z][a-záéíóú])/,'$1 '); // código pegado a la descripción
+    if(reCab.test(l)||/^Precio\s+Bulto$/i.test(l))continue;
+    const h=hdrs.filter(z=>z.y>=r.y-1).sort((x,y)=>x.y-y.y)[0];const rb=h?h.nombre:rubroInicio;
+    if(hdrs.some(z=>Math.abs(z.y-r.y)<2.5)&&(a===null)&&/^[A-Z]{2}\d\s/.test(l)){cerrar();continue}
+    const m=l.match(/^([A-Z0-9]{6,8})\s+(.*)$/)||l.match(/^([A-Z0-9]{6,8})$/);
+    if(m&&/\d/.test(m[1])&&/[A-Z]/.test(m[1])){cerrar();rec={codigo:m[1],raw:m[2]||'',rubro:rb};continue}
+    if(rec)rec.raw+=' '+l;else desc.push(l);
+   }
+   cerrar();
+   for(const x of recs){
+    const pm=x.raw.match(rePrecio);
+    if(!pm){desc.push(x.codigo+' '+x.raw);continue}
+    const ant=x.raw.slice(0,pm.index),post=x.raw.slice(pm.index+pm[0].length).replace(/^\s*\d{1,4}\s?[a-zA-Z]\b/,'');
+    const nombre=CATL.limpiar(ant)+(CATL.limpiar(post)?' '+CATL.limpiar(post):'');
+    filas.push({codigo:x.codigo,producto:CATL.limpiar(nombre),precio:CATL.numUS(pm[1]),rubro:x.rubro});
+   }
+  }
+  if(hdrs.length)rubro=hdrs.sort((x,y)=>x.y-y.y)[0].nombre;
+ }
+ return {filas,descartadas:desc};
+};
 /* Zambito ofertas (Cámaras): CÓDIGO Descripción CANT. $PRECIO UNIT. $-15% $-5% — con títulos de sección (marca). */
 CATL.zambitoOferta=function(paginas){
  const filas=[],desc=[];let seccion='';
@@ -3995,7 +4030,7 @@ CATL.generico=function(paginas){
  }
  return {filas,descartadas:desc};
 };
-CATL.FORMATOS={argentina:'La Argentina (Nº1 público · Nº2 costo)',barbatelli:'Barbatelli (2 columnas, sin código)',rubros:'Lista por rubros (Bicipartes AM)',zambito:'Zambito (código · cantidad · precio)',zambitoOferta:'Zambito ofertas (precio unitario · contado)',nunez:'Núñez (código · descripción · precio final)',generico:'Formato genérico'};
+CATL.FORMATOS={argentina:'La Argentina (Nº1 público · Nº2 costo)',barbatelli:'Barbatelli (2 columnas, sin código)',rubros:'Lista por rubros (Bicipartes AM)',zambito:'Zambito (código · cantidad · precio)',zambitoExtracto:'Zambito Extracto (rubros · precio · bulto)',zambitoOferta:'Zambito ofertas (precio unitario · contado)',nunez:'Núñez (código · descripción · precio final)',generico:'Formato genérico'};
 CATL.leer=function(paginas,formato){
  formato=formato||CATL.detectar(paginas);
  const r=(CATL[formato]||CATL.generico)(paginas);
