@@ -4020,31 +4020,39 @@ CATL.zambitoOferta=function(paginas){
  }
  return {filas,descartadas:desc};
 };
-/* Núñez: Img. Cod. Producto Pago Inmediato — CODIGO DESCRIPCION PRECIO, con categorías "Rubro / Subrubro"
-   sin $ y descripciones que a veces se parten en 2-3 renglones antes del precio. */
+/* Núñez: Img. Cod. Producto Pago Inmediato — tabla con columnas fijas: código (x≈96), descripción (x≈178), precio (x≈470).
+   Rubros como "Accesorios / Guantes" a la izquierda (x≈40). La descripción —y a veces el código— se parten en renglones
+   siguientes SIN precio ("KTM", "(Negro/Naranja)", "Hombre (18", Rojo)"): se pegan al producto de arriba. */
 CATL.nunez=function(paginas){
  const filas=[],desc=[];let rubro='',ultima=null;
- const esEncabezado=l=>/^(Listado de precios|Los precios incluyen impuestos|Img\.\s*Cod\.\s*Producto)/i.test(l);
- const esCodigo=s=>/\d/.test(s)||/^[A-Z0-9.-]+$/.test(s); // con dígito, o todo mayúsculas (ej. "OF-HERALCOL")
- for(const p of paginas)for(const r of CATL.renglones(p.items)){
-  const l=r.texto;
-  if(!l||esEncabezado(l))continue;
-  // línea completa: CODIGO DESCRIPCION PRECIO
-  let m=l.match(/^([A-Za-z0-9][A-Za-z0-9.-]{1,13})\s+(.+?)\s+([\d.]+,\d{2})\s*$/);
-  if(m&&esCodigo(m[1])){filas.push({codigo:m[1],producto:CATL.limpiar(m[2]),precio:CATL.numAR(m[3]),rubro});ultima=null;continue}
-  // línea de solo precio: cierra el producto pendiente (descripción partida en varios renglones)
-  m=l.match(/^([\d.]+,\d{2})\s*$/);
-  if(m&&ultima){ultima.precio=CATL.numAR(m[1]);filas.push(ultima);ultima=null;continue}
-  // línea que empieza un producto pero el precio quedó en el/los renglones siguientes
-  m=l.match(/^([A-Za-z0-9][A-Za-z0-9.-]{1,13})\s+(.+)$/);
-  if(m&&esCodigo(m[1])){ultima={codigo:m[1],producto:CATL.limpiar(m[2]),rubro};continue}
-  // continuación de una descripción partida
-  if(ultima){ultima.producto=CATL.limpiar(ultima.producto+' '+l);continue}
-  // encabezado de rubro/subrubro (ej. "Accesorios / Agarres de Potencia"), sin dígitos ni precio
-  if(!/\d/.test(l)){rubro=l.trim();continue}
-  desc.push(l);
+ const esEncabezado=l=>/^(Listado de precios|Los precios incluyen|Img\.\s*Cod\.\s*Producto|P[aá]gina\s+\d)/i.test(l);
+ const txt=its=>its.map(z=>String(z.str).trim()).join(' ').replace(/\s+/g,' ').trim();
+ for(const p of paginas){
+  ultima=null; // un producto no continúa en la página siguiente
+  for(const r of CATL.renglones(p.items)){
+   const l=r.texto;if(!l||esEncabezado(l))continue;
+   const pr=r.items.find(z=>z.x>=440&&/^-?[\d.]+,\d{2}$/.test(String(z.str).trim()));
+   const cod=r.items.filter(z=>z.x>=85&&z.x<170),des=r.items.filter(z=>z.x>=170&&z.x<440),izq=r.items.filter(z=>z.x<85);
+   if(izq.length&&!cod.length&&!des.length&&!pr){rubro=txt(izq);ultima=null;continue}
+   if(pr){
+    const c=txt(cod).replace(/\s+/g,''),d=txt(des);
+    // renglón de solo precio: cierra el producto que quedó sin precio
+    if(!c&&!d&&ultima&&ultima.precio==null){ultima.precio=CATL.numAR(pr.str);ultima._y=r.y;continue}
+    const f={codigo:c,producto:CATL.limpiar(d),precio:CATL.numAR(pr.str),rubro,_y:r.y};filas.push(f);ultima=f;continue;
+   }
+   // renglón sin precio: continuación del producto de arriba (código partido y/o descripción partida)
+   if(ultima&&ultima._y-r.y<=17){
+    if(cod.length)ultima.codigo+=txt(cod).replace(/\s+/g,'');
+    if(des.length)ultima.producto=CATL.limpiar(ultima.producto+' '+txt(des));
+    ultima._y=r.y;continue;
+   }
+   // producto que empieza sin precio (el precio viene en un renglón siguiente)
+   if(cod.length&&des.length){const f={codigo:txt(cod).replace(/\s+/g,''),producto:CATL.limpiar(txt(des)),precio:null,rubro,_y:r.y};filas.push(f);ultima=f;continue}
+   desc.push(l);
+  }
  }
- return {filas,descartadas:desc};
+ const ok=[];for(const f of filas){delete f._y;if(f.precio==null){desc.push(f.codigo+' '+f.producto)}else ok.push(f)}
+ return {filas:ok,descartadas:desc};
 };
 /* Genérico: intenta "PRODUCTO (COD) n n n" o "PRODUCTO ... PRECIO". */
 CATL.generico=function(paginas){
