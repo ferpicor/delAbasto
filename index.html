@@ -1224,6 +1224,22 @@ html body .item-operativo .small{color:var(--acc-tx)}
 #comprasDash .compra-check-row{grid-template-columns:28px 1fr 36px}
 @media (max-width:700px){#comprasDash .compra-check-row{grid-template-columns:34px 1fr 40px}}
 
+/* v8: Editar modelo — filas ordenadas (también en celular) y resumen fijo opaco */
+.ma-resumen{position:sticky;top:-1px;z-index:30;background:var(--raise,#f1f5f9);border:1px solid var(--line-2,#d1d5db);border-radius:10px;padding:8px 10px;box-shadow:0 6px 14px rgba(0,0,0,.35)}
+.ma-res-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 10px;font-size:12px}
+.ma-res-grid>div{display:flex;flex-direction:column;min-width:0}
+.ma-res-grid span{color:var(--tx-3,#64748b);font-size:11px}
+.ma-res-grid b{font-size:14px;white-space:nowrap}
+.ma-res-grid .ma-gan{grid-column:span 2}
+.ma-fila{border:1px solid var(--line-2,#d1d5db);border-radius:10px;padding:8px}
+html body .ma-fila input:not([type=checkbox]){width:100%;min-width:0;font-size:15px;padding:6px 8px;border-radius:8px;height:auto;min-height:38px}
+html body .ma-l3 input:not([type=checkbox]){font-size:14px}
+.ma-l1{display:grid;grid-template-columns:1fr 38px;gap:8px;align-items:center}
+.ma-del{color:#fb7185;font-size:18px;min-height:34px;border-radius:8px}
+.ma-l2{display:grid;grid-template-columns:76px 1fr;gap:8px;margin-top:6px}
+.ma-l2 label{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--tx-3,#64748b)}
+.ma-sub{margin-top:5px;font-size:12px;color:var(--tx-3,#64748b)}
+.ma-l3{margin-top:5px;font-size:13px;line-height:1.35;overflow-wrap:anywhere}
 /* v8: campos de uso diario resaltados (borde + etiqueta de color; sin fondo para no romper placeholders ni desplegables) */
 .campo-clave>label{color:var(--cyan-tx)!important;font-weight:700}
 .campo-clave>input,.campo-clave>select,.campo-clave>textarea,.campo-clave .flex>select{border:1px solid var(--cyan-bd)!important;border-left:4px solid var(--cyan-tx)!important}
@@ -4991,7 +5007,7 @@ function renderListaOperativa(tipo,contenedorId){
   el.innerHTML=items.map(r=>`<div class="compra-check-row"><input type="checkbox" class="compra-check" data-id="${r.id}" onchange="actualizarComprasSeleccionadas()"><button type="button" onclick="editarItemOperativo('${r.id}')" class="compra-check-text" title="Modificar o eliminar"><span class="compra-item-contenido">${esc(r.texto)}</span><span class="compra-item-fecha">📅 ${esc(r.fecha||'Sin fecha')}</span></button><button type="button" class="compra-buscar" title="Buscar en el catálogo de proveedores" onclick="ppBuscarEnCatalogo(${ppJs(r.texto)})">🔍</button></div>`).join('')||`<div class="text-slate-400 text-sm p-2">No hay compras pendientes.</div>`;
   actualizarComprasSeleccionadas(); return;
  }
- el.innerHTML=items.map(r=>`<button type="button" onclick="editarItemOperativo('${r.id}')" class="item-operativo w-full text-left border rounded-lg p-3"><div class="flex justify-between gap-3 items-center"><span>${esc(r.texto)}</span><span class="small shrink-0">✏️ Editar</span></div></button>`).join('')||`<div class="text-slate-400 text-sm p-2">No hay pendientes cargados.</div>`;
+ el.innerHTML=items.map(r=>`<div class="item-operativo w-full text-left border rounded-lg p-3"><div class="flex justify-between gap-3 items-center"><span class="flex-1 cursor-pointer" onclick="editarItemOperativo('${r.id}')">${esc(r.texto)}</span><span class="flex gap-2 shrink-0 items-center"><button type="button" onclick="editarItemOperativo('${r.id}')" class="small" title="Editar">✏️ Editar</button><button type="button" onclick="eliminarItemOperativo('${r.id}')" class="small" title="Eliminar" style="color:#fb7185;font-size:16px">🗑️</button></span></div></div>`).join('')||`<div class="text-slate-400 text-sm p-2">No hay pendientes cargados.</div>`;
 }
 function comprasChecks(){return [...document.querySelectorAll('#comprasDash .compra-check')]}
 function actualizarComprasSeleccionadas(){
@@ -5066,7 +5082,7 @@ async function editarModeloArmado(id){
  abrirModal(m?'✏️ Editar modelo':'➕ Nuevo modelo',`<div class="space-y-3">
   <div><label class="small text-slate-500">Nombre del modelo</label><input id="maNombre" class="border p-2 rounded w-full" value="${m?esc(m.nombre):''}" placeholder="Ej: Rondinella R28"></div>
   <div class="grid grid-cols-2 gap-2"><div><label class="small text-slate-500">Precio de venta</label><input id="maPrecio" type="number" min="0" oninput="maResumen()" class="border p-2 rounded w-full" value="${m&&m.precioVenta?m.precioVenta:''}"></div><div><label class="small text-slate-500">Armado (mano de obra)</label><input id="maMano" type="number" min="0" oninput="maResumen()" class="border p-2 rounded w-full" value="${m&&m.manoObra?m.manoObra:''}"></div></div>
-  <div id="maResumen" class="bg-slate-50 border rounded-lg p-2 text-sm shadow" style="position:sticky;top:0;z-index:20"></div>
+  <div id="maResumen" class="ma-resumen"></div>
   <div class="small text-slate-500">Partes: cargá el costo manual (por unidad) o vinculá un producto del catálogo. La cantidad multiplica. Sin costo ni vínculo, la parte no suma.</div>
   <div id="maPartes" class="space-y-2"></div>
   <div class="flex gap-2 flex-wrap"><button type="button" onclick="maAgregar()" class="bg-slate-700 text-white px-3 py-2 rounded text-sm">➕ Parte</button></div>
@@ -5081,12 +5097,12 @@ function maRenderPartes(){
   const x=p.productoId?CAT.porId.get(String(p.productoId)):null;
   const vinc=p.productoId
    ?(x&&x.activo?`<div class="small">🔗 ${esc(x.producto)} · ${esc(x.proveedor)} · ${money(x.costo)} <button type="button" class="text-rose-600" title="Quitar vínculo" onclick="maDesvincular(${i})">✖</button></div>`:`<div class="small text-rose-600">⚠️ Ese producto ya no figura en el catálogo <button type="button" class="text-rose-600" title="Quitar vínculo" onclick="maDesvincular(${i})">✖</button></div>`)
-   :`<input class="border p-1 rounded w-full text-sm" placeholder="🔎 Buscar producto en el catálogo (opcional)" oninput="maBuscar(${i},this.value)"><div id="maRes${i}" class="text-sm"></div>`;
-  return `<div class="border rounded-lg p-2"><div class="flex gap-2 items-center"><input class="border p-1 rounded flex-1" placeholder="Parte (ej: Cubiertas)" value="${esc(p.parte)}" oninput="MA.partes[${i}].parte=this.value"><input type="number" min="1" class="border p-1 rounded w-16 text-center" title="Cantidad" value="${p.cantidad||1}" oninput="MA.partes[${i}].cantidad=Math.max(1,Number(this.value)||1);maResumen();maSub(${i})"><button type="button" class="text-rose-600" title="Quitar parte" onclick="maQuitar(${i})">🗑</button></div><div class="mt-1 flex gap-2 items-center"><input type="number" min="0" step="any" class="border p-1 rounded w-28 text-sm" title="Costo manual por unidad (si lo completás, pisa al del catálogo)" placeholder="${x&&x.activo?'Cat. '+money(x.costo):'Costo c/u'}" value="${p.costoManual!==null&&p.costoManual!==undefined?p.costoManual:''}" oninput="MA.partes[${i}].costoManual=armadoNumONull(this.value);maResumen();maSub(${i})"><span id="maSub${i}" class="small text-slate-500"></span></div><div class="mt-1">${vinc}</div></div>`;
+   :`<input class="border p-1 rounded w-full text-sm" placeholder="🔎 Buscar en el catálogo (opcional)" oninput="maBuscar(${i},this.value)"><div id="maRes${i}" class="text-sm"></div>`;
+  return `<div class="ma-fila"><div class="ma-l1"><input placeholder="Parte (ej: Cubiertas)" value="${esc(p.parte)}" oninput="MA.partes[${i}].parte=this.value"><button type="button" class="ma-del" title="Quitar parte" onclick="maQuitar(${i})">🗑</button></div><div class="ma-l2"><label>Cant.<input type="number" min="1" inputmode="numeric" title="Cantidad" value="${p.cantidad||1}" oninput="MA.partes[${i}].cantidad=Math.max(1,Number(this.value)||1);maResumen();maSub(${i})"></label><label>Costo manual c/u<input type="number" min="0" step="any" inputmode="decimal" placeholder="$ (opcional)" title="Si lo completás, pisa al del catálogo" value="${p.costoManual!==null&&p.costoManual!==undefined?p.costoManual:''}" oninput="MA.partes[${i}].costoManual=armadoNumONull(this.value);maResumen();maSub(${i})"></label></div><div id="maSub${i}" class="ma-sub"></div><div class="ma-l3">${vinc}</div></div>`;
  }).join('')||'<div class="small text-slate-400">Agregá las partes del modelo.</div>';
  MA.partes.forEach((_,i)=>maSub(i));
 }
-function maSub(i){const el=document.getElementById('maSub'+i);if(!el||!MA||!MA.partes[i])return;const c=armadoCostoVivo(MA.partes[i]);el.innerHTML=c===null?'<span class="text-amber-600">sin costo</span>':'Línea: <b>'+money(c)+'</b>'+(armadoNumONull(MA.partes[i].costoManual)!==null?' (manual)':'')}
+function maSub(i){const el=document.getElementById('maSub'+i);if(!el||!MA||!MA.partes[i])return;const p=MA.partes[i],c=armadoCostoVivo(p),x=p.productoId?CAT.porId.get(String(p.productoId)):null,man=armadoNumONull(p.costoManual)!==null;el.innerHTML=(x&&x.activo?'Catálogo '+money(x.costo)+' · ':'')+(c===null?'<span class="text-amber-600">sin costo</span>':'Línea: <b>'+money(c)+'</b>'+(man?' (manual)':''))}
 function maAgregar(){MA.partes.push({parte:'',productoId:null,cantidad:1,costoManual:null});maRenderPartes();maResumen()}
 function maAgregarVarias(){
  const t=document.getElementById('maVarias');if(!t)return;
@@ -5112,7 +5128,7 @@ function maElegir(i,id){
 function maResumen(){
  const el=document.getElementById('maResumen');if(!el||!MA)return;
  const r=armadoResumen(MA.partes,document.getElementById('maPrecio')?.value,document.getElementById('maMano')?.value);
- el.innerHTML=`<div class="grid grid-cols-3 gap-x-3 gap-y-1"><div class="small text-slate-500">Repuestos<br><b class="text-sm">${money(r.rep)}</b></div><div class="small text-slate-500">Armado<br><b class="text-sm">${money(r.mo)}</b></div><div class="small text-slate-500">Costo total<br><b class="text-sm">${money(r.total)}</b></div><div class="small text-slate-500">Precio venta<br><b class="text-sm">${r.pv>0?money(r.pv):'—'}</b></div><div class="small text-slate-500 col-span-2">Ganancia · margen<br>${armadoMargenHTML(r)}</div></div>${r.sin?`<div class="small text-amber-600 mt-1">${r.sin} parte(s) sin costo: no suman.</div>`:''}`;
+ el.innerHTML=`<div class="ma-res-grid"><div><span>Repuestos</span><b>${money(r.rep)}</b></div><div><span>Armado</span><b>${money(r.mo)}</b></div><div><span>Costo total</span><b>${money(r.total)}</b></div><div><span>Precio venta</span><b>${r.pv>0?money(r.pv):'—'}</b></div><div class="ma-gan"><span>Ganancia · margen</span>${armadoMargenHTML(r)}</div></div>${r.sin?`<div class="small text-amber-600" style="margin-top:2px">${r.sin} parte(s) sin costo: no suman.</div>`:''}`;
 }
 async function maGuardar(){
  const nombre=document.getElementById('maNombre').value.trim();
