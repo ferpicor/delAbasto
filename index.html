@@ -210,8 +210,7 @@ function aplicarAccesoDirectoMovil(){
    showSection('ventas');
    setTimeout(()=>{const b=[...document.querySelectorAll('#ventas button')].find(x=>/nueva venta/i.test(x.textContent||''));if(b)b.click()},250);
   }else if(acceso==='compras'||acceso==='lista-compras'){
-   showSection('inicio');
-   setTimeout(()=>document.getElementById('comprasChecklistPanel')?.scrollIntoView({behavior:'smooth',block:'start'}),250);
+   irAOperativo('compras');
   }
  };
  setTimeout(abrir,700);
@@ -976,6 +975,7 @@ html body .item-operativo .small{color:var(--acc-tx)}
   <nav class="flex flex-wrap gap-2">
    <button class="tab px-3 py-2 rounded bg-blue-600" onclick="tab('dashboard')" id="t-dashboard">🏠 Inicio</button>
    <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('taller')" id="t-taller">🛠️ Taller</button>
+   <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('operativo')" id="t-operativo">📌 Operativo <span id="operBadge" class="oper-badge hidden"></span></button>
    <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('ventas')" id="t-ventas">🛒 Ventas</button>
    <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('caja')" id="t-caja">💰 Caja</button>
    <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('crm')" id="t-crm">👥 CRM</button>
@@ -1006,13 +1006,30 @@ html body .item-operativo .small{color:var(--acc-tx)}
   <div class="card p-4"><h3 class="font-semibold mb-3">⚠️ Alertas</h3><div id="alertas" class="space-y-2 text-sm"></div></div>
   <div class="card p-4 lg:col-span-2"><h3 class="font-semibold mb-3">📈 Evolución de caja — últimos 14 días</h3><div class="h-64"><canvas id="chartDashboard"></canvas></div></div>
  </div>
- <div class="grid lg:grid-cols-2 gap-4">
-  <div class="card p-5 lista-operativa-panel">
+ <div class="card p-4">
+  <div class="flex justify-between items-center mb-3"><h3 class="font-semibold text-lg">📌 Operativo</h3><button type="button" onclick="irAOperativo()" class="small text-blue-600 font-semibold">Abrir módulo →</button></div>
+  <div id="operResumenDash" class="oper-tiles"></div>
+ </div>
+ <div class="grid lg:grid-cols-2 gap-4"><div id="recordatoriosServicePanelDash" class="card p-5 recordatorios-panel-destacado"><div class="flex justify-between items-center mb-4"><div><h3 class="font-semibold text-lg">🚲 Recordatorios de service</h3><p class="small mt-1">Se crean automáticamente al vender una bicicleta.</p></div></div><div id="recordatoriosServiceDash" class="space-y-3"></div></div><div id="recordatoriosPanelDash" class="card p-5 recordatorios-panel-destacado"><div class="flex justify-between items-center mb-4"><div><h3 class="font-semibold text-lg">🔔 Recordatorios personales</h3><p class="small mt-1">Tareas y recordatorios cargados manualmente.</p></div><button onclick="abrirRecordatorio()" class="bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm">➕ Recordatorio</button></div><div id="recordatoriosDash" class="space-y-3"></div></div></div>
+</section>
+
+<section id="operativo" class="hidden space-y-5">
+ <div class="card p-4">
+  <h2 class="text-2xl font-bold">📌 Operativo</h2>
+  <p class="text-sm text-slate-500">Pendientes, lo que hay que comprar y las bicis a armar, conectados entre sí.</p>
+  <div id="operTabs" class="oper-tabs mt-3">
+   <button type="button" data-s="pendientes" onclick="operSolapa('pendientes')">📌 Pendientes <b id="operN-pendientes">0</b></button>
+   <button type="button" data-s="compras" onclick="operSolapa('compras')">🛒 Para comprar <b id="operN-compras">0</b></button>
+   <button type="button" data-s="armar" onclick="operSolapa('armar')">🚲 Bicis a armar <b id="operN-armar">0</b></button>
+  </div>
+ </div>
+ <div class="oper-paneles">
+  <div id="operP-pendientes" class="card p-5 lista-operativa-panel">
     <div class="flex justify-between items-center mb-3"><div><h3 class="font-semibold text-lg">📌 Pendientes</h3><p class="small mt-1">Temas importantes que quedan por resolver.</p></div><button onclick="nuevoItemOperativo('pendiente')" class="bg-blue-600 px-3 py-2 rounded-lg text-sm">➕ Agregar</button></div>
     <div id="pendientesDash" class="space-y-2"></div>
   </div>
-  <div id="comprasChecklistPanel" class="card p-5 lista-operativa-panel">
-    <div class="flex justify-between items-start gap-3 mb-3"><div><h3 class="font-semibold text-lg">🛒 Compras</h3><p class="small mt-1">Repuestos · Insumos · Faltantes</p></div><button onclick="nuevoItemOperativo('compra')" class="bg-emerald-600 px-3 py-2 rounded-lg text-sm shrink-0">＋ Agregar</button></div>
+  <div id="comprasChecklistPanel" class="card p-5 lista-operativa-panel operP-compras">
+    <div class="flex justify-between items-start gap-3 mb-3"><div><h3 class="font-semibold text-lg">🛒 Para comprar</h3><p class="small mt-1">Repuestos · Insumos · Faltantes (los de una bici se conectan con su armado)</p></div><button onclick="nuevoItemOperativo('compra')" class="bg-emerald-600 px-3 py-2 rounded-lg text-sm shrink-0">＋ Agregar</button></div>
     <div id="comprasDash" class="compras-checklist"></div>
     <div class="compras-checklist-footer mt-3 pt-3 flex justify-between items-center gap-2">
       <label class="flex items-center gap-2 text-sm cursor-pointer"><input id="comprasSelectTodo" type="checkbox" onchange="seleccionarTodasCompras(this.checked)"> Seleccionar todo</label>
@@ -1020,11 +1037,10 @@ html body .item-operativo .small{color:var(--acc-tx)}
     </div>
   </div>
  </div>
- <div class="card p-5 lista-operativa-panel">
+ <div id="operP-armar" class="card p-5 lista-operativa-panel">
    <div class="flex justify-between items-start gap-3 mb-3"><div><h3 class="font-semibold text-lg">🚲 Bicis a armar</h3><p class="small mt-1">Armados pendientes de entrega, con su checklist de partes.</p></div><div class="flex gap-2 shrink-0"><button onclick="abrirGestionModelosArmado()" class="bg-slate-700 text-white px-3 py-2 rounded-lg text-sm" title="Crear o editar la lista de partes de cada modelo">⚙️ Modelos</button><button onclick="nuevoArmado()" class="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm">➕ Agregar</button></div></div>
    <div id="armadosDash" class="space-y-2"></div>
  </div>
- <div class="grid lg:grid-cols-2 gap-4"><div id="recordatoriosServicePanelDash" class="card p-5 recordatorios-panel-destacado"><div class="flex justify-between items-center mb-4"><div><h3 class="font-semibold text-lg">🚲 Recordatorios de service</h3><p class="small mt-1">Se crean automáticamente al vender una bicicleta.</p></div></div><div id="recordatoriosServiceDash" class="space-y-3"></div></div><div id="recordatoriosPanelDash" class="card p-5 recordatorios-panel-destacado"><div class="flex justify-between items-center mb-4"><div><h3 class="font-semibold text-lg">🔔 Recordatorios personales</h3><p class="small mt-1">Tareas y recordatorios cargados manualmente.</p></div><button onclick="abrirRecordatorio()" class="bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm">➕ Recordatorio</button></div><div id="recordatoriosDash" class="space-y-3"></div></div></div>
 </section>
 
 <section id="taller" class="hidden space-y-5">
@@ -1221,9 +1237,25 @@ html body .item-operativo .small{color:var(--acc-tx)}
 #ppTabla .cat-badge{margin-top:0}
 .cat-comp-tabla td,.cat-comp-tabla th{padding:6px 8px;border-bottom:1px solid var(--line-2);font-size:.85rem}
 .cat-comp-mejor{background:var(--emerald-bg)}
-#comprasDash .compra-check-row{grid-template-columns:28px 1fr 36px}
-@media (max-width:700px){#comprasDash .compra-check-row{grid-template-columns:34px 1fr 40px}}
+#comprasDash .compra-check-row{grid-template-columns:28px 1fr auto}
+@media (max-width:700px){#comprasDash .compra-check-row{grid-template-columns:34px 1fr auto}}
 
+@keyframes filaHallada{0%,70%{background:rgba(56,189,248,.28);box-shadow:inset 4px 0 0 #38bdf8}100%{background:transparent;box-shadow:none}}
+tr.fila-hallada td{animation:filaHallada 3.2s ease-out}
+/* v8: módulo Operativo */
+.oper-tabs{display:flex;gap:8px;flex-wrap:wrap}
+.oper-tabs button{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;border:1px solid var(--line-2);background:transparent;color:var(--tx-2);font-weight:600}
+.oper-tabs button b{background:var(--raise);color:var(--tx);border-radius:999px;padding:0 8px;font-size:12px;min-width:22px;text-align:center}
+.oper-tabs button.on{border-color:var(--cyan-tx);color:var(--cyan-tx);background:var(--cyan-bg)}
+.oper-paneles{display:block}
+.oper-badge{margin-left:auto;background:var(--cyan-tx);color:#041016;border-radius:999px;font-size:11px;font-weight:700;padding:1px 7px;min-width:20px;text-align:center}
+.oper-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.oper-tile{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 12px;border-radius:12px;border:1px solid var(--line-2);background:var(--raise);text-align:left}
+.oper-tile b{font-size:24px;line-height:1.1;color:var(--tx-strong)}
+.oper-tile span{font-size:13px;color:var(--tx-2)}
+.oper-tile small{font-size:11px;color:var(--tx-3)}
+.oper-tile:hover{border-color:var(--cyan-tx)}
+.oper-link{background:transparent;border:1px solid var(--line-2);border-radius:8px;padding:2px 8px;font-size:12px;color:var(--cyan-tx);white-space:nowrap}
 /* v8: Editar modelo — filas ordenadas (también en celular) y resumen fijo opaco */
 .ma-resumen{position:sticky;top:-1px;z-index:30;background:var(--raise,#f1f5f9);border:1px solid var(--line-2,#d1d5db);border-radius:10px;padding:8px 10px;box-shadow:0 6px 14px rgba(0,0,0,.35)}
 .ma-res-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 10px;font-size:12px}
@@ -1742,11 +1774,12 @@ async function dbDelete(tabla,id){
 
 /* v7: se dibuja solo la sección visible (antes cada cambio redibujaba todo, gráficos incluidos). */
 const RENDER_SECCION={
- dashboard:()=>dashboard(), taller:()=>renderOT(), ventas:()=>renderVentas(), caja:()=>{renderCaja();renderArqueos()},
+ dashboard:()=>dashboard(), operativo:()=>renderOperativo(), taller:()=>renderOT(), ventas:()=>renderVentas(), caja:()=>{renderCaja();renderArqueos()},
  crm:()=>renderCRM(), stock:()=>renderStock(), compras:()=>renderCompras(), reportes:()=>reportes(), configuracion:()=>{}
 };
 function renderActivo(){
  try{actualizarSelectConceptos();actualizarSelectProveedores();actualizarSelectProductos();actualizarCatalogosMarcaModelo();actualizarSelectsStockMovimientos();actualizarSelectArmadoVenta();servicePorDefecto()}catch(e){console.error(e)}
+ try{operActualizarBadge()}catch(e){}
  try{(RENDER_SECCION[tabActual]||RENDER_SECCION.dashboard)()}catch(e){console.error('Error al dibujar',tabActual,e)}
 }
 function refresh(){renderActivo()}
@@ -3846,7 +3879,7 @@ function renderVentas(){
   const {cobrado,saldo}=saldoVenta(v);
   const aCobrar=v.montoCobrar==null?saldo:Math.min(saldo,Math.max(0,Number(v.montoCobrar)||0));
   const marcaFactura=f?.cae?`<br><span class="small text-emerald-700 font-semibold">✓ ${nombreCbte(f.tipo)} ${String(f.ptoVta||4).padStart(4,'0')}-${String(f.numero||'').padStart(8,'0')}</span>`:f?'<br><span class="small text-amber-700 font-semibold">🕓 Factura pendiente</span>':'';
-  return `<tr class="border-b"><td class="p-2 small">${fecha(v.fecha)}</td><td class="p-2">${esc(v.cliente)}${v.documento?`<br><span class="small font-mono text-slate-500">${esc(v.documento)}</span>`:''}</td><td class="p-2">${esc(descripcionVenta(v))}${v.nroSerie?`<br><span class="small font-mono text-slate-500">Serie: ${esc(v.nroSerie)}</span>`:''}${marcaFactura}</td><td class="p-2">${v.cantidad}</td><td class="p-2 font-semibold">${money(v.total)}</td><td class="p-2 text-emerald-700">${money(sena)}</td><td class="p-2">${money(cobrado)}</td><td class="p-2 font-semibold ${saldo>0?'text-amber-700':'text-emerald-700'}">${money(saldo)}</td><td class="p-2">${saldo>0?`<input type="number" min="0" max="${saldo}" class="border rounded p-1 w-24" value="${aCobrar}" onchange="setMontoCobrarVenta('${v.id}',this.value)">`:'<span class="text-emerald-700 font-semibold">Pagada</span>'}</td><td class="p-2">${money(v.costo)}</td><td class="p-2 text-emerald-600 font-semibold">${money(v.ganancia)}</td><td class="p-2">${mg.toFixed(1)}%</td><td class="p-2 acc-cell"><button onclick="editarVenta('${v.id}')" class="bg-blue-600 text-white btn-ic" title="Editar">✏️</button><button onclick="imprimirFichaVenta('${v.id}')" class="bg-slate-800 text-white btn-ic" title="Imprimir ficha de venta">🖨️</button>${saldo>0?`<button onclick="cobrarVenta('${v.id}')" class="bg-emerald-600 text-white btn-ic" title="Cobrar">💵</button>`:''}<button onclick="fichaClienteVenta('${v.id}')" class="bg-indigo-600 text-white btn-ic" title="Ficha del cliente">👤</button><button onclick="whatsappVenta('${v.id}')" class="bg-emerald-600 text-white btn-ic" title="WhatsApp">💬</button>${saldo<=0&&normalizarTelefono(v.telefono||clienteDeVenta(v)?.telefono)?botonResena('venta',v):''}${puede('emitir')?`<button onclick="facturarYEnviar('${v.id}')" class="${f?'bg-slate-700':'bg-violet-700'} text-white btn-ic" title="${f?.cae?'Factura emitida':f?'Factura pendiente':'Facturar'}">${f?.cae?'✅':f?'🕓':'🧾'}</button>`:''}<button type="button" data-delete-table="ventas" data-delete-id="${v.id}" class="bg-rose-50 text-rose-700 btn-ic delete-btn" title="Eliminar">🗑️</button></td></tr>`
+  return `<tr class="border-b" data-vid="${esc(String(v.id))}"><td class="p-2 small">${fecha(v.fecha)}</td><td class="p-2">${esc(v.cliente)}${v.documento?`<br><span class="small font-mono text-slate-500">${esc(v.documento)}</span>`:''}</td><td class="p-2">${esc(descripcionVenta(v))}${v.nroSerie?`<br><span class="small font-mono text-slate-500">Serie: ${esc(v.nroSerie)}</span>`:''}${marcaFactura}</td><td class="p-2">${v.cantidad}</td><td class="p-2 font-semibold">${money(v.total)}</td><td class="p-2 text-emerald-700">${money(sena)}</td><td class="p-2">${money(cobrado)}</td><td class="p-2 font-semibold ${saldo>0?'text-amber-700':'text-emerald-700'}">${money(saldo)}</td><td class="p-2">${saldo>0?`<input type="number" min="0" max="${saldo}" class="border rounded p-1 w-24" value="${aCobrar}" onchange="setMontoCobrarVenta('${v.id}',this.value)">`:'<span class="text-emerald-700 font-semibold">Pagada</span>'}</td><td class="p-2">${money(v.costo)}</td><td class="p-2 text-emerald-600 font-semibold">${money(v.ganancia)}</td><td class="p-2">${mg.toFixed(1)}%</td><td class="p-2 acc-cell"><button onclick="editarVenta('${v.id}')" class="bg-blue-600 text-white btn-ic" title="Editar">✏️</button><button onclick="imprimirFichaVenta('${v.id}')" class="bg-slate-800 text-white btn-ic" title="Imprimir ficha de venta">🖨️</button>${saldo>0?`<button onclick="cobrarVenta('${v.id}')" class="bg-emerald-600 text-white btn-ic" title="Cobrar">💵</button>`:''}<button onclick="fichaClienteVenta('${v.id}')" class="bg-indigo-600 text-white btn-ic" title="Ficha del cliente">👤</button><button onclick="whatsappVenta('${v.id}')" class="bg-emerald-600 text-white btn-ic" title="WhatsApp">💬</button>${saldo<=0&&normalizarTelefono(v.telefono||clienteDeVenta(v)?.telefono)?botonResena('venta',v):''}${puede('emitir')?`<button onclick="facturarYEnviar('${v.id}')" class="${f?'bg-slate-700':'bg-violet-700'} text-white btn-ic" title="${f?.cae?'Factura emitida':f?'Factura pendiente':'Facturar'}">${f?.cae?'✅':f?'🕓':'🧾'}</button>`:''}<button type="button" data-delete-table="ventas" data-delete-id="${v.id}" class="bg-rose-50 text-rose-700 btn-ic delete-btn" title="Eliminar">🗑️</button></td></tr>`
  }).join('')||'<tr><td colspan="13" class="p-4 text-center">Sin ventas en este período.</td></tr>';window.novaVentasBar&&novaVentasBar()
 }
 async function setMontoCobrarVenta(i,valor){
@@ -4979,9 +5012,9 @@ function renderCharts(ms,flujo,conceptos){
 
 const LISTA_PENDIENTE='__PENDIENTE__', LISTA_COMPRA='__COMPRA__';
 function esItemOperativo(r){return r?.cliente===LISTA_PENDIENTE||r?.cliente===LISTA_COMPRA}
-function nuevoItemOperativo(tipo){
+function nuevoItemOperativo(tipo,prefill=''){
  const titulo=tipo==='compra'?'Agregar compra':'Agregar pendiente';
- abrirModal((tipo==='compra'?'🛒 ':'📌 ')+titulo,`<div class="space-y-3"><div><label class="small">Detalle</label><textarea id="itemOperativoTexto" rows="3" class="border p-2 rounded w-full" placeholder="${tipo==='compra'?'Ej: cámaras 29, cables de freno...':'Ej: llamar proveedor, revisar reclamo...'}"></textarea></div><button onclick="guardarItemOperativo('${tipo}')" class="bg-blue-600 px-4 py-2 rounded w-full font-semibold">Guardar</button></div>`);
+ abrirModal((tipo==='compra'?'🛒 ':'📌 ')+titulo,`<div class="space-y-3"><div><label class="small">Detalle</label><textarea id="itemOperativoTexto" rows="3" class="border p-2 rounded w-full" placeholder="${tipo==='compra'?'Ej: cámaras 29, cables de freno...':'Ej: llamar proveedor, revisar reclamo...'}">${esc(prefill)}</textarea></div><button onclick="guardarItemOperativo('${tipo}')" class="bg-blue-600 px-4 py-2 rounded w-full font-semibold">Guardar</button></div>`);
 }
 async function guardarItemOperativo(tipo){
  const texto=document.getElementById('itemOperativoTexto')?.value.trim();if(!texto)return alert('Escribí el detalle.');
@@ -5000,14 +5033,84 @@ async function eliminarItemOperativo(id){
  if(!confirm('¿Eliminar este item de la lista?'))return;
  try{await dbDelete('recordatorios',id);cerrarModal();await cargarSupabase(true)}catch(e){alert('No se pudo eliminar: '+e.message)}
 }
+/* v8: conexiones entre Pendientes · Para comprar · Bicis a armar */
+function textoCompraParte(a,p){return `${p.parte}${p.cantidad>1?' x'+p.cantidad:''} — para ${a.cliente} (${a.modeloNombre})`}
+function armadoCompraDeParte(a,p){const t=textoCompraParte(a,p);return (state.recordatorios||[]).find(r=>r.cliente===LISTA_COMPRA&&!r.hecho&&r.texto===t)||null}
+function armadoDeCompra(r){
+ const m=String(r?.texto||'').match(/^(.*?)\s+—\s+para\s+(.+)\s+\((.+)\)\s*$/);if(!m)return null;
+ const base=m[1].replace(/\s+x\d+$/,'');
+ const a=(state.armados||[]).find(x=>!x.entregado&&x.cliente===m[2]&&x.modeloNombre===m[3]);if(!a)return null;
+ const idx=a.partesEstado.findIndex(p=>!p.tengo&&p.parte===base);
+ return {a,idx};
+}
+function normTxt(x){return String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim()}
+function armadoDePendiente(texto){
+ const t=normTxt(texto);let mejor=null;
+ (state.armados||[]).filter(a=>!a.entregado).forEach(a=>{const c=normTxt(a.cliente);if(c.length>=3&&(t===c||t.startsWith(c+' ')||t.startsWith(c+':')||t.startsWith(c+','))&&(!mejor||c.length>normTxt(mejor.cliente).length))mejor=a});
+ return mejor;
+}
+async function compraLlego(id){
+ const r=state.recordatorios.find(x=>String(x.id)===String(id));if(!r)return;
+ const l=armadoDeCompra(r);
+ if(!l||l.idx<0)return alert('No encontré la parte en el armado. Si ya está marcada como "Tengo", podés borrar este item.');
+ if(!confirm(`¿Llegó "${l.a.partesEstado[l.idx].parte}"? Se marca como "Tengo" en la bici de ${l.a.cliente} y sale de la lista de compras.`))return;
+ try{
+  const partes=l.a.partesEstado.map((p,i)=>i===l.idx?{...p,tengo:true,enCompras:false,costo:(p.costo!==null?p.costo:armadoCostoVivo(p))}:p);
+  await dbUpdate('armados',l.a.id,{partes_estado:partes});
+  await dbDelete('recordatorios',r.id);
+  await cargarSupabase(true,['armados','recordatorios']);
+ }catch(e){alert('No se pudo actualizar: '+e.message)}
+}
 function renderListaOperativa(tipo,contenedorId){
  const tag=tipo==='compra'?LISTA_COMPRA:LISTA_PENDIENTE, el=document.getElementById(contenedorId);if(!el)return;
  const items=state.recordatorios.filter(r=>r.cliente===tag).slice().sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')));
  if(tipo==='compra'){
-  el.innerHTML=items.map(r=>`<div class="compra-check-row"><input type="checkbox" class="compra-check" data-id="${r.id}" onchange="actualizarComprasSeleccionadas()"><button type="button" onclick="editarItemOperativo('${r.id}')" class="compra-check-text" title="Modificar o eliminar"><span class="compra-item-contenido">${esc(r.texto)}</span><span class="compra-item-fecha">📅 ${esc(r.fecha||'Sin fecha')}</span></button><button type="button" class="compra-buscar" title="Buscar en el catálogo de proveedores" onclick="ppBuscarEnCatalogo(${ppJs(r.texto)})">🔍</button></div>`).join('')||`<div class="text-slate-400 text-sm p-2">No hay compras pendientes.</div>`;
+  el.innerHTML=items.map(r=>{
+   const l=armadoDeCompra(r);
+   const extra=l?`<span class="flex gap-1 items-center">${l.idx>=0?`<button type="button" class="oper-link" title="Llegó: marcar como Tengo en el armado" onclick="compraLlego('${r.id}')">✅ Llegó</button>`:''}<button type="button" class="oper-link" title="Ver la bici a armar" onclick="abrirFichaArmado('${l.a.id}')">🚲</button></span>`:'';
+   return `<div class="compra-check-row"><input type="checkbox" class="compra-check" data-id="${r.id}" onchange="actualizarComprasSeleccionadas()"><button type="button" onclick="editarItemOperativo('${r.id}')" class="compra-check-text" title="Modificar o eliminar"><span class="compra-item-contenido">${esc(r.texto)}</span><span class="compra-item-fecha">📅 ${esc(r.fecha||'Sin fecha')}</span></button><span class="flex gap-1 items-center">${extra}<button type="button" class="compra-buscar" title="Buscar en el catálogo de proveedores" onclick="ppBuscarEnCatalogo(${ppJs(r.texto)})">🔍</button></span></div>`;
+  }).join('')||`<div class="text-slate-400 text-sm p-2">No hay compras pendientes.</div>`;
   actualizarComprasSeleccionadas(); return;
  }
- el.innerHTML=items.map(r=>`<div class="item-operativo w-full text-left border rounded-lg p-3"><div class="flex justify-between gap-3 items-center"><span class="flex-1 cursor-pointer" onclick="editarItemOperativo('${r.id}')">${esc(r.texto)}</span><span class="flex gap-2 shrink-0 items-center"><button type="button" onclick="editarItemOperativo('${r.id}')" class="small" title="Editar">✏️ Editar</button><button type="button" onclick="eliminarItemOperativo('${r.id}')" class="small" title="Eliminar" style="color:#fb7185;font-size:16px">🗑️</button></span></div></div>`).join('')||`<div class="text-slate-400 text-sm p-2">No hay pendientes cargados.</div>`;
+ el.innerHTML=items.map(r=>{
+  const a=armadoDePendiente(r.texto);
+  return `<div class="item-operativo w-full text-left border rounded-lg p-3"><div class="flex justify-between gap-3 items-center"><span class="flex-1 cursor-pointer" onclick="editarItemOperativo('${r.id}')">${esc(r.texto)}</span><span class="flex gap-2 shrink-0 items-center">${a?`<button type="button" class="oper-link" title="Ver la bici a armar de ${esc(a.cliente)}" onclick="abrirFichaArmado('${a.id}')">🚲 Armado</button>`:''}<button type="button" onclick="editarItemOperativo('${r.id}')" class="small" title="Editar">✏️ Editar</button><button type="button" onclick="eliminarItemOperativo('${r.id}')" class="small" title="Eliminar" style="color:#fb7185;font-size:16px">🗑️</button></span></div></div>`;
+ }).join('')||`<div class="text-slate-400 text-sm p-2">No hay pendientes cargados.</div>`;
+}
+/* v8: módulo Operativo (solapas) + resumen en Inicio */
+const OPER_KEY='abasto_oper_solapa';
+let operActual='pendientes';
+try{const g=localStorage.getItem(OPER_KEY);if(['pendientes','compras','armar'].includes(g))operActual=g}catch(e){}
+function operConteos(){
+ const rs=state.recordatorios||[];
+ const pend=rs.filter(r=>r.cliente===LISTA_PENDIENTE).length,comp=rs.filter(r=>r.cliente===LISTA_COMPRA).length;
+ const armados=(state.armados||[]).filter(a=>!a.entregado);
+ const completos=armados.filter(a=>a.partesEstado.length>0&&a.partesEstado.every(p=>p.tengo)).length;
+ return {pend,comp,armar:armados.length,completos};
+}
+function operActualizarBadge(){
+ const b=document.getElementById('operBadge');if(!b||typeof state==='undefined')return;
+ const c=operConteos(),n=c.pend+c.comp+c.armar;b.textContent=n;b.classList.toggle('hidden',n===0);
+}
+function operSolapa(s){
+ if(!['pendientes','compras','armar'].includes(s))s='pendientes';
+ operActual=s;try{localStorage.setItem(OPER_KEY,s)}catch(e){}
+ renderOperativo();
+}
+function irAOperativo(s){if(s&&['pendientes','compras','armar'].includes(s)){operActual=s;try{localStorage.setItem(OPER_KEY,s)}catch(e){}}tab('operativo')}
+function renderOperativo(){
+ renderListaOperativa('pendiente','pendientesDash');renderListaOperativa('compra','comprasDash');renderArmadosDash();
+ const c=operConteos();
+ document.getElementById('operN-pendientes').textContent=c.pend;document.getElementById('operN-compras').textContent=c.comp;document.getElementById('operN-armar').textContent=c.armar;
+ [['pendientes','operP-pendientes'],['compras','comprasChecklistPanel'],['armar','operP-armar']].forEach(([k,id])=>{const el=document.getElementById(id);if(el)el.classList.toggle('hidden',k!==operActual)});
+ document.querySelectorAll('#operTabs button').forEach(b=>b.classList.toggle('on',b.dataset.s===operActual));
+ operActualizarBadge();
+}
+function renderOperativoResumenDash(){
+ const el=document.getElementById('operResumenDash');if(!el)return;
+ const c=operConteos();
+ el.innerHTML=`<button type="button" class="oper-tile" onclick="irAOperativo('pendientes')"><b>${c.pend}</b><span>📌 Pendientes</span></button><button type="button" class="oper-tile" onclick="irAOperativo('compras')"><b>${c.comp}</b><span>🛒 Para comprar</span></button><button type="button" class="oper-tile" onclick="irAOperativo('armar')"><b>${c.armar}</b><span>🚲 Bicis a armar</span>${c.completos?`<small>✅ ${c.completos} con todas las partes</small>`:''}</button>`;
+ operActualizarBadge();
 }
 function comprasChecks(){return [...document.querySelectorAll('#comprasDash .compra-check')]}
 function actualizarComprasSeleccionadas(){
@@ -5178,7 +5281,8 @@ function renderArmadosDash(){
   const completo=total>0&&listas===total;
   const r=armadoResumen(a.partesEstado,a.precioVenta,a.manoObra);
   const mg=(a.precioVenta>0&&r.sin===0&&r.mg!==null)?` · <span class="${r.mg<armadoMargenMin()?'text-rose-600':'text-emerald-600'}">${r.mg.toFixed(0)}%</span>`:'';
-  return `<button type="button" onclick="abrirFichaArmado('${a.id}')" class="item-operativo w-full text-left border rounded-lg p-3"><div class="flex justify-between gap-3 items-center"><span><b>${esc(a.cliente)}</b> — ${esc(a.modeloNombre)}<br><span class="small text-slate-500">🗓 Compró el ${fechaCorta(a.fecha)}</span>${a.notas?`<br><span class="small text-slate-500">${esc(a.notas)}</span>`:''}</span><span class="small shrink-0 ${completo?'text-emerald-600 font-semibold':''}">${completo?'✅ Completo':`${listas}/${total} partes`}${mg}</span></div></button>`;
+  const enC=a.partesEstado.filter(p=>!p.tengo&&armadoCompraDeParte(a,p)).length,faltan=a.partesEstado.filter(p=>!p.tengo).length;
+  return `<button type="button" onclick="abrirFichaArmado('${a.id}')" class="item-operativo w-full text-left border rounded-lg p-3"><div class="flex justify-between gap-3 items-center"><span><b>${esc(a.cliente)}</b> — ${esc(a.modeloNombre)}<br><span class="small text-slate-500">🗓 Compró el ${fechaCorta(a.fecha)}</span>${a.notas?`<br><span class="small text-slate-500">${esc(a.notas)}</span>`:''}</span><span class="small shrink-0 ${completo?'text-emerald-600 font-semibold':''}">${completo?'✅ Completo':`${listas}/${total} partes`}${enC?`<br><span class="text-amber-600">🛒 ${enC} en compras</span>`:(faltan&&!completo?`<br><span class="text-slate-400">${faltan} sin pedir</span>`:'')}${mg}</span></div></button>`;
  }).join('')||'<div class="text-slate-400 text-sm p-2">No hay bicis a armar pendientes.</div>';
 }
 async function abrirFichaArmado(id){
@@ -5186,7 +5290,7 @@ async function abrirFichaArmado(id){
  const a=armadoPorId(id);if(!a)return;
  const filas=a.partesEstado.map((p,i)=>{
   const vivo=armadoCostoVivo(p);
-  return `<div class="border-b py-2 text-sm"><div class="flex justify-between items-center gap-2"><label class="flex items-center gap-2 cursor-pointer min-w-0"><input type="checkbox" ${p.tengo?'checked':''} onchange="toggleParteArmado('${a.id}',${i},this.checked)"> <span class="${p.tengo?'line-through text-slate-400':''}">${esc(p.parte)}${p.cantidad>1?` <span class="small">×${p.cantidad}</span>`:''}</span></label><span class="flex items-center gap-1 shrink-0"><input type="number" min="0" step="0.01" class="border p-1 rounded w-24 text-right text-sm" value="${p.costo===null?'':p.costo}" placeholder="${vivo===null?'costo':vivo}" title="Costo de esta línea. Se congela al marcar Tengo; podés corregirlo." onchange="setCostoParteArmado('${a.id}',${i},this.value)">${p.tengo?'':(p.enCompras?'<span class="small text-amber-600">🛒 En compras</span>':`<button onclick="parteACompras('${a.id}',${i})" class="bg-emerald-50 text-emerald-700 px-2 py-1 rounded text-xs" title="Mandar a Compras">🛒 Falta</button>`)}</span></div></div>`;
+  return `<div class="border-b py-2 text-sm"><div class="flex justify-between items-center gap-2"><label class="flex items-center gap-2 cursor-pointer min-w-0"><input type="checkbox" ${p.tengo?'checked':''} onchange="toggleParteArmado('${a.id}',${i},this.checked)"> <span class="${p.tengo?'line-through text-slate-400':''}">${esc(p.parte)}${p.cantidad>1?` <span class="small">×${p.cantidad}</span>`:''}</span></label><span class="flex items-center gap-1 shrink-0"><input type="number" min="0" step="0.01" class="border p-1 rounded w-24 text-right text-sm" value="${p.costo===null?'':p.costo}" placeholder="${vivo===null?'costo':vivo}" title="Costo de esta línea. Se congela al marcar Tengo; podés corregirlo." onchange="setCostoParteArmado('${a.id}',${i},this.value)">${p.tengo?'':(armadoCompraDeParte(a,p)?`<span class="small text-amber-600">🛒 En compras</span><button onclick="compraLlego('${armadoCompraDeParte(a,p).id}')" class="bg-emerald-50 text-emerald-700 px-2 py-1 rounded text-xs" title="Llegó: marcar Tengo">✅ Llegó</button>`:`<button onclick="parteACompras('${a.id}',${i})" class="bg-emerald-50 text-emerald-700 px-2 py-1 rounded text-xs" title="Mandar a Compras">🛒 Falta</button>`)}</span></div></div>`;
  }).join('');
  const r=armadoResumen(a.partesEstado,a.precioVenta,a.manoObra);
  abrirModal('🚲 '+a.cliente,`<div class="space-y-3">
@@ -5194,6 +5298,8 @@ async function abrirFichaArmado(id){
   <div>${filas}</div>
   <div class="grid grid-cols-2 gap-2"><div><label class="small text-slate-500">Precio de venta</label><input type="number" min="0" class="border p-2 rounded w-full" value="${a.precioVenta||''}" onchange="setCampoArmado('${a.id}','precio_venta',this.value)"></div><div><label class="small text-slate-500">Armado (mano de obra)</label><input type="number" min="0" class="border p-2 rounded w-full" value="${a.manoObra||''}" onchange="setCampoArmado('${a.id}','mano_obra',this.value)"></div></div>
   <div class="bg-slate-50 border rounded-lg p-3 text-sm"><div class="flex justify-between"><span>Repuestos</span><b>${money(r.rep)}</b></div><div class="flex justify-between"><span>Armado</span><b>${money(r.mo)}</b></div><div class="flex justify-between border-t mt-1 pt-1"><span>Costo total</span><b>${money(r.total)}</b></div><div class="flex justify-between"><span>Precio de venta</span><b>${r.pv>0?money(r.pv):'—'}</b></div><div class="flex justify-between"><span>Ganancia</span><span>${armadoMargenHTML(r)}</span></div>${r.sin?`<div class="small text-amber-600 mt-1">${r.sin} línea(s) sin costo: escribilo a mano para que sume.</div>`:''}<div class="small text-slate-500 mt-1">El costo se congela al marcar "Tengo" y no cambia con las listas nuevas.</div></div>
+  ${(()=>{const n=a.partesEstado.filter(p=>!p.tengo&&!armadoCompraDeParte(a,p)).length;return n?`<button onclick="faltantesACompras('${a.id}')" class="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-lg font-semibold w-full">🛒 Mandar los ${n} faltantes a Para comprar</button>`:''})()}
+  <button onclick="nuevoItemOperativo('pendiente',${ppJs(a.cliente+' '+a.modeloNombre+': ')})" class="bg-slate-100 text-slate-700 px-4 py-2 rounded-lg w-full text-sm">📌 Dejar un pendiente de esta bici</button>
   <div class="grid grid-cols-2 gap-2">
    <button onclick="marcarEntregadoArmado('${a.id}')" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold">✅ Marcar entregada</button>
    <button type="button" data-delete-table="armados" data-delete-id="${a.id}" data-after-delete="armados" class="delete-btn bg-rose-50 text-rose-700 px-4 py-2 rounded-lg font-semibold">🗑️ Eliminar</button>
@@ -5225,10 +5331,21 @@ async function parteACompras(armadoId,idx){
  const a=armadoPorId(armadoId);if(!a)return;
  const p=a.partesEstado[idx];if(!p)return;
  try{
-  await dbInsert('recordatorios',{fecha:fechaLocalHoy(),cliente:LISTA_COMPRA,texto:`${p.parte}${p.cantidad>1?' x'+p.cantidad:''} — para ${a.cliente} (${a.modeloNombre})`});
+  await dbInsert('recordatorios',{fecha:fechaLocalHoy(),cliente:LISTA_COMPRA,texto:textoCompraParte(a,p)});
   await dbUpdate('armados',a.id,{partes_estado:a.partesEstado.map((x,i)=>i===idx?{...x,enCompras:true}:x)});
   await cargarSupabase(true,['armados','recordatorios']);abrirFichaArmado(armadoId)
  }catch(e){alert('No se pudo mandar a Compras: '+e.message)}
+}
+async function faltantesACompras(armadoId){
+ const a=armadoPorId(armadoId);if(!a)return;
+ const faltan=a.partesEstado.map((p,i)=>({p,i})).filter(x=>!x.p.tengo&&!armadoCompraDeParte(a,x.p));
+ if(!faltan.length)return;
+ try{
+  for(const x of faltan)await dbInsert('recordatorios',{fecha:fechaLocalHoy(),cliente:LISTA_COMPRA,texto:textoCompraParte(a,x.p)});
+  const idx=new Set(faltan.map(x=>x.i));
+  await dbUpdate('armados',a.id,{partes_estado:a.partesEstado.map((p,i)=>idx.has(i)?{...p,enCompras:true}:p)});
+  await cargarSupabase(true,['armados','recordatorios']);abrirFichaArmado(armadoId)
+ }catch(e){alert('No se pudieron mandar todas: '+e.message)}
 }
 async function marcarEntregadoArmado(id){
  const a=armadoPorId(id);if(!a)return;
@@ -5260,8 +5377,7 @@ function dashboard(){
  if(ultCierre&&Math.abs(ultCierre.diferencia)>=0.01)al.push(`<div class="bg-rose-50 p-2 rounded">💰 Último arqueo con diferencia de ${money(ultCierre.diferencia)}.</div>`);
  if(puede('caja')&&!state.arqueos.some(a=>a.tipo==='apertura'&&isoDate(a.fecha)===hoyK))al.push(`<div class="bg-slate-50 p-2 rounded">🧾 Todavía no se hizo la apertura de caja de hoy. <button onclick="tab('caja');abrirArqueo()" class="text-blue-600 font-semibold">Abrir caja</button></div>`);
  alertas.innerHTML=al.join('')||'<div class="text-slate-400">Sin alertas críticas.</div>';
- renderListaOperativa('pendiente','pendientesDash');renderListaOperativa('compra','comprasDash');
- renderArmadosDash();
+ renderOperativoResumenDash();
  renderRecordatoriosSeparados();
  // v7: el gráfico de 14 días usa todos los movimientos (antes, con "Este mes", los días del mes anterior salían en 0).
  let days={}; for(let i=13;i>=0;i--){let d=new Date();d.setDate(d.getDate()-i);days[isoDate(d)]=0}
@@ -5526,7 +5642,7 @@ window.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>document.getEleme
 
   /* ── 2) Buscador global (Ctrl/Cmd + K) ──────────────────────────── */
   var MODULOS = [
-    ['dashboard','Inicio','home'], ['taller','Taller','wrench'], ['ventas','Ventas','cart'], ['caja','Caja','wallet'],
+    ['dashboard','Inicio','home'], ['operativo','Operativo','pin'], ['taller','Taller','wrench'], ['ventas','Ventas','cart'], ['caja','Caja','wallet'],
     ['crm','CRM','users'], ['stock','Stock','package'], ['compras','Compras','truck'], ['catalogoProveedores','Proveedores y Productos','truck'], ['reportes','Reportes','chart']
   ];
   function ir(t, foco){
@@ -5561,13 +5677,20 @@ window.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>document.getEleme
       push('Órdenes de trabajo', 'wrench', '#' + String(o.id).slice(-6) + ' · ' + o.cliente, [o.bici, o.trabajo, o.estado].filter(Boolean).join(' · '), function(){ ir('taller'); filtrar('buscarOT', o.cliente, 'renderOT') });
     });
     cap((state.ventas || []).filter(function(v){ return match([v.cliente, v.producto, v.marca, v.modelo, v.nroSerie].join(' ')) }), 4).forEach(function(v){
-      push('Ventas', 'cart', v.producto || 'Venta', [v.cliente, money_(v.total)].filter(Boolean).join(' · '), function(){ ir('ventas') });
+      push('Ventas', 'cart', v.producto || 'Venta', [v.cliente, money_(v.total)].filter(Boolean).join(' · '), function(){ ir('ventas'); if (window.novaVentasIrA) novaVentasIrA(v) });
     });
     cap((state.movimientos || []).filter(function(m){ return match([m.concepto, m.descripcion, m.medio, m.cuit].join(' ')) }), 4).forEach(function(m){
       push('Caja', 'wallet', (m.descripcion || m.concepto || 'Movimiento'), [m.tipo, m.concepto, money_(m.monto)].filter(Boolean).join(' · '), function(){ ir('caja'); filtrar('fCaja', m.descripcion || m.concepto || '', 'renderCaja') });
     });
     cap((state.stock || []).filter(function(s){ return match([s.marca, s.modelo, s.nroSerie, s.variante].join(' ')) }), 4).forEach(function(s){
       push('Stock', 'package', [s.marca, s.modelo].filter(Boolean).join(' '), [s.variante, s.nroSerie, s.cantidad + ' en stock'].filter(Boolean).join(' · '), function(){ ir('stock') });
+    });
+    cap((state.armados || []).filter(function(a){ return !a.entregado && match([a.cliente, a.modeloNombre, a.notas].join(' ')) }), 4).forEach(function(a){
+      push('Bicis a armar', 'bike', a.cliente + ' — ' + a.modeloNombre, [a.partesEstado.filter(function(p){return p.tengo}).length + '/' + a.partesEstado.length + ' partes', a.notas].filter(Boolean).join(' · '), function(){ irAOperativo('armar'); abrirFichaArmado(a.id) });
+    });
+    cap((state.recordatorios || []).filter(function(r){ return (r.cliente === LISTA_PENDIENTE || r.cliente === LISTA_COMPRA) && match(r.texto) }), 5).forEach(function(r){
+      var comp = r.cliente === LISTA_COMPRA;
+      push(comp ? 'Para comprar' : 'Pendientes', comp ? 'cart' : 'pin', r.texto, '', function(){ irAOperativo(comp ? 'compras' : 'pendientes') });
     });
     if (typeof CAT !== 'undefined' && CAT.cargado) cap(CAT.productos.filter(function(p){ return p.activo && match([p.producto, p.codigo, p.proveedor, p.marca].join(' ')) }), 5).forEach(function(p){
       push('Catálogo de proveedores', 'truck', p.producto, [p.proveedor, money_(p.costo)].filter(Boolean).join(' · '), function(){ ppBuscarEnCatalogo(p.producto) });
@@ -6021,6 +6144,17 @@ html body .nova-dayrow.on{border-color:rgba(56,189,248,.5);background:rgba(56,18
       var t=$(mod==='ventas'?'tablaVentas':'tablaCaja'); if(t&&t.scrollIntoView) t.closest('.card').scrollIntoView({behavior:'smooth',block:'start'});
     }
   }
+
+  /* Desde el buscador: muestra el día de esa venta, baja hasta su fila y la resalta un momento. */
+  window.novaVentasIrA=function(v){
+    if(!v) return;
+    var k=keyDe(v.fecha); if(k) ir('ventas','fecha',k);
+    setTimeout(function(){
+      var tr=document.querySelector('#tablaVentas tr[data-vid="'+String(v.id).replace(/"/g,'')+'"]'); if(!tr) return;
+      tr.scrollIntoView({behavior:'smooth',block:'center'});
+      tr.classList.add('fila-hallada'); setTimeout(function(){tr.classList.remove('fila-hallada')},3200);
+    },60);
+  };
 
   /* ── Días anteriores ── */
   function grupos(mod){
