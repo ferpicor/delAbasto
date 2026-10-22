@@ -3179,6 +3179,11 @@ async function prepararFacturaCaja(i,emitir=false){
  try{const creada=await dbInsert('facturas',payload);cerrarModal();await cargarSupabase(true);if(emitir&&creada?.id!=null)return emitirFacturaPendienteARCA(creada.id);alert('Factura guardada como PENDIENTE. Todavía no se emitió nada en ARCA.')}catch(e){alert('No se pudo guardar la factura pendiente: '+e.message)}
 }
 
+async function errorRealFuncion(e){
+ // supabase-js oculta el mensaje real de la Edge Function ("non-2xx"); se lee del cuerpo de la respuesta.
+ try{const r=e?.context;if(r&&typeof r.text==='function'){const t=await r.text();try{const j=JSON.parse(t);const m=j.error||j.message||j.detalle||j.mensaje||'';const extra=j.detalle&&j.detalle!==m?' — '+(typeof j.detalle==='string'?j.detalle:JSON.stringify(j.detalle)):'';if(m)return String(m)+extra+(r.status?' (HTTP '+r.status+')':'');return t.slice(0,600)}catch(_){if(t)return t.slice(0,600)+(r.status?' (HTTP '+r.status+')':'')}}}catch(_){}
+ return e?.message||String(e);
+}
 async function emitirFacturaPendienteARCA(facturaId){
  const f=(state.facturas||[]).find(x=>String(x.id)===String(facturaId));
  if(!f)return alert('No se encontró la factura pendiente. Recargá los datos.');
@@ -3283,7 +3288,8 @@ async function confirmarEmisionReal(facturaId){
      return;
    }
    // Si no pudimos confirmar nada, el bloqueo queda 3 minutos: evita reintentar en caliente y duplicar.
-   alert('No se pudo emitir la factura: '+(e?.message||e)+'\n\nPor seguridad la factura queda bloqueada 3 minutos. Antes de reintentar, usá "Verificar en ARCA" en la factura para confirmar que no se haya emitido.');
+   const detalleReal=await errorRealFuncion(e);
+   alert('No se pudo emitir la factura: '+detalleReal+'\n\nPor seguridad la factura queda bloqueada 3 minutos. Antes de reintentar, usá "Verificar en ARCA" en la factura para confirmar que no se haya emitido.');
    await cargarSupabase(true,['facturas']).catch(()=>{});
    if(btn){btn.disabled=false;btn.textContent='🔐 Sí, emitir factura REAL'}
  }
