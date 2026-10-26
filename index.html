@@ -1273,6 +1273,33 @@ html body .ma-l3 input:not([type=checkbox]){font-size:14px}
 .ma-sub{margin-top:5px;font-size:12px;color:var(--tx-3,#64748b)}
 .ma-l3{margin-top:5px;font-size:13px;line-height:1.35;overflow-wrap:anywhere}
 /* v8: campos de uso diario resaltados (borde + etiqueta de color; sin fondo para no romper placeholders ni desplegables) */
+.pp-sub-btn,.pp-vbtn{border:1px solid var(--line-2);border-radius:10px;padding:8px 14px;font-size:14px;background:var(--raise);color:var(--tx-2)}
+.pp-sub-on{border-color:var(--cyan-bd)!important;background:var(--cyan-bg)!important;color:var(--cyan-tx)!important}
+.pp-badge:not(:empty){background:var(--cyan);color:#001;border-radius:999px;font-size:11px;font-weight:700;padding:1px 7px;margin-left:4px}
+#catalogoProveedores.pp-sub-eq .pp-cat,#catalogoProveedores.pp-sub-an .pp-cat{display:none!important}
+.pp-mx{width:100%;border-collapse:collapse;font-size:13.5px}
+.pp-mx th{padding:8px;border-bottom:1px solid var(--line-2);font-size:12px;color:var(--tx-3)}
+.pp-mx td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+.mx-fila{cursor:pointer}.mx-fila:hover{background:var(--cyan-bg)}
+.mx-nom{min-width:230px;max-width:340px}.mx-sub{font-size:11px;color:var(--tx-3);font-weight:400}
+.mx-best{background:rgba(52,211,153,.15);color:#34d399;font-weight:700}
+.mx-worst{color:#fb7185}.mx-sin{opacity:.45;text-decoration:line-through}.mx-vacio{color:var(--tx-4)}
+.pp-chip{border:1px solid var(--line-2);border-radius:999px;padding:2px 10px;font-size:12px;background:var(--raise);color:var(--tx-2)}
+.pp-chip span{opacity:.6;margin-left:3px}.pp-chip.on{border-color:var(--cyan-bd);background:var(--cyan-bg);color:var(--cyan-tx)}
+.pp-kpi{border:1px solid var(--line-2);border-radius:12px;padding:12px;background:var(--raise)}.pp-kpi b{display:block;font-size:22px}.pp-kpi span{font-size:12px;color:var(--tx-3)}.pp-kpi-warn b{color:#fbbf24}
+.pp-thumb{width:46px;height:46px;border-radius:8px;border:1px solid var(--line-2);background:var(--raise);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;color:var(--tx-3);overflow:hidden;flex:none}
+.pp-thumb img{width:100%;height:100%;object-fit:contain;background:#fff}
+.pp-thumb:hover{border-color:var(--cyan-bd)}
+.pp-thumb.grande{width:100%;height:120px;border-radius:10px;font-size:28px}
+#ppCards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.pp-card{border:1px solid var(--line-2);border-radius:12px;background:var(--panel-2,var(--raise));padding:10px;display:flex;flex-direction:column;gap:6px;position:relative}
+.pp-card.pp-nav-activa{border-color:var(--cyan-bd);box-shadow:0 0 0 2px var(--cyan-bg)}
+.pp-card.cat-inactivo{opacity:.55}
+.pp-card .pp-sel{position:absolute;top:8px;left:8px;z-index:1}
+.pp-card .pp-nom{font-weight:600;font-size:13.5px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.pp-card .pp-precios{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.pp-card .pp-acc{display:flex;gap:10px;justify-content:flex-end;margin-top:auto}
+body.modo-buscador nav .tab:not(#t-catalogoProveedores),body.modo-buscador #ppImportCard,body.modo-buscador #btnAbrirBuscador{display:none!important}
 .campo-clave>label{color:var(--cyan-tx)!important;font-weight:700}
 .campo-clave>input,.campo-clave>select,.campo-clave>textarea,.campo-clave .flex>select{border:1px solid var(--cyan-bd)!important;border-left:4px solid var(--cyan-tx)!important}
 .campo-clave>input:focus,.campo-clave>select:focus,.campo-clave .flex>select:focus{border-color:var(--cyan-tx)!important;box-shadow:0 0 0 2px var(--cyan-bd)}
@@ -1301,12 +1328,16 @@ html body .ma-l3 input:not([type=checkbox]){font-size:14px}
     <label class="text-sm font-semibold">Margen general %</label><input id="ppMargenGeneral" type="number" min="0" step="0.1" class="border p-2 rounded-lg w-24" value="50" onchange="ppCambiarMargenGeneral(this.value)">
     <select id="ppRedondeo" class="border p-2 rounded-lg" onchange="ppCambiarRedondeo(this.value)" title="Redondeo del precio sugerido"><option value="0">Sin redondeo</option><option value="10">Redondear a $10</option><option value="100">Redondear a $100</option><option value="500">Redondear a $500</option></select>
     <button onclick="ppAbrirNuevo()" class="bg-blue-600 text-white px-4 py-2 rounded-lg">＋ Producto</button>
+    <label class="bg-slate-700 text-white px-3 py-2 rounded-lg cursor-pointer text-sm" title="Cargar el archivo fotos_nyv.json con las fotos de la lista de Nuñez">📷 Cargar fotos<input type="file" accept=".json,application/json" class="hidden" onchange="ppImportarFotos(this.files[0]);this.value=''"></label>
+    <button id="btnAbrirBuscador" type="button" onclick="window.open(location.pathname+'?modo=buscador','_blank')" class="bg-slate-700 text-white px-3 py-2 rounded-lg text-sm" title="Abrir solo el buscador en otra pestaña del navegador">🪟 Abrir buscador aparte</button>
    </div>
   </div>
   <div id="ppAviso" class="hidden mt-3"></div>
  </div>
 
- <div class="card p-4 space-y-3">
+ <div id="ppSubNav" class="card p-3 flex flex-wrap gap-2"><button type="button" data-sub="cat" class="pp-sub-btn pp-sub-on" onclick="ppSub('cat')">📋 Catálogo</button><button type="button" data-sub="eq" class="pp-sub-btn" onclick="ppSub('eq')">🧩 Equivalencias <span id="ppEqBadge" class="pp-badge"></span></button><button type="button" data-sub="an" class="pp-sub-btn" onclick="ppSub('an')">📊 Análisis</button></div>
+ <div id="ppPanelEq" class="hidden space-y-3"></div><div id="ppPanelAn" class="hidden space-y-3"></div>
+ <div id="ppImportCard" class="card p-4 space-y-3 pp-cat">
   <div class="flex flex-col lg:flex-row justify-between gap-3 lg:items-center">
    <div><h3 class="font-semibold">📥 Importar lista de precios</h3><div class="small">PDF, Excel o CSV. Primero ves una vista previa; no se guarda nada hasta que confirmes.</div></div>
    <div class="flex flex-wrap gap-2">
@@ -1318,14 +1349,16 @@ html body .ma-l3 input:not([type=checkbox]){font-size:14px}
   <div id="ppImportPreview" class="hidden"></div>
  </div>
 
- <div class="card p-4 space-y-3">
-  <div class="flex flex-col md:flex-row justify-between gap-3 md:items-center"><div><h3 class="font-semibold">🛒 Pedidos a proveedores</h3><div class="small">Agregá artículos con 🛒, ajustá cantidades, mandalo por WhatsApp y cuando llegue registralo como compra.</div></div><button type="button" onclick="ppVaciarPedidos()" class="bg-slate-700 px-3 py-2 rounded-lg text-sm">Vaciar pedidos</button></div>
+ <div class="card p-4 space-y-3 pp-cat">
+  <div class="flex flex-col md:flex-row justify-between gap-3 md:items-center"><div><h3 class="font-semibold">🛒 Pedidos a proveedores</h3><div class="small">Agregá artículos con 🛒, ajustá cantidades, mandalo por WhatsApp y cuando llegue registralo como compra.</div></div><span class="flex gap-2 flex-wrap"><button type="button" onclick="ppOptimizarPedido()" class="bg-emerald-700 text-white px-3 py-2 rounded-lg text-sm" title="Pasa cada artículo al proveedor más barato">⚡ Optimizar pedido</button><button type="button" onclick="ppVaciarPedidos()" class="bg-slate-700 px-3 py-2 rounded-lg text-sm">Vaciar pedidos</button></span></div>
   <div id="ppPedidos"></div>
  </div>
 
- <div class="card p-4 space-y-3">
+ <div class="card p-4 space-y-3 pp-cat">
   <div id="ppChips" class="flex flex-wrap gap-2"></div>
   <div class="small">⌨️ Escribí para buscar (ej: <i>camara 29 presta</i>) · ↑ ↓ para recorrer · Enter agrega al pedido</div>
+  <div id="ppEspecChips" class="space-y-1"></div>
+  <div class="flex flex-wrap gap-2 items-center"><select id="ppBusquedas" class="border p-1 rounded-lg text-sm" onchange="ppAplicarBusqueda(this.value);this.value=''"><option value="">⭐ Búsquedas guardadas…</option></select><button type="button" class="bg-slate-700 px-3 py-1 rounded-lg text-sm" onclick="ppGuardarBusqueda()">💾 Guardar esta búsqueda</button><button type="button" class="text-xs text-rose-500" onclick="ppBorrarBusqueda()" title="Borrar la búsqueda elegida en la lista">🗑 borrar guardada</button></div>
   <div class="grid md:grid-cols-4 gap-3">
    <div class="campo-clave md:col-span-2"><label class="block text-xs mb-1">🔎 Buscar</label><input id="ppBuscar" class="border p-2 rounded-lg w-full" placeholder="Buscar por producto, medida, código, marca o proveedor..." oninput="ppBuscarCambio()" onkeydown="return ppBuscarTecla(event)" autocomplete="off"></div>
    <select id="ppFiltroProveedor" class="border p-2 rounded-lg" onchange="ppRender()"><option value="">Todos los proveedores</option></select>
@@ -1343,6 +1376,7 @@ html body .ma-l3 input:not([type=checkbox]){font-size:14px}
   </div>
   <div id="ppResumen" class="text-sm text-slate-500"></div>
   <div class="flex flex-wrap gap-2 items-center">
+   <span class="inline-flex gap-1"><button type="button" data-vista="tabla" onclick="ppCambiarVista('tabla')" class="pp-vbtn bg-slate-700 px-3 py-2 rounded-lg text-sm">☰ Tabla</button><button type="button" data-vista="tarjetas" onclick="ppCambiarVista('tarjetas')" class="pp-vbtn bg-slate-700 px-3 py-2 rounded-lg text-sm">▦ Tarjetas</button><button type="button" data-vista="comparativa" onclick="ppCambiarVista('comparativa')" class="pp-vbtn bg-slate-700 px-3 py-2 rounded-lg text-sm" title="Un renglón por producto y una columna por proveedor">⚖️ Comparativa</button></span>
    <button type="button" onclick="ppSeleccionarVisibles(true)" class="bg-slate-700 px-3 py-2 rounded-lg text-sm">☑ Seleccionar visibles</button>
    <button type="button" onclick="ppSeleccionarVisibles(false)" class="bg-slate-700 px-3 py-2 rounded-lg text-sm">☐ Quitar selección</button>
    <button type="button" onclick="ppCategoriaSeleccionados()" class="bg-slate-700 px-3 py-2 rounded-lg text-sm">🏷️ Cambiar categoría</button>
@@ -1351,7 +1385,9 @@ html body .ma-l3 input:not([type=checkbox]){font-size:14px}
    <span id="ppSeleccionResumen" class="small"></span>
   </div>
  </div>
- <div class="card p-4">
+ <div class="card p-4 pp-cat">
+  <div id="ppCards" class="hidden"></div>
+  <div id="ppMatriz" class="hidden"></div>
   <div id="ppTablaWrap">
   <table class="w-full text-sm"><thead><tr class="bg-slate-50"><th class="p-2 text-center" style="width:36px"><input id="ppCheckTodos" type="checkbox" title="Seleccionar productos visibles" onchange="ppSeleccionarVisibles(this.checked)"></th><th class="p-2 text-left">Producto</th><th class="p-2 text-left">Proveedor</th><th class="p-2 text-right">Tu costo</th><th class="p-2 text-right" title="Precio al público sugerido por el proveedor">Público ref.</th><th class="p-2 text-center">Margen %</th><th class="p-2 text-right">Precio sugerido</th><th class="p-2 text-left">Comparación</th><th class="p-2 text-center">Acciones</th></tr></thead><tbody id="ppTabla"></tbody></table>
   </div>
@@ -1619,11 +1655,20 @@ async function cerrarSesion(){
  if(!confirm('¿Querés cerrar la sesión?'))return;
  await supabaseClient.auth.signOut();
 }
+const MODO_BUSCADOR=/[?&]modo=buscador\b/.test(location.search);
+if(MODO_BUSCADOR){document.addEventListener('DOMContentLoaded',()=>{document.body.classList.add('modo-buscador');document.title='Buscador de productos · Bicicletería del Abasto'})}
 async function iniciarAplicacion(){
  mostrarApp();
  if(appIniciada)return; // v7: ya iniciada → no recargar todo en cada evento de sesión
  appIniciada=true; reloj(); inicializarFechaIngreso();
  await cargarRol();
+ if(MODO_BUSCADOR){
+  // Pestaña independiente: solo el buscador. Carga lo mínimo (sin ventas, caja, taller…) y sin sincronización en vivo.
+  await cargarSupabase(false,['proveedores','compras']);
+  tab('catalogoProveedores');
+  setTimeout(()=>{const b=document.getElementById('ppBuscar');if(b)b.focus()},400);
+  return;
+ }
  verificarMigracion();
  if(!realtimeIniciado){realtimeIniciado=true;activarRealtime()}
  await cargarSupabase();
@@ -1777,7 +1822,7 @@ async function dbDelete(tabla,id){
 
 /* v7: se dibuja solo la sección visible (antes cada cambio redibujaba todo, gráficos incluidos). */
 const RENDER_SECCION={
- dashboard:()=>dashboard(), operativo:()=>renderOperativo(), taller:()=>renderOT(), ventas:()=>renderVentas(), caja:()=>{renderCaja();renderArqueos()},
+ dashboard:()=>dashboard(), operativo:()=>renderOperativo(), catalogoProveedores:()=>{}, taller:()=>renderOT(), ventas:()=>renderVentas(), caja:()=>{renderCaja();renderArqueos()},
  crm:()=>renderCRM(), stock:()=>renderStock(), compras:()=>renderCompras(), reportes:()=>reportes(), configuracion:()=>{}
 };
 function renderActivo(){
@@ -4241,7 +4286,7 @@ CATU.parecido=function(A,B){
  else if(ma||mb){if(['camara','cubierta','llanta','cuadro','horquilla','bici'].includes(ta))return -1}
  const va=A._valv??CATU.valvula(A.producto),vb=B._valv??CATU.valvula(B.producto);
  if(va&&vb&&va!==vb)return -1;
- const xa=new Set(A._tok||CATU.tokens(A.producto)),xb=new Set(B._tok||CATU.tokens(B.producto));
+ const xa=A._set||new Set(A._tok||CATU.tokens(A.producto)),xb=B._set||new Set(B._tok||CATU.tokens(B.producto));
  let comun=0;xa.forEach(w=>{if(xb.has(w))comun++});
  const jac=comun/Math.max(1,Math.min(xa.size,xb.size));
  let p=35+45*jac;if(ma&&mb)p+=(ma.anchos.length&&mb.anchos.length)?12:4;if(va&&vb)p+=8;
@@ -4292,7 +4337,7 @@ function catPreparar(x){
  x._tipo=CATU.tipo(x.producto);x._medida=CATU.medida(x.producto);x._valv=CATU.valvula(x.producto);x._tok=CATU.tokens(x.producto);
  return x;
 }
-function catIndexar(){
+function catIndexar(){EQV.cache=null;
  CAT.porId=new Map(CAT.productos.map(x=>[String(x.id),x]));CAT.grupos=new Map();
  CAT.productos.forEach(x=>{if(x.grupo&&x.activo){if(!CAT.grupos.has(x.grupo))CAT.grupos.set(x.grupo,[]);CAT.grupos.get(x.grupo).push(x)}});
  CAT.grupos.forEach(a=>a.sort((p,q)=>p.costo-q.costo));
@@ -4325,12 +4370,13 @@ function ppAvisoHTML(){
  else{const loc=ppLocalPendiente();if(loc)h=`<div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm flex flex-col md:flex-row justify-between gap-3 md:items-center"><div><b>Tenés ${loc.productos} producto(s) y ${loc.pedidos} pedido(s) guardados solo en este navegador</b> (versión anterior del catálogo). Subilos a Supabase para verlos en todos tus dispositivos. Los precios se actualizan cuando vuelvas a importar cada lista.</div><button onclick="ppMigrarLocal()" class="bg-emerald-600 px-4 py-2 rounded-lg shrink-0">⬆️ Subir a Supabase</button></div>`}
  el.innerHTML=h;el.classList.toggle('hidden',!h);
 }
-function ppFiltrar(){
- const q=CATU.norm(document.getElementById('ppBuscar')?.value||'').split(' ').filter(Boolean).map(w=>{const v=[w];if(w.length>4&&/es$/.test(w))v.push(w.slice(0,-2));if(w.length>3&&/s$/.test(w))v.push(w.slice(0,-1));return v});
+function ppFiltrar(sinEspec){
+ const SYN=ppSinonimos();
+ const q=CATU.norm(document.getElementById('ppBuscar')?.value||'').split(' ').filter(Boolean).map(w=>{const v=[w];if(w.length>4&&/es$/.test(w))v.push(w.slice(0,-2));if(w.length>3&&/s$/.test(w))v.push(w.slice(0,-1));const sy=SYN.get(w);if(sy)v.push(...sy);return v});
  const fp=document.getElementById('ppFiltroProveedor')?.value||'',fc=document.getElementById('ppFiltroCategoria')?.value||'',fm=document.getElementById('ppFiltroMarca')?.value||'';
  const pmin=Number(document.getElementById('ppPrecioMin')?.value)||0,pmax=Number(document.getElementById('ppPrecioMax')?.value)||0;
  const soloStock=document.getElementById('ppSoloStock')?.checked,soloComp=document.getElementById('ppSoloComparados')?.checked,verInact=document.getElementById('ppVerInactivos')?.checked,soloRev=document.getElementById('ppSoloRevisar')?.checked;
- let items=CAT.productos.filter(x=>(verInact||x.activo)&&(!fp||x.proveedor===fp)&&(!fc||x.categoria===fc)&&(!fm||x.marca===fm)&&(!pmin||x.costo>=pmin)&&(!pmax||x.costo<=pmax)&&(!soloStock||!x.sin_stock)&&(!soloComp||(x.grupo&&(CAT.grupos.get(x.grupo)||[]).length>1))&&(!soloRev||ppARevisar(x).length)&&q.every(v=>v.some(w=>x._n.includes(w))));
+ let items=CAT.productos.filter(x=>(verInact||x.activo)&&(!fp||x.proveedor===fp)&&(!fc||x.categoria===fc)&&(!fm||x.marca===fm)&&(!pmin||x.costo>=pmin)&&(!pmax||x.costo<=pmax)&&(!soloStock||!x.sin_stock)&&(!soloComp||(x.grupo&&(CAT.grupos.get(x.grupo)||[]).length>1))&&(!soloRev||ppARevisar(x).length)&&(sinEspec||ppEspecOK(x))&&q.every(v=>v.some(w=>x._n.includes(w))));
  const ord=document.getElementById('ppOrden')?.value||'producto';
  const cmp={costo:(a,b)=>a.costo-b.costo,costoDesc:(a,b)=>b.costo-a.costo,precio:(a,b)=>ppPrecio(a)-ppPrecio(b),proveedor:(a,b)=>a.proveedor.localeCompare(b.proveedor,'es')||a.producto.localeCompare(b.producto,'es'),suba:(a,b)=>(ppVariacion(b)??-1e9)-(ppVariacion(a)??-1e9),actualizado:(a,b)=>String(b.actualizado_at).localeCompare(String(a.actualizado_at)),producto:(a,b)=>a.producto.localeCompare(b.producto,'es')};
  // Con búsqueda y orden "Producto", se agrupan juntos los productos vinculados para comparar de un vistazo.
@@ -4363,15 +4409,504 @@ function ppFilaHTML(x,i){
  const varHTML=v===null||Math.abs(v)<0.5?'':`<div class="${v>0?'cat-sube':'cat-baja'}" title="Antes ${money(x.costo_anterior)}">${v>0?'▲':'▼'} ${Math.abs(v).toFixed(1)}%</div>`;
  return `<tr data-pp-id="${esc(x.id)}" class="border-b ${i===PP_NAV_INDEX?'pp-nav-activa':''} ${x.activo?'':'cat-inactivo'}" onmouseenter="PP_NAV_INDEX=${i};ppActualizarFilaNav()">
 <td class="p-2 text-center"><input type="checkbox" ${PP_SEL.has(String(x.id))?'checked':''} onchange="ppToggleSeleccion('${x.id}',this.checked)"></td>
-<td class="p-2" style="min-width:220px"><div class="font-semibold">${esc(x.producto)}</div><div class="cat-sub">${x.codigo?`<span class="font-mono">${esc(x.codigo)}</span> · `:''}${esc(x.lista||'')} · ${ppFechaCorta(x.fecha_lista||x.actualizado_at)}</div><div>${badges}</div></td>
+<td class="p-2" style="min-width:240px"><div class="flex gap-2 items-start">${ppThumb(x)}<div class="min-w-0"><div class="font-semibold">${esc(x.producto)}</div><div class="cat-sub">${x.codigo?`<span class="font-mono">${esc(x.codigo)}</span> · `:''}${esc(x.lista||'')} · ${ppFechaCorta(x.fecha_lista||x.actualizado_at)}</div><div>${badges}</div></div></div></td>
 <td class="p-2"><button type="button" class="text-blue-600 text-left" onclick="ppFichaProveedor(${ppJs(x.proveedor)})" title="Ficha del proveedor">${esc(x.proveedor)}</button></td>
 <td class="p-2 text-right money whitespace-nowrap">${money(x.costo)}${varHTML}</td>
 <td class="p-2 text-right money whitespace-nowrap">${x.referencia>0?money(x.referencia):'-'}</td>
 <td class="p-2 text-center" style="width:90px;min-width:90px"><input type="number" min="0" step="0.1" class="border rounded p-1 text-center" style="width:76px;max-width:76px" value="${x.margen===null||x.margen===undefined?'':Number(x.margen)}" placeholder="${ppMargenGeneral()}" title="Vacío = margen general" onchange="ppMargenProducto('${x.id}',this.value,this)"></td>
 <td class="p-2 text-right font-semibold money whitespace-nowrap">${money(ppPrecio(x))}</td>
 <td class="p-2">${ppCompHTML(x)}</td>
-<td class="p-2 text-center cat-acc"><button onclick="ppAgregarPedido('${x.id}')" class="text-emerald-600" title="Agregar al pedido">🛒＋</button><button onclick="ppEditar('${x.id}')" class="text-blue-600" title="Editar">✏️</button><button onclick="ppBorrar('${x.id}')" class="text-rose-600" title="Eliminar del catálogo">🗑️</button></td></tr>`;
+<td class="p-2 text-center cat-acc"><button onclick="ppAgregarPedido('${x.id}')" class="text-emerald-600" title="Agregar al pedido">🛒＋</button><button onclick="ppHistorial('${x.id}')" class="text-slate-400" title="Historial de precios">📈</button><button onclick="ppEditar('${x.id}')" class="text-blue-600" title="Editar">✏️</button><button onclick="ppBorrar('${x.id}')" class="text-rose-600" title="Eliminar del catálogo">🗑️</button></td></tr>`;
 }
+/* ===================================================================
+   EQUIVALENCIAS · COMPARATIVA · ANÁLISIS
+   =================================================================== */
+/* ---------- Motor de equivalencias (agrupa productos iguales de distintos proveedores) ---------- */
+const EQ={ALTO:88,MEDIO:72};
+function eqMarca(x){return String(x.marca||CATU.marca(x.producto)||'').toUpperCase().trim()}
+const EQ_GENERICAS=new Set('camara camaras cubierta cubiertas valv_auto valv_presta valv_fina rosca roscado roscada vulc vulcanizada indiv individual imp importada importado nacional mtb bulk pack kit juego par set mm cm largo corto standard estandar std color colores varios varias medida medidas'.split(' '));
+const EQ_COLORES=new Set('negro negra blanco blanca rojo roja azul beige crema verde amarillo amarilla naranja rosa rosado gris celeste marron violeta dorado dorada plateado plateada fucsia lila turquesa'.split(' '));
+function eqPrep(x){
+ if(x._tipo===undefined){x._tipo=CATU.tipo(x.producto);x._medida=CATU.medida(x.producto);x._valv=CATU.valvula(x.producto);x._tok=CATU.tokens(x.producto)}
+ if(!x._set)x._set=new Set(x._tok);
+ if(x._mk===undefined)x._mk=eqMarca(x);
+ if(!x._dis){
+  const pal=CATU.norm(x.producto).split(' ').slice(1),d=new Set(),c=new Set();
+  pal.forEach(w=>{if(w.length<3||/\d/.test(w)||EQ_GENERICAS.has(w)||CATU.PALABRAS_VACIAS.has(w))return;if(EQ_COLORES.has(w))c.add(w);else d.add(w.replace(/(es|s)$/,''))});
+  x._dis=d;x._col=c;
+ }
+ return x;
+}
+function eqAnidados(A,B){for(const w of A)if(!B.has(w))return false;return true}
+/* Dos productos del mismo tipo/medida solo son "el mismo" si lo que los distingue (marca, modelo, color) coincide o uno es más escueto que el otro. */
+function eqDistintivos(a,b){
+ if(a._col.size&&b._col.size&&![...a._col].some(w=>b._col.has(w)))return false;
+ if(!a._dis.size!==!b._dis.size)return false;                     // uno con marca/modelo y el otro sin nada: no es el mismo
+ if(a._dis.size&&!(eqAnidados(a._dis,b._dis)||eqAnidados(b._dis,a._dis)))return false;
+ return true;
+}
+/* Puntaje 0–100 de que A y B sean el MISMO producto (misma marca, o una sin marca). -1 = no pueden serlo. */
+function eqScore(a,b,ignorarMarca){
+ const s=CATU.parecido(a,b);if(s<0)return -1;
+ if(!ignorarMarca&&a._mk&&b._mk&&a._mk!==b._mk)return -1;
+ if(!ignorarMarca&&!eqDistintivos(a,b))return -1;
+ return s;
+}
+/* items: productos activos. rechazos: Set de "claveA||claveB" ordenadas. Devuelve [{items,min,tipo:'manual'|'auto'}] con ≥2 proveedores. */
+function eqAgrupar(items,rechazos,opc){
+ opc=opc||{};const ign=!!opc.ignorarMarca,tMin=opc.minimo||EQ.MEDIO;
+ const key=x=>x.proveedor+'|'+x.clave,par=(a,b)=>{const ka=key(a),kb=key(b);return ka<kb?ka+'||'+kb:kb+'||'+ka};
+ const rech=rechazos||new Set();
+ items.forEach(eqPrep);
+ // Cubetas: tipo + rodado (o solo tipo si no tiene medida)
+ const cub=new Map();items.forEach(x=>{const k=x._tipo+'|'+(x._medida?x._medida.rodado:'');if(!cub.has(k))cub.set(k,[]);cub.get(k).push(x)});
+ const edges=[];
+ cub.forEach(arr=>{
+  if(arr.length<2||arr.length>2500)return;
+  for(let i=0;i<arr.length;i++)for(let j=i+1;j<arr.length;j++){
+   const a=arr[i],b=arr[j];if(a.proveedor===b.proveedor)continue;
+   const s=eqScore(a,b,ign);if(s>=tMin&&!rech.has(par(a,b)))edges.push([s,a,b]);
+  }
+ });
+ edges.sort((p,q)=>q[0]-p[0]);
+ // Unión con enlace completo: todos los pares de proveedores distintos entre los dos grupos deben ser compatibles.
+ const cl=new Map();           // id -> cluster
+ const manual=new Map();       // grupo manual -> cluster
+ const clusterDe=x=>{let c=cl.get(x.id);if(!c){c={items:[x],manual:null,min:100};cl.set(x.id,c)}return c};
+ items.forEach(x=>{if(x.grupo){let c=manual.get(x.grupo);if(!c){c={items:[],manual:x.grupo,min:100};manual.set(x.grupo,c)}c.items.push(x);cl.set(x.id,c)}});
+ const compat=(A,B)=>{let min=100;if(A.items.length+B.items.length>14)return -1;for(const a of A.items)for(const b of B.items){if(a.proveedor===b.proveedor){if(!ign&&(CATU.parecido(a,b)<0||!eqDistintivos(a,b)))return -1;continue}const s=eqScore(a,b,ign);if(s<tMin||rech.has(par(a,b)))return -1;if(s<min)min=s}return min};
+ edges.forEach(([s,a,b])=>{
+  const A=clusterDe(a),B=clusterDe(b);if(A===B)return;
+  if(A.manual&&B.manual)return;
+  // un grupo manual solo acepta sumas de alta confianza
+  if((A.manual||B.manual)&&s<EQ.ALTO)return;
+  const m=compat(A,B);if(m<0)return;
+  const dest=A.manual?A:(B.manual?B:A),orig=dest===A?B:A;
+  orig.items.forEach(x=>{dest.items.push(x);cl.set(x.id,dest)});
+  dest.min=Math.min(dest.min,orig.min,m);
+ });
+ const out=[],vistos=new Set();
+ cl.forEach(c=>{if(vistos.has(c))return;vistos.add(c);if(new Set(c.items.map(x=>x.proveedor)).size>1)out.push({items:c.items,min:c.min,tipo:c.manual?'manual':'auto',grupo:c.manual})});
+ return out;
+}
+
+const EQV={cache:null,sub:'cat',nEq:40,nivel:'todas',q:'',modoEsp:true,filas:[],orden:'ahorro'};
+const PP_ESPEC={tipo:'',rodado:'',valv:''};
+let PP_ITEMS=[];
+const _$=id=>document.getElementById(id);
+const eqClaveItem=x=>x.proveedor+'|'+x.clave;
+function eqParKey(a,b){const p=eqClaveItem(a),q=eqClaveItem(b);return p<q?p+'||'+q:q+'||'+p}
+function eqRechazos(){return new Set(Array.isArray(CAT.config?.equiv_rechazos)?CAT.config.equiv_rechazos:[])}
+
+/* ---------- Cálculo (se hace una vez y se guarda hasta que cambia el catálogo) ---------- */
+function eqEspecKey(x){
+ if(!['camara','cubierta'].includes(x._tipo)||!x._medida)return null;
+ const a=x._medida.anchos[0];if(a===undefined)return null;
+ return [x._tipo,x._medida.rodado,String(a),x._tipo==='camara'?(x._valv||'?'):''].join('|');
+}
+function eqEspecEtiqueta(k){const [t,r,a,v]=k.split('|');const an=String(a).replace(/f/g,' ');return `${t==='camara'?'Cámara':'Cubierta'} ${r} x ${an}${v&&v!=='?'?' · válv. '+v:''}`}
+function eqCalcular(){
+ if(EQV.cache)return EQV.cache;
+ const act=CAT.productos.filter(x=>x.activo);
+ const todos=eqAgrupar(act,eqRechazos());
+ const m=new Map();act.forEach(x=>{const k=eqEspecKey(x);if(!k)return;if(!m.has(k))m.set(k,[]);m.get(k).push(x)});
+ const espec=[];m.forEach((arr,k)=>{if(new Set(arr.map(x=>x.proveedor)).size>1)espec.push({items:arr,min:0,tipo:'espec',grupo:null,clave:k})});
+ EQV.cache={todos,auto:todos.filter(c=>c.tipo==='auto'),manual:todos.filter(c=>c.tipo==='manual'),espec,act};
+ return EQV.cache;
+}
+/* Costo "puesto en el local": suma el flete que cargaste para cada proveedor. */
+function ppCondiciones(){return (CAT.config&&CAT.config.condiciones)||{}}
+function ppCostoPuesto(x){const c=ppCondiciones()[x.proveedor];const f=c&&Number(c.flete)>0?Number(c.flete):0;return x.costo*(1+f/100)}
+function ppUsaPuesto(){return !!_$('ppConFlete')?.checked}
+function ppC(x){return ppUsaPuesto()?ppCostoPuesto(x):x.costo}
+/* Resumen de un grupo: mejor y peor opción disponibles (sin precios sospechosos). */
+function eqResumen(g){
+ const ok=g.items.filter(x=>!x.sin_stock&&!ppARevisar(x).some(r=>/muy bajo|menor que el costo/.test(r))).sort((a,b)=>ppC(a)-ppC(b));
+ const base=ok.length?ok:g.items.slice().sort((a,b)=>ppC(a)-ppC(b));
+ const mejor=base[0],peor=base[base.length-1];
+ const provs=new Set(base.map(x=>x.proveedor));
+ const ah=provs.size>1&&ppC(mejor)>0?(ppC(peor)-ppC(mejor))/ppC(mejor)*100:0;
+ return {mejor,peor,ahorroPct:ah,ahorro:ppC(peor)-ppC(mejor),provs:provs.size,ok:ok.length>0};
+}
+function eqNombreGrupo(g){return g.etiqueta||(g.clave?eqEspecEtiqueta(g.clave):(eqResumen(g).mejor||g.items[0]).producto)}
+
+/* ---------- Navegación entre Catálogo / Equivalencias / Análisis ---------- */
+function ppSub(s){
+ EQV.sub=s;const sec=_$('catalogoProveedores');if(!sec)return;
+ sec.classList.toggle('pp-sub-eq',s==='eq');sec.classList.toggle('pp-sub-an',s==='an');
+ document.querySelectorAll('#ppSubNav [data-sub]').forEach(b=>b.classList.toggle('pp-sub-on',b.dataset.sub===s));
+ _$('ppPanelEq')?.classList.toggle('hidden',s!=='eq');_$('ppPanelAn')?.classList.toggle('hidden',s!=='an');
+ if(s==='eq')ppRenderEquivalencias();else if(s==='an')ppRenderAnalisis();else ppRender();
+}
+function ppActualizarBadgeEq(){
+ const b=_$('ppEqBadge');if(!b||!CAT.cargado||CAT.error)return;
+ if(!EQV.cache){b.textContent='';return}
+ const n=EQV.cache.auto.length;b.textContent=n?String(n):'';
+}
+
+/* ---------- Comparativa (matriz) ---------- */
+function ppRenderMatriz(items){
+ const host=_$('ppMatriz');if(!host)return;
+ host.innerHTML='<div class="p-4 text-center text-slate-400">⏳ Analizando equivalencias…</div>';
+ setTimeout(()=>{
+  const c=eqCalcular();ppActualizarBadgeEq();
+  const ids=new Set(items.map(x=>x.id));
+  const fuente=EQV.modoEsp?c.espec.concat(c.todos.filter(g=>!['camara','cubierta'].includes(g.items[0]._tipo))):c.todos;
+  let filas=fuente.filter(g=>g.items.some(x=>ids.has(x.id))).map(g=>({g,r:eqResumen(g)}));
+  const enGrupo=new Set();filas.forEach(f=>f.g.items.forEach(x=>enGrupo.add(x.id)));
+  const sueltos=items.filter(x=>!enGrupo.has(x.id)).length;
+  const o=EQV.orden;
+  filas.sort(o==='nombre'?(a,b)=>eqNombreGrupo(a.g).localeCompare(eqNombreGrupo(b.g),'es'):o==='precio'?(a,b)=>ppC(a.r.mejor)-ppC(b.r.mejor):o==='ahorroPesos'?(a,b)=>b.r.ahorro-a.r.ahorro:(a,b)=>b.r.ahorroPct-a.r.ahorroPct);
+  EQV.filas=filas;
+  const cnt=new Map();filas.forEach(f=>new Set(f.g.items.map(x=>x.proveedor)).forEach(p=>cnt.set(p,(cnt.get(p)||0)+1)));
+  const provs=[...cnt.keys()].sort((a,b)=>cnt.get(b)-cnt.get(a)||a.localeCompare(b,'es'));
+  const MAX=150,mostrar=filas.slice(0,MAX);
+  const flete=Object.values(ppCondiciones()).some(v=>Number(v?.flete)>0);
+  const barra=`<div class="flex flex-wrap gap-3 items-center mb-3 text-sm">
+   <span class="font-semibold">⚖️ ${filas.length} productos comparables</span>
+   <label class="inline-flex items-center gap-1"><input type="checkbox" ${EQV.modoEsp?'checked':''} onchange="EQV.modoEsp=this.checked;ppRender()"> Comparar cámaras y cubiertas de cualquier marca (misma medida y válvula)</label>
+   ${flete?`<label class="inline-flex items-center gap-1"><input type="checkbox" id="ppConFlete" ${ppUsaPuesto()?'checked':''} onchange="ppRender()"> Costo puesto (con flete)</label>`:'<span id="ppConFlete" class="hidden"></span>'}
+   <select class="border p-1 rounded-lg" onchange="EQV.orden=this.value;ppRender()"><option value="ahorro" ${o==='ahorro'?'selected':''}>Mayor diferencia %</option><option value="ahorroPesos" ${o==='ahorroPesos'?'selected':''}>Mayor diferencia $</option><option value="precio" ${o==='precio'?'selected':''}>Menor precio</option><option value="nombre" ${o==='nombre'?'selected':''}>Nombre</option></select>
+   <button type="button" class="bg-slate-700 px-3 py-1 rounded-lg" onclick="ppExportarMatriz()">📥 Excel</button>
+   <button type="button" class="bg-slate-700 px-3 py-1 rounded-lg" onclick="ppCopiarMatriz()">📋 Copiar</button>
+   <span class="small">${sueltos?`${sueltos} de tus resultados no tienen equivalente en otro proveedor. `:''}${EQV.modoEsp?'En cámaras y cubiertas se compara el más barato de cada proveedor aunque sean marcas distintas (la marca figura abajo del precio).':'Solo el mismo producto exacto.'}</span></div>`;
+  if(!filas.length){host.innerHTML=barra+`<div class="p-6 text-center text-slate-400">Ningún producto de esta búsqueda tiene equivalente en otro proveedor todavía.<br><span class="small">Probá "Incluir otras marcas", o revisá las sugerencias en la solapa 🧩 Equivalencias.</span></div>`;return}
+  const th=provs.map(p=>`<th class="text-right whitespace-nowrap">${esc(p)}</th>`).join('');
+  const body=mostrar.map((f,i)=>{
+   const por=new Map();f.g.items.forEach(x=>{const a=por.get(x.proveedor);if(!a||(a.sin_stock&&!x.sin_stock)||(a.sin_stock===x.sin_stock&&ppC(x)<ppC(a)))por.set(x.proveedor,x)});
+   const vals=[...por.values()].filter(x=>!x.sin_stock).map(ppC);const mn=Math.min(...vals),mxv=Math.max(...vals);
+   const celdas=provs.map(p=>{const x=por.get(p);if(!x)return '<td class="text-right mx-vacio">—</td>';
+    const v=ppC(x),cls=x.sin_stock?'mx-sin':(vals.length>1&&v===mn?'mx-best':(vals.length>1&&v===mxv?'mx-worst':''));
+    const extra=[EQV.modoEsp&&x.marca?esc(x.marca):'',x.sin_stock?'sin stock':'',x.cant_minima>1?'mín. '+x.cant_minima:''].filter(Boolean).join(' · ');
+    return `<td class="text-right ${cls}" title="${esc(x.producto)}">${money(v)}${extra?`<div class="mx-sub">${extra}</div>`:''}</td>`}).join('');
+   const r=f.r;
+   return `<tr class="mx-fila" onclick="ppDetalleEq(${i})"><td class="mx-nom"><div class="font-semibold">${esc(eqNombreGrupo(f.g))}</div><div class="mx-sub">${f.g.tipo==='manual'?'✓ confirmado':f.g.tipo==='espec'?'por especificación':'≈ automático'} · ${f.g.items.length} opciones</div></td>${celdas}<td class="text-right whitespace-nowrap">${r.ahorroPct>0?`<b ${r.ahorroPct>100?'class="text-amber-500" title="Diferencia enorme: verificá que sea el mismo producto y la misma unidad (caja, pack o unidad)"':''}>${r.ahorroPct>100?'⚠️ ':''}${r.ahorroPct.toFixed(0)}%</b><div class="mx-sub">${money(r.ahorro)}</div>`:'—'}</td></tr>`;
+  }).join('');
+  host.innerHTML=barra+`<div class="overflow-x-auto"><table class="pp-mx"><thead><tr><th class="text-left">Producto</th>${th}<th class="text-right">Diferencia</th></tr></thead><tbody>${body}</tbody></table></div>${filas.length>MAX?`<div class="small mt-2">Mostrando ${MAX} de ${filas.length}. Afiná la búsqueda.</div>`:''}<div class="small mt-2">🟢 más barato · 🔴 más caro · tocá una fila para ver el detalle y agregar al pedido.</div>`;
+ },20);
+}
+function ppDetalleEq(i){
+ const f=EQV.filas[i];if(!f)return;const g=f.g;
+ const filas=g.items.slice().sort((a,b)=>ppC(a)-ppC(b));const min=ppC(f.r.mejor);
+ const auto=g.tipo==='auto';
+ abrirModal('⚖️ '+eqNombreGrupo(g),`<div class="space-y-3">
+  <div class="overflow-x-auto"><table class="w-full cat-comp-tabla"><thead><tr><th class="text-left">Proveedor</th><th class="text-left">Producto</th><th class="text-right">Costo</th><th class="text-right">vs mejor</th><th></th></tr></thead><tbody>
+  ${filas.map(x=>{const v=ppC(x),d=min>0?(v-min)/min*100:0;return `<tr class="${x===f.r.mejor?'cat-comp-mejor':''} ${x.sin_stock?'cat-inactivo':''}"><td>${esc(x.proveedor)}<div class="small">${ppFechaCorta(x.fecha_lista||x.actualizado_at)}</div></td><td>${esc(x.producto)}${x.codigo?`<div class="small font-mono">${esc(x.codigo)}</div>`:''}${x.sin_stock?'<div class="small text-rose-500">Sin stock</div>':''}${x.cant_minima>1?`<div class="small">mín. ${x.cant_minima}</div>`:''}</td><td class="text-right money">${money(v)}${x===f.r.mejor?' 🏆':''}</td><td class="text-right small">${d>0.4?'+'+d.toFixed(0)+'%':'—'}</td><td class="whitespace-nowrap"><button class="text-emerald-600" title="Agregar al pedido" onclick="ppAgregarPedido('${x.id}')">🛒＋</button> <button class="text-blue-600" title="Historial de precios" onclick="ppHistorial('${x.id}')">📈</button></td></tr>`}).join('')}
+  </tbody></table></div>
+  ${auto?`<div class="flex flex-wrap gap-2"><button class="bg-emerald-700 text-white px-3 py-2 rounded-lg text-sm" onclick="ppConfirmarEq(${i})">✓ Son el mismo producto: confirmar</button><button class="bg-rose-700 text-white px-3 py-2 rounded-lg text-sm" onclick="ppRechazarEq(${i})">✗ No son iguales</button></div><div class="small">Esta equivalencia la propuso el sistema. Confirmarla la deja guardada; rechazarla evita que vuelva a aparecer.</div>`:''}
+ </div>`);
+}
+async function ppConfirmarEq(i){const g=EQV.filas[i]?.g;if(!g)return;try{await ppVincular(g.items.map(x=>x.id));cerrarModal();ppRender();ppToast('Equivalencia confirmada.')}catch(e){alert('No se pudo confirmar: '+e.message)}}
+async function ppGuardarRechazos(set){await catGuardarConfig('equiv_rechazos',[...set])}
+function eqRechazarGrupo(g,set){for(let a=0;a<g.items.length;a++)for(let b=a+1;b<g.items.length;b++)if(g.items[a].proveedor!==g.items[b].proveedor)set.add(eqParKey(g.items[a],g.items[b]))}
+async function ppRechazarEq(i){const g=EQV.filas[i]?.g;if(!g)return;try{const s=eqRechazos();eqRechazarGrupo(g,s);await ppGuardarRechazos(s);EQV.cache=null;cerrarModal();ppRender();ppToast('Listo: no se vuelve a proponer.')}catch(e){alert('No se pudo guardar: '+e.message)}}
+function ppMatrizAFilas(){
+ const filas=EQV.filas;const provs=[...new Set(filas.flatMap(f=>f.g.items.map(x=>x.proveedor)))].sort((a,b)=>a.localeCompare(b,'es'));
+ return {provs,filas:filas.map(f=>{const por={};f.g.items.forEach(x=>{if(!x.sin_stock&&(por[x.proveedor]===undefined||ppC(x)<por[x.proveedor]))por[x.proveedor]=ppC(x)});return {nombre:eqNombreGrupo(f.g),por,mejor:f.r.mejor?.proveedor||'',dif:f.r.ahorroPct}})};
+}
+function ppExportarMatriz(){
+ if(!EQV.filas.length)return alert('No hay nada para exportar.');
+ const {provs,filas}=ppMatrizAFilas();
+ const data=filas.map(f=>{const o={Producto:f.nombre};provs.forEach(p=>{o[p]=f.por[p]===undefined?'':Math.round(f.por[p]*100)/100});o['Más barato']=f.mejor;o['Diferencia %']=Math.round(f.dif*10)/10;return o});
+ const ws=XLSX.utils.json_to_sheet(data),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Comparativa');XLSX.writeFile(wb,'Comparativa_proveedores.xlsx');
+}
+function ppCopiarMatriz(){
+ const {provs,filas}=ppMatrizAFilas();
+ const txt=filas.slice(0,60).map(f=>`${f.nombre}\n`+provs.filter(p=>f.por[p]!==undefined).sort((a,b)=>f.por[a]-f.por[b]).map((p,i)=>`  ${i===0?'🏆':'  '} ${p}: ${money(f.por[p])}`).join('\n')).join('\n\n');
+ const ok=()=>ppToast('Comparativa copiada. Pegala en WhatsApp o donde quieras.');
+ try{navigator.clipboard.writeText(txt).then(ok,()=>{window.prompt('Copiá con Ctrl+C:',txt)})}catch(_){window.prompt('Copiá con Ctrl+C:',txt)}
+}
+
+/* ---------- Solapa Equivalencias (revisión) ---------- */
+function ppRenderEquivalencias(){
+ const host=_$('ppPanelEq');if(!host)return;
+ if(!CAT.cargado){host.innerHTML='<div class="card p-4 text-slate-400">⏳ Cargando catálogo…</div>';catIniciar().then(()=>ppRenderEquivalencias());return}
+ host.innerHTML='<div class="card p-4 text-slate-400">⏳ Buscando productos iguales entre proveedores…</div>';
+ setTimeout(()=>{
+  const c=eqCalcular();ppActualizarBadgeEq();
+  const q=CATU.norm(EQV.q).split(' ').filter(Boolean);
+  let lista=c.auto.slice().sort((a,b)=>b.min-a.min);
+  const altas=lista.filter(g=>g.min>=EQ.ALTO).length;
+  if(EQV.nivel==='alta')lista=lista.filter(g=>g.min>=EQ.ALTO);else if(EQV.nivel==='media')lista=lista.filter(g=>g.min<EQ.ALTO);
+  if(q.length)lista=lista.filter(g=>g.items.some(x=>q.every(w=>x._n.includes(w))));
+  EQV.lista=lista;
+  const conf=c.manual.length,total=c.act.length;
+  const enEq=new Set();c.todos.forEach(g=>g.items.forEach(x=>enEq.add(x.id)));
+  host.innerHTML=`<div class="card p-4 space-y-3">
+   <div class="flex flex-col lg:flex-row justify-between gap-3">
+    <div><h3 class="font-semibold">🧩 Equivalencias entre proveedores</h3><div class="small">El sistema compara todo el catálogo y propone qué productos son iguales (mismo tipo, medida, válvula, marca y modelo). Confirmás o descartás; lo confirmado alimenta la Comparativa.</div></div>
+    <div class="text-sm text-right"><b>${enEq.size}</b> de ${total} productos con equivalente (${total?Math.round(enEq.size/total*100):0}%)<br><b>${conf}</b> grupos confirmados · <b>${c.auto.length}</b> propuestas (${altas} de alta confianza)</div>
+   </div>
+   <div class="flex flex-wrap gap-2 items-center">
+    <select class="border p-2 rounded-lg" onchange="EQV.nivel=this.value;EQV.nEq=40;ppRenderEquivalencias()"><option value="todas" ${EQV.nivel==='todas'?'selected':''}>Todas las propuestas</option><option value="alta" ${EQV.nivel==='alta'?'selected':''}>Alta confianza</option><option value="media" ${EQV.nivel==='media'?'selected':''}>Para revisar (media)</option></select>
+    <input class="border p-2 rounded-lg" style="min-width:220px" placeholder="Filtrar propuestas…" value="${esc(EQV.q)}" onchange="EQV.q=this.value;EQV.nEq=40;ppRenderEquivalencias()">
+    <button class="bg-emerald-700 text-white px-3 py-2 rounded-lg text-sm" onclick="ppConfirmarAltas()" ${altas?'':'disabled'}>✓ Confirmar las ${altas} de alta confianza</button>
+   </div>
+  </div>
+  ${lista.slice(0,EQV.nEq).map((g,i)=>{const r=eqResumen(g);return `<div class="card p-3"><div class="flex flex-wrap justify-between gap-2 items-center mb-2"><span class="small">Coincidencia ${g.min>=EQ.ALTO?'<b class="text-emerald-500">alta</b>':'<b class="text-amber-500">media</b>'} (${g.min}%)${r.ahorroPct>0?` · diferencia de precio ${r.ahorroPct.toFixed(0)}%`:''}</span><span class="flex gap-2"><button class="bg-emerald-700 text-white px-3 py-1 rounded-lg text-sm" onclick="ppConfirmarEqLista(${i})">✓ Son iguales</button><button class="bg-rose-700 text-white px-3 py-1 rounded-lg text-sm" onclick="ppRechazarEqLista(${i})">✗ No son iguales</button></span></div>
+   ${g.items.slice().sort((a,b)=>ppC(a)-ppC(b)).map(x=>`<div class="flex justify-between gap-3 text-sm py-1 border-t"><span><b>${esc(x.proveedor)}</b> · ${esc(x.producto)}${x.codigo?` <span class="small font-mono">${esc(x.codigo)}</span>`:''}</span><span class="money whitespace-nowrap">${money(ppC(x))}${x===r.mejor?' 🏆':''}</span></div>`).join('')}</div>`}).join('')||'<div class="card p-6 text-center text-slate-400">No hay propuestas con este filtro.</div>'}
+  ${lista.length>EQV.nEq?`<div class="text-center"><button class="bg-slate-700 px-4 py-2 rounded-lg" onclick="EQV.nEq+=40;ppRenderEquivalencias()">Mostrar 40 más (${lista.length-EQV.nEq} restantes)</button></div>`:''}`;
+ },20);
+}
+async function ppConfirmarEqLista(i){const g=EQV.lista?.[i];if(!g)return;try{await ppVincular(g.items.map(x=>x.id));ppRenderEquivalencias();ppToast('Confirmada.')}catch(e){alert('No se pudo confirmar: '+e.message)}}
+async function ppRechazarEqLista(i){const g=EQV.lista?.[i];if(!g)return;try{const s=eqRechazos();eqRechazarGrupo(g,s);await ppGuardarRechazos(s);EQV.cache=null;ppRenderEquivalencias();ppToast('Descartada: no se vuelve a proponer.')}catch(e){alert('No se pudo guardar: '+e.message)}}
+async function ppConfirmarAltas(){
+ const altas=(EQV.cache?.auto||[]).filter(g=>g.min>=EQ.ALTO);if(!altas.length)return;
+ const muestra=altas.slice(0,4).map(g=>'• '+g.items.slice(0,2).map(x=>x.producto.slice(0,38)).join('  =  ')).join('\n');
+ if(!confirm(`Se van a confirmar ${altas.length} equivalencias de alta confianza.\n\nEjemplos:\n${muestra}\n\nSe pueden deshacer una por una desde la Comparativa. ¿Seguir?`))return;
+ try{for(const g of altas)await ppVincular(g.items.map(x=>x.id));ppRenderEquivalencias();ppToast(`${altas.length} equivalencias confirmadas.`)}catch(e){alert('No se pudo confirmar todo: '+e.message)}
+}
+
+/* ---------- Solapa Análisis ---------- */
+function ppRenderAnalisis(){
+ const host=_$('ppPanelAn');if(!host)return;
+ if(!CAT.cargado){host.innerHTML='<div class="card p-4 text-slate-400">⏳ Cargando catálogo…</div>';catIniciar().then(()=>ppRenderAnalisis());return}
+ host.innerHTML='<div class="card p-4 text-slate-400">⏳ Analizando el catálogo…</div>';
+ setTimeout(()=>{
+  const c=eqCalcular();ppActualizarBadgeEq();const act=c.act;
+  const grupos=c.todos.map(g=>({g,r:eqResumen(g)}));
+  const enEq=new Set();grupos.forEach(({g})=>g.items.forEach(x=>enEq.add(x.id)));
+  const provs=[...new Set(act.map(x=>x.proveedor))].sort((a,b)=>a.localeCompare(b,'es'));
+  const gana=new Map(provs.map(p=>[p,0])),part=new Map(provs.map(p=>[p,0]));
+  grupos.forEach(({g,r})=>{if(r.provs<2)return;new Set(g.items.map(x=>x.proveedor)).forEach(p=>part.set(p,(part.get(p)||0)+1));gana.set(r.mejor.proveedor,(gana.get(r.mejor.proveedor)||0)+1)});
+  const filaProv=provs.map(p=>{const n=act.filter(x=>x.proveedor===p).length,ne=act.filter(x=>x.proveedor===p&&enEq.has(x.id)).length,f=Math.max(...act.filter(x=>x.proveedor===p).map(x=>x._f||new Date(x.fecha_lista||x.actualizado_at||0).getTime()||0)),d=f?Math.floor((Date.now()-f)/86400000):null,pp=part.get(p)||0,gg=gana.get(p)||0;
+   return `<tr class="border-b"><td class="p-2 font-semibold">${esc(p)}</td><td class="p-2 text-right">${n}</td><td class="p-2 text-right">${ne} <span class="small">(${n?Math.round(ne/n*100):0}%)</span></td><td class="p-2 text-right">${n-ne}</td><td class="p-2 text-right">${pp?`${gg} de ${pp} <span class="small">(${Math.round(gg/pp*100)}%)</span>`:'—'}</td><td class="p-2 text-right ${d!=null&&d>30?'text-amber-500':''}">${d==null?'—':'hace '+d+' d'}${d!=null&&d>30?' ⚠️':''}</td></tr>`}).join('');
+  const segura=({g})=>g.tipo==='manual'||g.min>=EQ.ALTO;
+  const oport=grupos.filter(f=>f.r.provs>1&&f.r.ahorroPct>=8&&f.r.ahorroPct<=100&&ppC(f.r.mejor)>=500&&segura(f)).sort((a,b)=>b.r.ahorro-a.r.ahorro).slice(0,12);
+  const raros=grupos.filter(f=>f.r.provs>1&&f.r.ahorroPct>100).sort((a,b)=>b.r.ahorroPct-a.r.ahorroPct);
+  const cambios=act.filter(x=>{const v=ppVariacion(x);return v!==null&&Math.abs(v)>=8&&Math.abs(v)<=60}).sort((a,b)=>Math.abs(ppVariacion(b))-Math.abs(ppVariacion(a))).slice(0,12);
+  const cambioLider=grupos.filter(({g,r})=>{if(r.provs<2)return false;const ant=g.items.filter(x=>!x.sin_stock).map(x=>({x,v:Number(x.costo_anterior)>0?Number(x.costo_anterior):x.costo})).sort((a,b)=>a.v-b.v)[0];return ant&&ant.x.proveedor!==r.mejor.proveedor}).slice(0,10);
+  const dup=new Map();act.forEach(x=>{const k=x.proveedor+'|'+CATU.norm(x.producto);if(!dup.has(k))dup.set(k,[]);dup.get(k).push(x)});
+  const dups=[...dup.values()].filter(a=>a.length>1);
+  const rev=act.filter(x=>ppARevisar(x).length).length,viejas=provs.filter(p=>{const f=Math.max(...act.filter(x=>x.proveedor===p).map(x=>new Date(x.fecha_lista||x.actualizado_at||0).getTime()||0));return f&&(Date.now()-f)/86400000>30});
+  const cond=ppCondiciones();
+  const tabla=(cab,filas)=>`<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="bg-slate-50">${cab}</tr></thead><tbody>${filas}</tbody></table></div>`;
+  host.innerHTML=`
+  <div class="card p-4"><h3 class="font-semibold mb-3">📊 Resumen del catálogo</h3>
+   <div class="grid grid-cols-2 md:grid-cols-5 gap-3 text-center">
+    <div class="pp-kpi"><b>${act.length}</b><span>productos activos</span></div>
+    <div class="pp-kpi"><b>${enEq.size}</b><span>con equivalente (${act.length?Math.round(enEq.size/act.length*100):0}%)</span></div>
+    <div class="pp-kpi"><b>${c.manual.length}</b><span>grupos confirmados</span></div>
+    <div class="pp-kpi"><b>${c.auto.length}</b><span>propuestas por revisar</span></div>
+    <div class="pp-kpi ${rev?'pp-kpi-warn':''}"><b>${rev}</b><span>precios a revisar</span></div>
+   </div>
+   ${viejas.length?`<div class="mt-3 text-sm text-amber-500">⚠️ Listas con más de 30 días sin actualizar: <b>${viejas.map(esc).join(', ')}</b>. Con precios viejos, "el más barato" puede no ser cierto.</div>`:''}
+  </div>
+  <div class="card p-4"><h3 class="font-semibold mb-1">🏭 Proveedores</h3><div class="small mb-2">Cuántos productos tiene cada uno, cuántos se pueden comparar y en cuántos de los comparables es el más barato.</div>
+   ${tabla('<th class="p-2 text-left">Proveedor</th><th class="p-2 text-right">Productos</th><th class="p-2 text-right">Comparables</th><th class="p-2 text-right">Exclusivos</th><th class="p-2 text-right">Más barato en</th><th class="p-2 text-right">Lista</th>',filaProv)}
+  </div>
+  <div class="card p-4"><h3 class="font-semibold mb-1">💰 Mayores diferencias de precio</h3><div class="small mb-2">Productos iguales (confirmados o de alta confianza) donde elegir bien el proveedor más ahorra por unidad.</div>
+   ${oport.length?tabla('<th class="p-2 text-left">Producto</th><th class="p-2 text-left">Más barato</th><th class="p-2 text-left">Más caro</th><th class="p-2 text-right">Ahorro</th>',oport.map(({g,r})=>`<tr class="border-b cursor-pointer" onclick="ppAbrirGrupoAnalisis(${grupos.findIndex(z=>z.g===g)})"><td class="p-2">${esc(eqNombreGrupo(g).slice(0,70))}</td><td class="p-2">${esc(r.mejor.proveedor)} <b>${money(ppC(r.mejor))}</b></td><td class="p-2">${esc(r.peor.proveedor)} ${money(ppC(r.peor))}</td><td class="p-2 text-right"><b>${r.ahorroPct.toFixed(0)}%</b> · ${money(r.ahorro)}</td></tr>`).join('')):'<div class="small p-2">Todavía no hay diferencias grandes entre productos confirmados o de alta confianza.</div>'}
+   ${raros.length?`<div class="mt-3 text-sm text-amber-500">⚠️ ${raros.length} equivalencia(s) tienen más de 100% de diferencia entre proveedores. Casi siempre es un error: no son el mismo producto, o un proveedor lista por caja/pack y otro por unidad. No las incluí arriba. <button class="text-blue-600 text-xs ml-2" onclick="ppVerRaros()">ver cuáles</button></div>`:''}
+  </div>
+  <div class="grid lg:grid-cols-2 gap-4">
+   <div class="card p-4"><h3 class="font-semibold mb-1">📈 Cambios de precio recientes</h3><div class="small mb-2">Contra la lista anterior (de 8% a 60%).</div>
+    ${cambios.length?cambios.map(x=>{const v=ppVariacion(x);return `<div class="flex justify-between gap-2 text-sm py-1 border-t"><span>${esc(x.proveedor)} · ${esc(x.producto.slice(0,46))}</span><span class="${v>0?'cat-sube':'cat-baja'} whitespace-nowrap">${v>0?'▲':'▼'} ${Math.abs(v).toFixed(0)}%</span></div>`}).join(''):'<div class="small">Sin cambios importantes.</div>'}
+    ${cambioLider.length?`<div class="mt-3 small"><b>Cambió el más barato</b> respecto de la lista anterior en ${cambioLider.length} producto(s): ${cambioLider.slice(0,4).map(({g,r})=>esc(eqNombreGrupo(g).slice(0,30))+' → '+esc(r.mejor.proveedor)).join(' · ')}</div>`:''}
+   </div>
+   <div class="card p-4"><h3 class="font-semibold mb-1">🧹 Calidad de datos</h3>
+    <div class="text-sm space-y-2">
+     <div>${dups.length} producto(s) repetidos dentro del mismo proveedor ${dups.length?`<button class="text-blue-600 text-xs ml-2" onclick="ppVerDuplicados()">ver</button>`:''}</div>
+     <div>${rev} producto(s) con precio sospechoso <button class="text-blue-600 text-xs ml-2" onclick="ppIrACatalogo({revisar:true})">ver</button></div>
+     <div>${act.filter(x=>!x.marca).length} sin marca detectada · ${act.filter(x=>!x.fecha_lista&&!x.manual).length} sin fecha de lista</div>
+    </div></div>
+  </div>
+  <div class="card p-4"><h3 class="font-semibold mb-1">🚚 Condiciones por proveedor</h3><div class="small mb-2">Flete (% sobre el costo) para ver el "costo puesto en el local" en la Comparativa, y monto mínimo de compra para avisarte al armar el pedido.</div>
+   ${tabla('<th class="p-2 text-left">Proveedor</th><th class="p-2 text-right">Flete %</th><th class="p-2 text-right">Compra mínima $</th>',provs.map(p=>`<tr class="border-b"><td class="p-2">${esc(p)}</td><td class="p-2 text-right"><input type="number" min="0" step="0.1" class="border rounded p-1 text-right" style="width:90px" value="${cond[p]?.flete||''}" placeholder="0" onchange="ppGuardarCondicion(${ppJs(p)},'flete',this.value)"></td><td class="p-2 text-right"><input type="number" min="0" class="border rounded p-1 text-right" style="width:120px" value="${cond[p]?.minimo||''}" placeholder="0" onchange="ppGuardarCondicion(${ppJs(p)},'minimo',this.value)"></td></tr>`).join(''))}
+  </div>
+  <div class="card p-4"><h3 class="font-semibold mb-1">🔤 Tus sinónimos de búsqueda</h3><div class="small mb-2">Una por línea, así: <code>cub=cubierta</code>. Al buscar "cub" también encuentra "cubierta".</div>
+   <textarea class="border p-2 rounded-lg w-full" rows="4" placeholder="cub=cubierta&#10;cam=camara" onchange="ppGuardarSinonimos(this.value)">${esc(CAT.config?.sinonimos||'')}</textarea></div>`;
+  EQV.gruposAn=grupos;
+ },20);
+}
+function ppVerRaros(){const l=(EQV.gruposAn||[]).filter(f=>f.r.provs>1&&f.r.ahorroPct>100).sort((a,b)=>b.r.ahorroPct-a.r.ahorroPct).slice(0,25);abrirModal('⚠️ Diferencias de más de 100%',`<div class="text-sm space-y-2">${l.map(f=>`<div class="border rounded p-2"><b>${f.r.ahorroPct.toFixed(0)}%</b> · ${f.g.items.slice().sort((a,b)=>ppC(a)-ppC(b)).map(x=>`<div class="small">${esc(x.proveedor)}: ${esc(x.producto.slice(0,60))} <b>${money(ppC(x))}</b></div>`).join('')}</div>`).join('')}</div>`)}
+function ppAbrirGrupoAnalisis(i){const f=EQV.gruposAn?.[i];if(!f)return;EQV.filas=[f];ppDetalleEq(0)}
+async function ppGuardarCondicion(prov,campo,v){const c=JSON.parse(JSON.stringify(ppCondiciones()));c[prov]=c[prov]||{};c[prov][campo]=Math.max(0,Number(v)||0);try{await catGuardarConfig('condiciones',c);ppToast('Guardado.')}catch(e){alert('No se pudo guardar: '+e.message)}}
+async function ppGuardarSinonimos(t){try{await catGuardarConfig('sinonimos',String(t||''));ppToast('Sinónimos guardados.')}catch(e){alert('No se pudo guardar: '+e.message)}}
+function ppSinonimos(){const m=new Map();String(CAT.config?.sinonimos||'').split('\n').forEach(l=>{const [a,b]=l.split('=');if(!a||!b)return;const k=CATU.norm(a),v=CATU.norm(b);if(k&&v)m.set(k,v.split(' '))});return m}
+function ppIrACatalogo(opc){ppSub('cat');if(opc&&opc.revisar){const c=_$('ppSoloRevisar');if(c)c.checked=true}ppRender()}
+function ppVerDuplicados(){
+ const act=CAT.productos.filter(x=>x.activo),dup=new Map();act.forEach(x=>{const k=x.proveedor+'|'+CATU.norm(x.producto);if(!dup.has(k))dup.set(k,[]);dup.get(k).push(x)});
+ const l=[...dup.values()].filter(a=>a.length>1).slice(0,40);
+ abrirModal('🧹 Repetidos dentro del mismo proveedor',`<div class="text-sm space-y-2">${l.map(a=>`<div class="border rounded p-2"><b>${esc(a[0].proveedor)}</b> · ${esc(a[0].producto)}<br>${a.map(x=>`<span class="small">${esc(x.lista||'')} · ${x.codigo?esc(x.codigo)+' · ':''}${money(x.costo)}</span>`).join('<br>')}</div>`).join('')}</div>`);
+}
+
+/* ---------- Chips de especificación y búsquedas guardadas ---------- */
+function ppEspecChips(base){
+ const host=_$('ppEspecChips');if(!host)return;
+ if(!base.length||base.length>7000){host.innerHTML='';return}
+ const cuenta=(fn)=>{const m=new Map();base.forEach(x=>{const k=fn(x);if(k)m.set(k,(m.get(k)||0)+1)});return [...m.entries()].sort((a,b)=>b[1]-a[1])};
+ const tipos=cuenta(x=>x._tipo).slice(0,8),rod=cuenta(x=>x._medida&&x._medida.rodado).slice(0,9),val=cuenta(x=>x._valv);
+ const chip=(campo,v,n,etq)=>`<button type="button" class="pp-chip ${PP_ESPEC[campo]===v?'on':''}" onclick="ppToggleEspec('${campo}',${ppJs(v)})">${esc(etq||v)} <span>${n}</span></button>`;
+ const hay=tipos.length>1||rod.length>1||val.length>0;
+ host.innerHTML=hay?`<div class="flex flex-wrap gap-1 items-center"><span class="small">Tipo:</span>${tipos.map(([v,n])=>chip('tipo',v,n)).join('')}</div>
+  ${rod.length>1||PP_ESPEC.rodado?`<div class="flex flex-wrap gap-1 items-center"><span class="small">Rodado:</span>${rod.map(([v,n])=>chip('rodado',v,n)).join('')}</div>`:''}
+  ${val.length>0?`<div class="flex flex-wrap gap-1 items-center"><span class="small">Válvula:</span>${val.map(([v,n])=>chip('valv',v,n,v==='auto'?'automotor':v)).join('')}</div>`:''}
+  ${(PP_ESPEC.tipo||PP_ESPEC.rodado||PP_ESPEC.valv)?'<button type="button" class="text-blue-600 text-xs" onclick="ppLimpiarEspec()">✕ Quitar filtros de tipo/medida</button>':''}`:'';
+}
+function ppToggleEspec(campo,v){PP_ESPEC[campo]=PP_ESPEC[campo]===v?'':v;PP_NAV_INDEX=0;PP_LIMITE=200;ppRender()}
+function ppLimpiarEspec(){PP_ESPEC.tipo=PP_ESPEC.rodado=PP_ESPEC.valv='';ppRender()}
+function ppBusquedas(){return Array.isArray(CAT.config?.busquedas)?CAT.config.busquedas:[]}
+function ppRenderBusquedas(){
+ const s=_$('ppBusquedas');if(!s)return;const l=ppBusquedas();
+ s.innerHTML='<option value="">⭐ Búsquedas guardadas…</option>'+l.map((b,i)=>`<option value="${i}">${esc(b.nombre)}</option>`).join('');
+}
+async function ppGuardarBusqueda(){
+ const q=_$('ppBuscar')?.value||'';const nombre=prompt('Nombre para esta búsqueda (ej: Cámaras 29 presta):',q.slice(0,30));if(!nombre)return;
+ const b={nombre:nombre.slice(0,40),q,prov:_$('ppFiltroProveedor')?.value||'',cat:_$('ppFiltroCategoria')?.value||'',marca:_$('ppFiltroMarca')?.value||'',espec:{...PP_ESPEC}};
+ try{await catGuardarConfig('busquedas',[...ppBusquedas().filter(x=>x.nombre!==b.nombre),b]);ppRenderBusquedas();ppToast('Búsqueda guardada.')}catch(e){alert('No se pudo guardar: '+e.message)}
+}
+function ppAplicarBusqueda(i){
+ const b=ppBusquedas()[Number(i)];if(!b)return;
+ _$('ppBuscar').value=b.q||'';_$('ppFiltroProveedor').value=b.prov||'';_$('ppFiltroCategoria').value=b.cat||'';_$('ppFiltroMarca').value=b.marca||'';
+ Object.assign(PP_ESPEC,{tipo:'',rodado:'',valv:''},b.espec||{});PP_NAV_INDEX=0;PP_LIMITE=200;ppRender();
+}
+async function ppBorrarBusqueda(){
+ const s=_$('ppBusquedas');const i=Number(s?.value);if(!Number.isInteger(i)||s.value==='')return alert('Elegí primero una búsqueda guardada.');
+ const b=ppBusquedas()[i];if(!b||!confirm('¿Borrar la búsqueda "'+b.nombre+'"?'))return;
+ try{await catGuardarConfig('busquedas',ppBusquedas().filter((_,k)=>k!==i));ppRenderBusquedas()}catch(e){alert('No se pudo borrar: '+e.message)}
+}
+
+/* ---------- Pedido óptimo ---------- */
+function ppOptimizarPedido(){
+ if(!CAT.pedidos.length)return alert('El pedido está vacío. Agregá artículos con 🛒 y volvé a probar.');
+ const c=eqCalcular();ppActualizarBadgeEq();
+ const grupoDe=new Map();c.todos.forEach(g=>g.items.forEach(x=>grupoDe.set(x.id,g)));
+ const sug=[];
+ CAT.pedidos.forEach(p=>{
+  const x=CAT.porId.get(String(p.producto_id));if(!x)return;const g=grupoDe.get(x.id);if(!g)return;
+  const cant=Number(p.cantidad)||1;
+  const alt=g.items.filter(z=>z.proveedor!==x.proveedor&&!z.sin_stock&&!ppARevisar(z).some(r=>/muy bajo|menor que el costo/.test(r))&&(!z.cant_minima||z.cant_minima<=cant)&&ppCostoPuesto(z)<ppCostoPuesto(x)).sort((a,b)=>ppCostoPuesto(a)-ppCostoPuesto(b))[0];
+  if(alt)sug.push({p,x,alt,cant,ahorro:(ppCostoPuesto(x)-ppCostoPuesto(alt))*cant,tipo:g.tipo});
+ });
+ const cond=ppCondiciones(),tot=new Map();CAT.pedidos.forEach(p=>tot.set(p.proveedor,(tot.get(p.proveedor)||0)+(Number(p.costo)||0)*(Number(p.cantidad)||1)));
+ const avisos=[...tot.entries()].filter(([pv,t])=>Number(cond[pv]?.minimo)>0&&t<Number(cond[pv].minimo)).map(([pv,t])=>`⚠️ Tu pedido a <b>${esc(pv)}</b> es de ${money(t)} y su mínimo es ${money(cond[pv].minimo)}.`);
+ EQV.sug=sug;
+ abrirModal('⚡ Optimizar pedido',`<div class="space-y-3">
+  ${sug.length?`<div class="text-sm">Podés ahorrar <b>${money(sug.reduce((s,z)=>s+z.ahorro,0))}</b> pasando estos artículos al proveedor más barato (mismo producto, respetando cantidad mínima y stock).</div>
+  <div class="overflow-x-auto"><table class="w-full cat-comp-tabla"><thead><tr><th></th><th class="text-left">Artículo</th><th class="text-left">Hoy</th><th class="text-left">Pasar a</th><th class="text-right">Ahorro</th></tr></thead><tbody>${sug.map((z,i)=>`<tr><td><input type="checkbox" class="pp-opt" value="${i}" checked></td><td>${esc(z.x.producto.slice(0,50))}<div class="small">× ${z.cant}${z.tipo==='auto'?' · equivalencia propuesta (sin confirmar)':''}</div></td><td>${esc(z.x.proveedor)}<div class="small">${money(ppCostoPuesto(z.x))}</div></td><td>${esc(z.alt.proveedor)}<div class="small">${money(ppCostoPuesto(z.alt))}</div></td><td class="text-right money">${money(z.ahorro)}</td></tr>`).join('')}</tbody></table></div>
+  <button class="bg-emerald-700 text-white px-4 py-2 rounded-lg w-full font-semibold" onclick="ppAplicarOptimo()">Aplicar los marcados</button>`:'<div class="text-sm">Tu pedido ya está en el proveedor más barato para los artículos que se pueden comparar. 👍</div>'}
+  ${avisos.length?`<div class="bg-amber-50 border border-amber-300 rounded-lg p-3 text-sm text-amber-900 space-y-1">${avisos.map(a=>`<div>${a}</div>`).join('')}</div>`:''}
+ </div>`);
+}
+async function ppAplicarOptimo(){
+ const sel=[...document.querySelectorAll('.pp-opt:checked')].map(c=>EQV.sug[Number(c.value)]).filter(Boolean);if(!sel.length)return alert('No marcaste nada.');
+ try{
+  for(const z of sel){
+   const ya=CAT.pedidos.find(p=>String(p.producto_id)===String(z.alt.id)&&String(p.id)!==String(z.p.id));
+   if(ya){const cantidad=(Number(ya.cantidad)||0)+z.cant;const {error}=await supabaseClient.from('catalogo_pedidos').update({cantidad}).eq('id',ya.id);if(error)throw error;ya.cantidad=cantidad;const {error:e2}=await supabaseClient.from('catalogo_pedidos').delete().eq('id',z.p.id);if(e2)throw e2;CAT.pedidos=CAT.pedidos.filter(p=>String(p.id)!==String(z.p.id))}
+   else{const cambios={producto_id:z.alt.id,proveedor:z.alt.proveedor,codigo:z.alt.codigo||'',producto:z.alt.producto,costo:z.alt.costo};const {error}=await supabaseClient.from('catalogo_pedidos').update(cambios).eq('id',z.p.id);if(error)throw error;Object.assign(z.p,cambios)}
+  }
+  cerrarModal();ppRenderPedidos();ppToast(`${sel.length} artículo(s) movidos al proveedor más barato.`);
+ }catch(e){alert('No se pudo aplicar: '+e.message)}
+}
+
+/* ---------- Historial de precios ---------- */
+async function ppHistorial(id){
+ const x=CAT.porId.get(String(id));if(!x)return;
+ abrirModal('📈 '+x.producto.slice(0,60),'<div class="p-4 text-center text-slate-400">⏳ Leyendo historial…</div>');
+ try{
+  const {data,error}=await supabaseClient.from('catalogo_historial').select('costo,fecha').eq('proveedor',x.proveedor).eq('clave',x.clave).order('fecha');
+  if(error)throw error;
+  const pts=(data||[]).map(r=>({t:new Date(r.fecha).getTime(),v:Number(r.costo)})).filter(p=>p.v>0);
+  if(pts.length<2){abrirModal('📈 '+x.producto.slice(0,60),`<div class="text-sm space-y-2"><div>Todavía no hay cambios de precio guardados para este producto.</div><div class="small">El historial empieza a registrarse desde que se instaló <code>migracion_historial.sql</code>: cada vez que importás una lista y el costo cambia, queda anotado acá. Costo actual: <b>${money(x.costo)}</b>${x.costo_anterior?` · anterior: ${money(x.costo_anterior)}`:''}.</div></div>`);return}
+  const W=560,H=200,P=36,t0=pts[0].t,t1=pts[pts.length-1].t||t0+1,mn=Math.min(...pts.map(p=>p.v)),mxv=Math.max(...pts.map(p=>p.v)),rg=(mxv-mn)||1;
+  const X=t=>P+(t1===t0?0:(t-t0)/(t1-t0))*(W-P-10),Y=v=>H-24-((v-mn)/rg)*(H-50);
+  const path=pts.map((p,i)=>(i?'L':'M')+X(p.t).toFixed(1)+' '+Y(p.v).toFixed(1)).join(' ');
+  const d=t=>new Date(t).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+  const prim=pts[0].v,ult=pts[pts.length-1].v,pct=(ult-prim)/prim*100;
+  abrirModal('📈 '+x.producto.slice(0,60),`<div class="space-y-3"><div class="text-sm">${esc(x.proveedor)} · de <b>${money(prim)}</b> a <b>${money(ult)}</b> <span class="${pct>0?'cat-sube':'cat-baja'}">(${pct>0?'+':''}${pct.toFixed(1)}%)</span> entre ${d(t0)} y ${d(t1)}</div>
+   <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto"><line x1="${P}" y1="${H-24}" x2="${W-10}" y2="${H-24}" stroke="currentColor" opacity=".25"/><path d="${path}" fill="none" stroke="#22d3ee" stroke-width="2.5"/>${pts.map(p=>`<circle cx="${X(p.t).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="3.5" fill="#22d3ee"><title>${d(p.t)}: ${money(p.v)}</title></circle>`).join('')}<text x="${P}" y="${H-6}" font-size="11" fill="currentColor" opacity=".7">${d(t0)}</text><text x="${W-10}" y="${H-6}" font-size="11" text-anchor="end" fill="currentColor" opacity=".7">${d(t1)}</text><text x="4" y="${Y(mxv)+4}" font-size="11" fill="currentColor" opacity=".7">${money(mxv)}</text><text x="4" y="${Y(mn)+4}" font-size="11" fill="currentColor" opacity=".7">${money(mn)}</text></svg>
+   <div class="small">Pasá el mouse sobre cada punto para ver la fecha y el precio.</div></div>`);
+ }catch(e){abrirModal('📈 Historial',`<div class="text-sm">${/catalogo_historial|does not exist|schema cache/i.test(String(e.message))?'Falta correr <code>migracion_historial.sql</code> en Supabase (SQL Editor). Después de eso, cada cambio de precio queda registrado.':'No se pudo leer el historial: '+esc(e.message||e)}</div>`)}
+}
+
+function ppEspecOK(x){return (!PP_ESPEC.tipo||x._tipo===PP_ESPEC.tipo)&&(!PP_ESPEC.rodado||(x._medida&&x._medida.rodado===PP_ESPEC.rodado))&&(!PP_ESPEC.valv||x._valv===PP_ESPEC.valv)}
+
+/* ---------- Fotos de productos y vista de tarjetas ---------- */
+const IMG={cache:new Map(),miss:new Set(),sinTabla:false};
+let PP_VISTA='tabla';try{const _v=localStorage.getItem('pp_vista');PP_VISTA=['tarjetas','comparativa'].includes(_v)?_v:'tabla'}catch(_){}
+function imgKey(x){return x.proveedor+'|'+x.clave}
+function ppThumb(x,grande){const k=imgKey(x),u=IMG.cache.get(k);return `<span class="pp-thumb${grande?' grande':''}" data-img-k="${esc(k)}" onclick="ppFoto('${x.id}')" title="${u?'Ver o cambiar la foto':'Agregar foto'}">${u?`<img src="${u}" alt="">`:'📷'}</span>`}
+function ppPintarFotos(){document.querySelectorAll('[data-img-k]').forEach(el=>{const u=IMG.cache.get(el.dataset.imgK),tiene=el.querySelector('img');if(u&&(!tiene||tiene.getAttribute('src')!==u))el.innerHTML=`<img src="${u}" alt="">`;else if(!u&&tiene)el.textContent='📷'})}
+async function ppCargarFotos(items){
+ if(IMG.sinTabla)return;
+ const falta=items.filter(x=>x.clave&&!IMG.cache.has(imgKey(x))&&!IMG.miss.has(imgKey(x)));if(!falta.length)return;
+ const porProv=new Map();falta.forEach(x=>{if(!porProv.has(x.proveedor))porProv.set(x.proveedor,[]);porProv.get(x.proveedor).push(x.clave)});
+ for(const [prov,claves] of porProv){
+  for(let i=0;i<claves.length;i+=40){
+   const lote=claves.slice(i,i+40);
+   try{
+    const {data,error}=await supabaseClient.from('catalogo_imagenes').select('clave,img').eq('proveedor',prov).in('clave',lote);
+    if(error)throw error;
+    const hay=new Set();(data||[]).forEach(r=>{hay.add(r.clave);IMG.cache.set(prov+'|'+r.clave,r.img)});
+    lote.forEach(c=>{if(!hay.has(c))IMG.miss.add(prov+'|'+c)});
+   }catch(e){if(/catalogo_imagenes|does not exist|schema cache|permission/i.test(String(e?.message||e)))IMG.sinTabla=true;console.warn('Fotos',e);return}
+  }
+  ppPintarFotos();
+ }
+}
+function ppFoto(id){
+ const x=CAT.porId.get(String(id));if(!x)return;const u=IMG.cache.get(imgKey(x));
+ abrirModal('📷 Foto del producto',`<div class="space-y-3 text-center"><div class="font-semibold">${esc(x.producto)}</div>
+  <div id="ppFotoVista" class="flex items-center justify-center" style="min-height:160px">${u?`<img src="${u}" style="max-width:100%;max-height:320px;background:#fff;border-radius:8px" alt="">`:'<span class="small">Todavía no hay foto de este producto.</span>'}</div>
+  <div class="flex flex-wrap gap-2 justify-center"><label class="bg-blue-600 text-white px-3 py-2 rounded-lg cursor-pointer text-sm">📁 Elegir archivo<input type="file" accept="image/*" class="hidden" onchange="ppFotoArchivo('${x.id}',this.files[0])"></label>${u?`<button type="button" class="bg-rose-700 text-white px-3 py-2 rounded-lg text-sm" onclick="ppFotoQuitar('${x.id}')">🗑 Quitar foto</button>`:''}</div>
+  <div class="small">También podés copiar una imagen (o una captura de pantalla) y pegarla acá con Ctrl+V.</div></div>`);
+ window.PP_FOTO_ID=String(x.id);
+}
+function ppFotoReducir(file,max){return new Promise((ok,mal)=>{const fr=new FileReader();fr.onerror=()=>mal(new Error('No se pudo leer la imagen.'));fr.onload=()=>{const im=new Image();im.onerror=()=>mal(new Error('El archivo no es una imagen válida.'));im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',.82))};im.src=fr.result};fr.readAsDataURL(file)})}
+async function ppFotoArchivo(id,file){
+ const x=CAT.porId.get(String(id));if(!x||!file)return;
+ try{
+  const img=await ppFotoReducir(file,240);
+  const {error}=await supabaseClient.from('catalogo_imagenes').upsert({proveedor:x.proveedor,clave:x.clave,img,fuente:'manual',updated_at:new Date().toISOString()},{onConflict:'proveedor,clave'});
+  if(error)throw error;
+  IMG.sinTabla=false;IMG.cache.set(imgKey(x),img);IMG.miss.delete(imgKey(x));ppPintarFotos();ppFoto(id);ppToast('Foto guardada.');
+ }catch(e){alert('No se pudo guardar la foto: '+(e.message||e)+(/catalogo_imagenes/.test(String(e.message))?'\n\nFalta correr migracion_fotos.sql en Supabase.':''))}
+}
+async function ppFotoQuitar(id){
+ const x=CAT.porId.get(String(id));if(!x)return;if(!confirm('¿Quitar la foto de este producto?'))return;
+ try{const {error}=await supabaseClient.from('catalogo_imagenes').delete().eq('proveedor',x.proveedor).eq('clave',x.clave);if(error)throw error;IMG.cache.delete(imgKey(x));IMG.miss.add(imgKey(x));ppPintarFotos();ppFoto(id)}catch(e){alert('No se pudo quitar: '+(e.message||e))}
+}
+document.addEventListener('paste',e=>{
+ if(!document.getElementById('ppFotoVista')||!window.PP_FOTO_ID)return;
+ const it=[...(e.clipboardData?.items||[])].find(i=>i.type&&i.type.indexOf('image/')===0);if(!it)return;
+ e.preventDefault();ppFotoArchivo(window.PP_FOTO_ID,it.getAsFile());
+});
+async function ppImportarFotos(file){
+ if(!file)return;
+ try{
+  const j=JSON.parse(await file.text());const fotos=j&&j.fotos;if(!fotos||typeof fotos!=='object')throw new Error('El archivo no tiene el formato esperado.');
+  const nom=CATU.norm(j.proveedor||'');const provs=[...new Set(CAT.productos.map(x=>x.proveedor))];
+  const prov=provs.find(p=>CATU.norm(p)===nom)||provs.find(p=>CATU.norm(p).indexOf(nom)===0||nom.indexOf(CATU.norm(p))===0);
+  if(!prov)return alert('No encontré el proveedor "'+(j.proveedor||'')+'" en el catálogo. Importá primero su lista de precios.');
+  const claves=new Set(CAT.productos.filter(x=>x.proveedor===prov).map(x=>x.clave));
+  const filas=Object.entries(fotos).map(([cod,img])=>({proveedor:prov,clave:'c:'+String(cod).trim().toUpperCase(),img,fuente:'lista',updated_at:new Date().toISOString()})).filter(r=>claves.has(r.clave));
+  if(!filas.length)return alert('Ninguna foto del archivo coincide con productos de '+prov+'.');
+  if(!confirm(`Se van a cargar ${filas.length} fotos de ${prov} (el archivo trae ${Object.keys(fotos).length}).\n\nLas que ya existían se reemplazan.`))return;
+  for(let i=0;i<filas.length;i+=40){
+   ppToast(`Subiendo fotos… ${Math.min(i+40,filas.length)} de ${filas.length}`,'ok',2500);
+   const {error}=await supabaseClient.from('catalogo_imagenes').upsert(filas.slice(i,i+40),{onConflict:'proveedor,clave'});if(error)throw error;
+  }
+  IMG.cache.clear();IMG.miss.clear();IMG.sinTabla=false;ppRender();alert(`Listo: ${filas.length} fotos cargadas en ${prov}.`);
+ }catch(e){alert('No se pudieron cargar las fotos: '+(e.message||e)+(/catalogo_imagenes/.test(String(e.message))?'\n\nFalta correr migracion_fotos.sql en Supabase.':''))}
+}
+function ppCambiarVista(v){PP_VISTA=['tabla','tarjetas','comparativa'].includes(v)?v:'tabla';try{localStorage.setItem('pp_vista',PP_VISTA)}catch(_){}ppRender()}
+function ppCardHTML(x,i){
+ const rev=ppARevisar(x),v=ppVariacion(x);
+ const badges=[x.marca?`<span class="cat-badge">${esc(x.marca)}</span>`:'',x.sin_stock?'<span class="cat-badge cat-b-rojo">Sin stock</span>':'',!x.activo?'<span class="cat-badge cat-b-rojo">Ya no figura</span>':'',x.cant_minima>1?`<span class="cat-badge">mín. ${x.cant_minima}</span>`:'',rev.length?`<span class="cat-badge cat-b-ambar" title="${esc(rev.join(' · '))}">⚠️ Revisar</span>`:''].join('');
+ const varHTML=v===null||Math.abs(v)<0.5?'':`<span class="${v>0?'cat-sube':'cat-baja'}" title="Antes ${money(x.costo_anterior)}">${v>0?'▲':'▼'} ${Math.abs(v).toFixed(1)}%</span>`;
+ return `<div data-pp-id="${esc(x.id)}" class="pp-card ${i===PP_NAV_INDEX?'pp-nav-activa':''} ${x.activo?'':'cat-inactivo'}" onmouseenter="PP_NAV_INDEX=${i};ppActualizarFilaNav()">
+  <input class="pp-sel" type="checkbox" ${PP_SEL.has(String(x.id))?'checked':''} onchange="ppToggleSeleccion('${x.id}',this.checked)">
+  ${ppThumb(x,true)}
+  <div class="pp-nom" title="${esc(x.producto)}">${esc(x.producto)}</div>
+  <div class="cat-sub"><button type="button" class="text-blue-600" onclick="ppFichaProveedor(${ppJs(x.proveedor)})">${esc(x.proveedor)}</button>${x.codigo?` · <span class="font-mono">${esc(x.codigo)}</span>`:''} · ${ppFechaCorta(x.fecha_lista||x.actualizado_at)}</div>
+  <div>${badges}</div>
+  <div class="pp-precios"><span><span class="small">Tu costo</span><br><b class="money">${money(x.costo)}</b> ${varHTML}</span><span class="text-right"><span class="small">Sugerido</span><br><b class="money">${money(ppPrecio(x))}</b></span></div>
+  <div>${ppCompHTML(x)}</div>
+  <div class="pp-acc cat-acc"><button onclick="ppAgregarPedido('${x.id}')" class="text-emerald-600" title="Agregar al pedido">🛒＋</button><button onclick="ppHistorial('${x.id}')" class="text-slate-400" title="Historial de precios">📈</button><button onclick="ppEditar('${x.id}')" class="text-blue-600" title="Editar">✏️</button><button onclick="ppBorrar('${x.id}')" class="text-rose-600" title="Eliminar del catálogo">🗑️</button></div></div>`;
+}
+
 function ppRender(){
  const tabla=document.getElementById('ppTabla');if(!tabla)return;
  if(!CAT.cargado){tabla.innerHTML='<tr><td colspan="9" class="p-4 text-center text-slate-400">⏳ Cargando catálogo…</td></tr>';catIniciar().then(()=>ppRender());return}
@@ -4384,12 +4919,18 @@ function ppRender(){
  const fp=document.getElementById('ppFiltroProveedor')?.value||'';
  ppOpciones('ppFiltroMarca',[...new Set(activos.filter(x=>!fp||x.proveedor===fp).map(x=>x.marca).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es')),'Todas las marcas');
  ppChipsHTML();
- const items=ppFiltrar();PP_VISIBLES=items.slice(0,PP_LIMITE);
+ const items=ppFiltrar();PP_ITEMS=items;PP_VISIBLES=items.slice(0,PP_LIMITE);ppEspecChips(ppFiltrar(true));ppRenderBusquedas();
  if(PP_NAV_INDEX>=PP_VISIBLES.length)PP_NAV_INDEX=PP_VISIBLES.length-1;
- tabla.innerHTML=PP_VISIBLES.map(ppFilaHTML).join('')||`<tr><td colspan="9" class="p-4 text-center text-slate-400">${CAT.productos.length?'No hay productos que coincidan con el filtro.':'Todavía no hay productos. Importá una lista de precios arriba.'}</td></tr>`;
- const mas=document.getElementById('ppMas');if(mas)mas.innerHTML=items.length>PP_LIMITE?`<div class="flex flex-wrap gap-2 items-center"><span class="small">Mostrando ${PP_LIMITE} de ${items.length}. Afiná la búsqueda o</span><button class="bg-slate-700 px-3 py-2 rounded-lg text-sm" onclick="PP_LIMITE+=300;ppRender()">Mostrar 300 más</button></div>`:'';
+ const _vc=document.getElementById('ppCards'),_vt=document.getElementById('ppTablaWrap'),_vm=document.getElementById('ppMatriz'),_cards=PP_VISTA==='tarjetas',_mx=PP_VISTA==='comparativa';
+ if(_vc&&_vt){_vc.classList.toggle('hidden',!_cards);_vt.classList.toggle('hidden',_cards||_mx)}
+ if(_vm)_vm.classList.toggle('hidden',!_mx);
+ document.querySelectorAll('[data-vista]').forEach(b=>b.classList.toggle('pp-sub-on',b.dataset.vista===PP_VISTA));
+ if(_mx)ppRenderMatriz(items);
+ if(_cards&&_vc)_vc.innerHTML=PP_VISIBLES.map(ppCardHTML).join('')||`<div class="p-4 text-center text-slate-400" style="grid-column:1/-1">${CAT.productos.length?'No hay productos que coincidan con el filtro.':'Todavía no hay productos. Importá una lista de precios arriba.'}</div>`;
+ tabla.innerHTML=((_cards||_mx)?[]:PP_VISIBLES).map(ppFilaHTML).join('')||`<tr><td colspan="9" class="p-4 text-center text-slate-400">${CAT.productos.length?'No hay productos que coincidan con el filtro.':'Todavía no hay productos. Importá una lista de precios arriba.'}</td></tr>`;
+ const mas=document.getElementById('ppMas');if(mas)mas.innerHTML=(items.length>PP_LIMITE&&!_mx)?`<div class="flex flex-wrap gap-2 items-center"><span class="small">Mostrando ${PP_LIMITE} de ${items.length}. Afiná la búsqueda o</span><button class="bg-slate-700 px-3 py-2 rounded-lg text-sm" onclick="PP_LIMITE+=300;ppRender()">Mostrar 300 más</button></div>`:'';
  const r=document.getElementById('ppResumen');if(r){const comp=[...CAT.grupos.values()].filter(g=>g.length>1).length;r.innerHTML=`<b>${items.length}</b> productos encontrados · <b>${activos.length}</b> en catálogo · <b>${comp}</b> comparaciones vinculadas · margen general <b>${ppMargenGeneral()}%</b>${ppRedondeo()?` · redondeo $${ppRedondeo()}`:''}.`}
- ppActualizarSeleccionUI();ppRenderPedidos();
+ ppActualizarSeleccionUI();ppRenderPedidos();ppCargarFotos(PP_VISIBLES);
 }
 function ppBuscarCambio(){PP_NAV_INDEX=0;PP_LIMITE=200;clearTimeout(PP_BUSCAR_T);PP_BUSCAR_T=setTimeout(ppRender,180)}
 function ppBuscarTecla(e){
@@ -4399,7 +4940,7 @@ function ppBuscarTecla(e){
  if(e.key==='Enter'){e.preventDefault();clearTimeout(PP_BUSCAR_T);const x=PP_VISIBLES[PP_NAV_INDEX<0?0:PP_NAV_INDEX];if(x)ppAgregarPedido(x.id);return false}
  return true;
 }
-function ppActualizarFilaNav(){const rows=[...document.querySelectorAll('#ppTabla tr[data-pp-id]')];rows.forEach((tr,i)=>tr.classList.toggle('pp-nav-activa',i===PP_NAV_INDEX));const tr=rows[PP_NAV_INDEX];if(tr)tr.scrollIntoView({block:'nearest'})}
+function ppActualizarFilaNav(){const rows=[...document.querySelectorAll('#ppTabla tr[data-pp-id],#ppCards [data-pp-id]')];rows.forEach((tr,i)=>tr.classList.toggle('pp-nav-activa',i===PP_NAV_INDEX));const tr=rows[PP_NAV_INDEX];if(tr)tr.scrollIntoView({block:'nearest'})}
 function ppBuscarEnCatalogo(texto){tab('catalogoProveedores');const b=document.getElementById('ppBuscar');if(b){b.value=String(texto||'').split('\n')[0].slice(0,60);ppBuscarCambio();b.focus()}}
 
 /* ---------- Selección y acciones masivas ---------- */
