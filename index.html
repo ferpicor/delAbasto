@@ -963,6 +963,15 @@ html body .item-operativo .small{color:var(--acc-tx)}
 <style id="compras-fecha-v70">
 .compra-check-text{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:14px!important}
 .compra-item-contenido{min-width:0;overflow-wrap:anywhere}
+.gcal{display:grid;grid-template-columns:repeat(7,minmax(104px,1fr));gap:4px}
+.gcal-cab{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--tx-3);text-align:center;padding:4px}
+.gcal-celda{min-height:92px;border:1px solid var(--line);border-radius:8px;padding:4px;background:var(--field);display:flex;flex-direction:column;gap:3px}
+.gcal-vacia{background:transparent;border-color:transparent}
+.gcal-hoy{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc-glow)}
+.gcal-dia{font-size:.72rem;color:var(--tx-3);font-weight:600}
+.gcal-pill{font-size:.68rem;text-align:left;border:1px solid var(--line-2);border-radius:6px;padding:1px 5px;background:transparent;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;width:100%}
+.gcal-pill i{font-style:normal;opacity:.75}
+#gastosVistaBtns button.on{border-color:var(--acc);color:var(--acc-tx)}
 .pend-chip{font-size:.68rem;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--tx-2);white-space:nowrap}
 .compra-item-fecha{flex:0 0 auto;font-family:var(--mono);font-size:.68rem;color:var(--tx-3);white-space:nowrap}
 @media(max-width:700px){
@@ -1029,6 +1038,7 @@ html body .item-operativo .small{color:var(--acc-tx)}
    <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('crm')" id="t-crm">👥 CRM</button>
    <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('stock')" id="t-stock">📦 Stock</button>
    <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('compras')" id="t-compras">🚚 Compras</button>
+   <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('gastos')" id="t-gastos">📅 Gastos <span id="gastosBadge" class="oper-badge hidden"></span></button>
    <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('catalogoProveedores')" id="t-catalogoProveedores">🏷️ Proveedores y Productos</button>
    <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('reportes')" id="t-reportes">📊 Reportes</button>
    <button class="tab px-3 py-2 rounded bg-slate-700" onclick="tab('configuracion')" id="t-configuracion" title="Configuración">⚙️ Configuración</button>
@@ -1491,6 +1501,25 @@ body.modo-buscador nav .tab:not(#t-catalogoProveedores),body.modo-buscador #ppIm
  </div>
 </section>
 
+<section id="gastos" class="hidden space-y-5">
+ <div class="card p-5">
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+   <div><h2 class="text-xl font-bold">📅 Gastos y vencimientos</h2><p class="text-sm text-slate-500">Alquiler, tarjetas, sueldos, impuestos y servicios. Solo visible para el Dueño.</p></div>
+   <div class="flex flex-wrap gap-2 items-center">
+    <div class="flex gap-1" id="gastosVistaBtns"><button type="button" class="small oper-link" data-v="lista" onclick="gastosVista('lista')">☰ Lista</button><button type="button" class="small oper-link" data-v="cal" onclick="gastosVista('cal')">📅 Calendario</button></div>
+    <button onclick="gastoEditar()" class="bg-blue-600 px-3 py-2 rounded-lg text-sm">➕ Nuevo gasto</button>
+   </div>
+  </div>
+ </div>
+ <div id="gastosKpis" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+ <div class="card p-4 flex flex-wrap gap-2 items-center">
+  <select id="gastosFiltroEstado" class="border p-2 rounded" onchange="gastosRender()"><option value="pendiente">Pendientes</option><option value="pagado">Pagados</option><option value="todos">Todos</option></select>
+  <select id="gastosFiltroTipo" class="border p-2 rounded" onchange="gastosRender()"><option value="">Todos los tipos</option></select>
+  <input id="gastosBuscar" oninput="gastosRender()" class="border p-2 rounded flex-1 min-w-[160px]" placeholder="Buscar gasto...">
+ </div>
+ <div id="gastosAviso" class="hidden card p-4 text-sm"></div>
+ <div id="gastosCuerpo"></div>
+</section>
 <section id="reportes" class="hidden space-y-5">
  <div class="card p-5">
   <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
@@ -1642,12 +1671,12 @@ async function rpc(nombre,params,reintento=true){
 /* Roles: dueno | mostrador | taller */
 let rolActual='dueno',tabActual='dashboard';
 const PERMISOS={
- dueno:{borrar:true,emitir:true,caja:true,reportes:true,compras:true,ventas:true,admin:true,editarCaja:true,anular:true},
+ dueno:{borrar:true,emitir:true,caja:true,reportes:true,compras:true,ventas:true,admin:true,editarCaja:true,anular:true,gastos:true},
  mostrador:{borrar:false,emitir:true,caja:true,reportes:false,compras:true,ventas:true,admin:false,editarCaja:false,anular:false},
  taller:{borrar:false,emitir:false,caja:false,reportes:false,compras:false,ventas:false,admin:false,editarCaja:false,anular:false}
 };
 function puede(p){return !!(PERMISOS[rolActual]||PERMISOS.mostrador)[p]}
-const TAB_PERMISO={caja:'caja',reportes:'reportes',compras:'compras',catalogoProveedores:'compras',ventas:'ventas',configuracion:'caja'};
+const TAB_PERMISO={gastos:'gastos',caja:'caja',reportes:'reportes',compras:'compras',catalogoProveedores:'compras',ventas:'ventas',configuracion:'caja'};
 const CFG_DEFAULT={
  nombre:'Bicicletería del Abasto',direccion:'Entre Ríos 1887, Rosario',telefono:'341813614',whatsapp:'3416508671',instagram:'@bicicletasdelabasto',
  emailRemitente:'',emailFacturaAuto:false,serviceAuto:true,serviceDias:30,tituloService:'Service de bicicleta',
@@ -1846,6 +1875,7 @@ async function cargarSupabase(silencioso=false,soloTablas=null){
   if(typeof actualizarSelectsStockMovimientos==='function')actualizarSelectsStockMovimientos();
   refresh();
   if(!soloTablas)setTimeout(()=>{try{avisarRecordatoriosDelDia()}catch(_){}},400);
+  if(typeof gastosCargar==='function')gastosCargar();
   if(fallos.length){
    console.error('Errores de sincronización:',fallos);
    syncStatus(`⚠️ ${fallos.length} tabla(s) sin acceso`,false);
@@ -1889,18 +1919,19 @@ async function dbDelete(tabla,id){
  // v7: la función del servidor valida la tabla contra una lista blanca, controla el rol
  // y borra en cascada los movimientos de Caja vinculados (venta/OT/compra).
  // armados y modelos_armado no están en la lista blanca de la función del servidor: borrado directo (RLS: authenticated).
- if(tabla==='armados'||tabla==='modelos_armado'){const {error}=await supabaseClient.from(tabla).delete().eq('id',id);if(error)throw error;return {ok:true}}
+ if(tabla==='armados'||tabla==='modelos_armado'||tabla==='gastos'){const {error}=await supabaseClient.from(tabla).delete().eq('id',id);if(error)throw error;return {ok:true}}
  return rpc('crm_delete_record_v6',{p_table:tabla,p_id:String(id)});
 }
 
 /* v7: se dibuja solo la sección visible (antes cada cambio redibujaba todo, gráficos incluidos). */
 const RENDER_SECCION={
  dashboard:()=>dashboard(), operativo:()=>renderOperativo(), catalogoProveedores:()=>{}, taller:()=>renderOT(), ventas:()=>renderVentas(), caja:()=>{renderCaja();renderArqueos()},
- crm:()=>renderCRM(), stock:()=>renderStock(), compras:()=>renderCompras(), reportes:()=>reportes(), configuracion:()=>{}
+ crm:()=>renderCRM(), stock:()=>renderStock(), compras:()=>renderCompras(), gastos:()=>gastosRender(), reportes:()=>reportes(), configuracion:()=>{}
 };
 function renderActivo(){
  try{actualizarSelectConceptos();actualizarSelectProveedores();actualizarSelectProductos();actualizarCatalogosMarcaModelo();actualizarSelectsStockMovimientos();actualizarSelectArmadoVenta();servicePorDefecto()}catch(e){console.error(e)}
  try{operActualizarBadge()}catch(e){}
+ try{gastosActualizarBadge()}catch(e){}
  try{(RENDER_SECCION[tabActual]||RENDER_SECCION.dashboard)()}catch(e){console.error('Error al dibujar',tabActual,e)}
 }
 function refresh(){renderActivo()}
@@ -5792,6 +5823,208 @@ function renderListaOperativa(tipo,contenedorId){
   return `<div class="item-operativo w-full text-left border rounded-lg p-3"><div class="flex justify-between gap-3 items-center"><span class="flex-1 cursor-pointer" onclick="editarItemOperativo('${r.id}')">${esc(r.texto)}</span><span class="flex gap-2 shrink-0 items-center">${pendienteBadgesHTML(r)}${pendienteFechaHTML(r)}${a?`<button type="button" class="oper-link" title="Ver la bici a armar de ${esc(a.cliente)}" onclick="abrirFichaArmado('${a.id}')">🚲 Armado</button>`:''}<button type="button" onclick="resolverItemOperativo('${r.id}')" class="small" title="Marcar como hecho" style="color:#34d399">✅ Hecho</button><button type="button" onclick="editarItemOperativo('${r.id}')" class="small" title="Editar">✏️ Editar</button><button type="button" onclick="eliminarItemOperativo('${r.id}')" class="small" title="Eliminar" style="color:#fb7185;font-size:16px">🗑️</button></span></div></div>`;
  }).join('')||`<div class="text-slate-400 text-sm p-2">No hay pendientes cargados.</div>`;
 }
+/* ───────── Gastos y vencimientos (solo Dueño) ───────── */
+const GASTO_TIPOS=[['Alquiler','🏠'],['Tarjeta','💳'],['Sueldo','👥'],['Impuesto','🧾'],['Servicio','🔧'],['Proveedor','🚚'],['Otros','📦']];
+const GASTO_FREC=[['unica','Una sola vez'],['mensual','Todos los meses'],['bimestral','Cada 2 meses'],['trimestral','Cada 3 meses'],['semestral','Cada 6 meses'],['anual','Todos los años']];
+const GASTO_MESES_N={mensual:1,bimestral:2,trimestral:3,semestral:6,anual:12};
+const GASTO_MEDIOS=['Efectivo','Transferencia','Débito automático','Tarjeta','Cheque','Otro'];
+const GASTO_PLANTILLAS=[
+ {t:'🏠 Alquiler',nombre:'Alquiler',tipo:'Alquiler',frec:'mensual',dd:1,dh:10},
+ {t:'💳 Tarjeta',nombre:'Tarjeta de crédito',tipo:'Tarjeta',frec:'mensual',dd:10,dh:10},
+ {t:'👥 Sueldos',nombre:'Sueldos',tipo:'Sueldo',frec:'mensual',dd:1,dh:5},
+ {t:'🧾 Monotributo / IVA',nombre:'Monotributo',tipo:'Impuesto',frec:'mensual',dd:20,dh:20},
+ {t:'🔧 Servicio',nombre:'Luz',tipo:'Servicio',frec:'mensual',dd:15,dh:15}
+];
+let GASTOS_ERROR='',GASTOS_VISTA='lista',GASTOS_MES=null;
+try{GASTOS_VISTA=localStorage.getItem('abasto_gastos_vista')==='cal'?'cal':'lista'}catch(e){}
+function gFecha(s){const [y,m,d]=String(s).slice(0,10).split('-').map(Number);return new Date(y,m-1,d)}
+function gISO(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function gDif(a,b){return Math.round((gFecha(b)-gFecha(a))/864e5)}
+function gFmt(s){const d=gFecha(s),h=new Date();return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}${d.getFullYear()!==h.getFullYear()?'/'+String(d.getFullYear()).slice(2):''}`}
+function gNumInput(v){if(v===null||v===undefined||String(v).trim()==='')return null;const t=String(v).trim();const n=/,/.test(t)?parseFloat(t.replace(/\./g,'').replace(',','.')):parseFloat(t);return isNaN(n)?null:n}
+function gastoNorm(x){
+ const n=v=>v===null||v===undefined||v===''?null:Number(v);
+ return {id:x.id,nombre:x.nombre||'',tipo:x.tipo||'Otros',monto:n(x.monto),montoEst:n(x.monto_estimado),fijo:!!x.monto_fijo,
+  diaDesde:x.dia_desde||null,diaHasta:x.dia_hasta||null,desde:String(x.fecha_desde).slice(0,10),hasta:String(x.fecha_hasta||x.fecha_desde).slice(0,10),
+  frec:x.frecuencia||'unica',aviso:x.aviso_dias==null?3:Number(x.aviso_dias),notas:x.notas||'',estado:x.estado||'pendiente',
+  pagadoFecha:x.pagado_fecha?String(x.pagado_fecha).slice(0,10):'',montoPagado:n(x.monto_pagado),medio:x.medio||'',serie:x.serie_id||null};
+}
+async function gastosCargar(){
+ if(typeof puede!=='function'||!puede('gastos')||typeof supabaseClient==='undefined')return;
+ const prev=JSON.stringify(state.gastos||[]);
+ try{
+  const {data,error}=await supabaseClient.from('gastos').select('*').order('fecha_desde',{ascending:true}).limit(3000);
+  if(error)throw error;
+  state.gastos=(data||[]).map(gastoNorm);GASTOS_ERROR='';
+ }catch(e){GASTOS_ERROR=String(e.message||e);state.gastos=state.gastos||[]}
+ try{
+  gastosActualizarBadge();
+  if(tabActual==='gastos')gastosRender();
+  else if(tabActual==='dashboard'&&prev!==JSON.stringify(state.gastos||[]))dashboard();
+ }catch(_){}
+}
+function gastoEstado(g,hoy){
+ hoy=hoy||fechaLocalHoy();
+ if(g.estado==='pagado')return {nivel:'ok',txt:'Pagado',orden:9,aDesde:0,aHasta:0};
+ const aDesde=gDif(hoy,g.desde),aHasta=gDif(hoy,g.hasta),unico=g.desde===g.hasta,r=(nivel,txt,orden)=>({nivel,txt,orden,aDesde,aHasta});
+ if(aHasta<0)return r('rojo',`Vencido hace ${-aHasta} d`,0);
+ if(aDesde<=0){
+  if(aHasta===0)return r('rojo','Vence HOY',1);
+  if(aHasta<=g.aviso)return r('ambar',`Vence ${aHasta===1?'mañana':'en '+aHasta+' d'}`,2);
+  return r('cian',`Ya podés pagar · hasta el ${gFmt(g.hasta)}`,3);
+ }
+ if(aDesde<=g.aviso)return r('ambar',unico?(aDesde===1?'Vence mañana':`Vence en ${aDesde} d`):(aDesde===1?'Empieza mañana':`Empieza en ${aDesde} d`),4);
+ return r('gris',`En ${aDesde} d`,5);
+}
+function gastosPendientes(){return (state.gastos||[]).filter(g=>g.estado!=='pagado')}
+function gastosUrgentes(){
+ return gastosPendientes().map(g=>({g,e:gastoEstado(g)})).filter(x=>['rojo','ambar','cian'].includes(x.e.nivel)).sort((a,b)=>a.e.orden-b.e.orden||a.g.desde.localeCompare(b.g.desde))
+  .map(x=>({g:x.g,txt:x.e.txt+(x.g.monto==null?' · ⏳ monto a confirmar':' · '+money(x.g.monto))}));
+}
+function gastosActualizarBadge(){
+ const b=document.getElementById('gastosBadge');if(!b)return;
+ const n=(typeof puede==='function'&&puede('gastos'))?gastosUrgentes().length:0;b.textContent=n;b.classList.toggle('hidden',n===0);
+}
+function gastoVentanaTxt(g){
+ if(g.desde===g.hasta)return 'el '+gFmt(g.desde);
+ const a=gFecha(g.desde),b=gFecha(g.hasta);
+ if(a.getMonth()===b.getMonth()&&a.getFullYear()===b.getFullYear())return `del ${a.getDate()} al ${gFmt(g.hasta)}`;
+ return `del ${gFmt(g.desde)} al ${gFmt(g.hasta)}`;
+}
+function gastoSiguiente(g){
+ const n=GASTO_MESES_N[g.frec];if(!n)return null;
+ const a=gFecha(g.desde),b=gFecha(g.hasta),dd=g.diaDesde||a.getDate(),dh=g.diaHasta||b.getDate();
+ const cruza=b.getMonth()!==a.getMonth()||b.getFullYear()!==a.getFullYear();
+ const ult=(y,m)=>new Date(y,m+1,0).getDate(),y=a.getFullYear(),m=a.getMonth()+n,m2=cruza?m+1:m;
+ const f1=new Date(y,m,Math.min(dd,ult(y,m)));let f2=new Date(y,m2,Math.min(dh,ult(y,m2)));if(f2<f1)f2=f1;
+ return {nombre:g.nombre,tipo:g.tipo,monto:g.fijo?g.monto:null,monto_estimado:g.montoEst,monto_fijo:g.fijo,dia_desde:dd,dia_hasta:dh,
+  fecha_desde:gISO(f1),fecha_hasta:gISO(f2),frecuencia:g.frec,aviso_dias:g.aviso,notas:g.notas||null,estado:'pendiente',serie_id:g.serie||g.id};
+}
+function gastosVista(v){GASTOS_VISTA=v;try{localStorage.setItem('abasto_gastos_vista',v)}catch(e){}gastosRender()}
+function gastosMes(d){const b=GASTOS_MES||new Date();GASTOS_MES=new Date(b.getFullYear(),b.getMonth()+d,1);gastosRender()}
+function gastoColor(nivel){return {rojo:'#fb7185',ambar:'#fbbf24',cian:'var(--acc-tx)',ok:'#34d399'}[nivel]||''}
+function gastoIcono(t){return (GASTO_TIPOS.find(x=>x[0]===t)||GASTO_TIPOS[6])[1]}
+function gastosFiltrados(){
+ const est=document.getElementById('gastosFiltroEstado')?.value||'pendiente',tipo=document.getElementById('gastosFiltroTipo')?.value||'',q=normTxt(document.getElementById('gastosBuscar')?.value||'');
+ return (state.gastos||[]).filter(g=>(est==='todos'||g.estado===est)&&(!tipo||g.tipo===tipo)&&(!q||normTxt(g.nombre+' '+g.notas+' '+g.tipo).includes(q)));
+}
+function gastoFilaHTML(g){
+ const e=gastoEstado(g),col=gastoColor(e.nivel),pag=g.estado==='pagado';
+ const monto=pag?`<b>${money(g.montoPagado??g.monto)}</b>`:(g.monto!=null?`<b>${money(g.monto)}</b>`:(g.montoEst!=null?`<span class="small">⏳ a confirmar (aprox. ${money(g.montoEst)})</span>`:`<span class="small">⏳ monto a confirmar</span>`));
+ const sub=[pag?`Pagado el ${gFmt(g.pagadoFecha||g.desde)}${g.medio?' · '+esc(g.medio):''}`:gastoVentanaTxt(g),g.frec!=='unica'?'🔁 '+(GASTO_FREC.find(x=>x[0]===g.frec)||[])[1]:'',g.notas?esc(g.notas):''].filter(Boolean).join(' · ');
+ return `<div class="item-operativo border rounded-lg p-3"><div class="flex justify-between gap-3 items-center flex-wrap"><div class="flex-1" style="min-width:200px"><b>${gastoIcono(g.tipo)} ${esc(g.nombre)}</b> <span class="pend-chip">${esc(g.tipo)}</span><div class="small mt-1">${sub}</div></div><div class="flex gap-2 items-center shrink-0 flex-wrap"><span class="pend-chip" ${col?`style="color:${col};border-color:${col}"`:''}>${esc(e.txt)}</span>${monto}${pag?'':`<button type="button" class="small" style="color:#34d399" onclick="gastoPagar('${g.id}')">✅ Pagar</button>`}<button type="button" class="small" onclick="gastoEditar('${g.id}')">✏️ Editar</button></div></div></div>`;
+}
+function gastosKpis(){
+ const hoy=fechaLocalHoy(),p=gastosPendientes().map(g=>({g,e:gastoEstado(g,hoy)}));
+ const suma=l=>l.reduce((s,x)=>s+(x.g.monto||0),0),sinM=l=>l.filter(x=>x.g.monto==null).length;
+ const ven=p.filter(x=>x.e.aHasta<0),sem=p.filter(x=>x.e.aHasta>=0&&x.e.aDesde<=7),mes=p.filter(x=>x.e.aHasta>=0&&x.e.aDesde<=30);
+ const mm=hoy.slice(0,7),pagMes=(state.gastos||[]).filter(g=>g.estado==='pagado'&&String(g.pagadoFecha||'').slice(0,7)===mm).reduce((s,g)=>s+(g.montoPagado??g.monto??0),0);
+ const k=(t,n,sub,col)=>`<div class="card p-4"><div class="small">${t}</div><div class="text-2xl font-bold" ${col&&n>0?`style="color:${col}"`:''}>${n}</div><div class="small">${sub}</div></div>`;
+ const sub=l=>`${money(suma(l))}${sinM(l)?` + ${sinM(l)} sin monto`:''}`;
+ document.getElementById('gastosKpis').innerHTML=k('🔴 Vencidos',ven.length,sub(ven),'#fb7185')+k('🟡 Próximos 7 días',sem.length,sub(sem),'#fbbf24')+k('📅 Próximos 30 días',mes.length,sub(mes))+k('✅ Pagado este mes',(state.gastos||[]).filter(g=>g.estado==='pagado'&&String(g.pagadoFecha||'').slice(0,7)===mm).length,money(pagMes));
+}
+function gastosRender(){
+ const cuerpo=document.getElementById('gastosCuerpo');if(!cuerpo)return;
+ const ft=document.getElementById('gastosFiltroTipo');if(ft&&ft.options.length<=1){GASTO_TIPOS.forEach(([t])=>ft.add(new Option(t,t)))}
+ document.querySelectorAll('#gastosVistaBtns button').forEach(b=>b.classList.toggle('on',b.dataset.v===GASTOS_VISTA));
+ const av=document.getElementById('gastosAviso');
+ if(av){av.classList.toggle('hidden',!GASTOS_ERROR);if(GASTOS_ERROR)av.innerHTML=`⚠️ No pude leer la tabla de gastos: <span class="small">${esc(GASTOS_ERROR)}</span><br>Si es la primera vez, corré <b>migracion_gastos.sql</b> en el SQL Editor de Supabase y recargá.`}
+ gastosKpis();
+ const lista=gastosFiltrados();
+ if(GASTOS_VISTA==='cal'){cuerpo.innerHTML=gastosCalendarioHTML(lista);return}
+ const est=document.getElementById('gastosFiltroEstado')?.value||'pendiente';
+ if(!lista.length){cuerpo.innerHTML=`<div class="card p-5 text-slate-400 text-sm">${(state.gastos||[]).length?'No hay gastos con ese filtro.':'Todavía no cargaste gastos. Tocá ➕ Nuevo gasto y elegí una plantilla (Alquiler, Tarjeta, Sueldos…).'}</div>`;return}
+ const hoy=fechaLocalHoy(),grupos=[];
+ const pend=lista.filter(g=>g.estado!=='pagado').map(g=>({g,e:gastoEstado(g,hoy)})).sort((a,b)=>a.g.desde.localeCompare(b.g.desde)||a.g.hasta.localeCompare(b.g.hasta));
+ const G=(t,l)=>{if(l.length)grupos.push(`<div class="card p-4 space-y-2"><h3 class="font-semibold">${t} <span class="small">(${l.length})</span></h3>${l.map(x=>gastoFilaHTML(x.g)).join('')}</div>`)};
+ G('🔴 Vencidos',pend.filter(x=>x.e.aHasta<0));
+ G('💸 En ventana de pago (podés pagar ahora)',pend.filter(x=>x.e.aHasta>=0&&x.e.aDesde<=0));
+ G('⏭ Próximos 30 días',pend.filter(x=>x.e.aDesde>0&&x.e.aDesde<=30));
+ G('🗓 Más adelante',pend.filter(x=>x.e.aDesde>30));
+ const pag=lista.filter(g=>g.estado==='pagado').sort((a,b)=>String(b.pagadoFecha||b.desde).localeCompare(String(a.pagadoFecha||a.desde)));
+ if(pag.length)grupos.push(`<div class="card p-4 space-y-2"><h3 class="font-semibold">✅ Pagados <span class="small">(${pag.length} · ${money(pag.reduce((s,g)=>s+(g.montoPagado??g.monto??0),0))})</span></h3>${pag.slice(0,80).map(gastoFilaHTML).join('')}</div>`);
+ cuerpo.innerHTML=grupos.join('<div class="h-3"></div>');
+}
+function gastosCalendarioHTML(lista){
+ const base=GASTOS_MES||(GASTOS_MES=new Date(new Date().getFullYear(),new Date().getMonth(),1));
+ const y=base.getFullYear(),m=base.getMonth(),primero=new Date(y,m,1),dias=new Date(y,m+1,0).getDate(),off=(primero.getDay()+6)%7,hoy=fechaLocalHoy();
+ const nombres=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'],mesTxt=primero.toLocaleDateString('es-AR',{month:'long',year:'numeric'});
+ let celdas='';
+ for(let i=0;i<off;i++)celdas+='<div class="gcal-celda gcal-vacia"></div>';
+ for(let d=1;d<=dias;d++){
+  const iso=gISO(new Date(y,m,d)),dd=lista.filter(g=>g.desde<=iso&&g.hasta>=iso);
+  const pills=dd.slice(0,3).map(g=>{const e=gastoEstado(g,hoy),col=gastoColor(e.nivel),ini=g.desde===iso;
+   return `<button type="button" class="gcal-pill" style="${col?`border-color:${col};color:${col}`:''};${ini?'':'opacity:.55;border-style:dashed'}" title="${esc(g.nombre)} · ${esc(gastoVentanaTxt(g))}" onclick="gastoEditar('${g.id}')">${ini?esc(g.nombre):'… '+esc(g.nombre)}${ini&&g.monto!=null?' <i>'+Math.round(g.monto).toLocaleString('es-AR')+'</i>':''}</button>`}).join('');
+  const mas=dd.length>3?`<div class="small" title="${esc(dd.slice(3).map(g=>g.nombre).join(', '))}">+${dd.length-3} más</div>`:'';
+  celdas+=`<div class="gcal-celda${iso===hoy?' gcal-hoy':''}"><div class="gcal-dia">${d}</div>${pills}${mas}</div>`;
+ }
+ return `<div class="card p-4"><div class="flex justify-between items-center mb-3"><button type="button" class="small oper-link" onclick="gastosMes(-1)">‹ Anterior</button><h3 class="font-semibold">${mesTxt.charAt(0).toUpperCase()+mesTxt.slice(1)}</h3><button type="button" class="small oper-link" onclick="gastosMes(1)">Siguiente ›</button></div><div style="overflow-x:auto"><div class="gcal">${nombres.map(n=>`<div class="gcal-cab">${n}</div>`).join('')}${celdas}</div></div><p class="small mt-2">Línea punteada = días de la ventana de pago. Tocá un gasto para editarlo.</p></div>`;
+}
+function gastoEditar(id){
+ const g=id?(state.gastos||[]).find(x=>String(x.id)===String(id)):null,pag=g&&g.estado==='pagado',hoy=fechaLocalHoy();
+ const plant=g?'':`<div><label class="small">Plantilla rápida</label><div class="flex flex-wrap gap-2 mt-1">${GASTO_PLANTILLAS.map((p,i)=>`<button type="button" class="small oper-link" onclick="gastoPlantilla(${i})">${p.t}</button>`).join('')}</div></div>`;
+ abrirModal(g?'✏️ Editar gasto':'➕ Nuevo gasto',`<div class="space-y-3">${plant}
+  <div class="grid grid-cols-2 gap-2"><div><label class="small">Nombre</label><input id="gNombre" class="border p-2 rounded w-full" value="${esc(g?.nombre||'')}" placeholder="Ej: Alquiler local"></div>
+  <div><label class="small">Tipo</label><select id="gTipo" class="border p-2 rounded w-full">${GASTO_TIPOS.map(([t])=>`<option ${t===(g?.tipo||'Otros')?'selected':''}>${t}</option>`).join('')}</select></div></div>
+  <div class="grid grid-cols-2 gap-2"><div><label class="small">Se puede pagar desde</label><input id="gDesde" type="date" class="border p-2 rounded w-full" value="${g?.desde||hoy}"></div>
+  <div><label class="small">Hasta (vacío = un solo día)</label><input id="gHasta" type="date" class="border p-2 rounded w-full" value="${g&&g.hasta!==g.desde?g.hasta:''}"></div></div>
+  <div class="grid grid-cols-2 gap-2"><div><label class="small">Monto (vacío = a confirmar)</label><input id="gMonto" inputmode="decimal" class="border p-2 rounded w-full" value="${g&&g.monto!=null?g.monto:''}" placeholder="a confirmar"></div>
+  <div><label class="small">Monto estimado (opcional)</label><input id="gEst" inputmode="decimal" class="border p-2 rounded w-full" value="${g&&g.montoEst!=null?g.montoEst:''}" placeholder="aprox."></div></div>
+  <div class="grid grid-cols-2 gap-2"><div><label class="small">Se repite</label><select id="gFrec" class="border p-2 rounded w-full">${GASTO_FREC.map(([v,t])=>`<option value="${v}" ${v===(g?.frec||'unica')?'selected':''}>${t}</option>`).join('')}</select></div>
+  <div><label class="small">Avisar antes (días)</label><input id="gAviso" type="number" min="0" max="60" class="border p-2 rounded w-full" value="${g?g.aviso:3}"></div></div>
+  <label class="flex items-center gap-2 text-sm"><input id="gFijo" type="checkbox" ${g?.fijo?'checked':''}> El monto es siempre el mismo (se copia al mes siguiente)</label>
+  <div><label class="small">Notas</label><textarea id="gNotas" rows="2" class="border p-2 rounded w-full">${esc(g?.notas||'')}</textarea></div>
+  ${pag?`<div class="grid grid-cols-3 gap-2"><div><label class="small">Pagado el</label><input id="gPagFecha" type="date" class="border p-2 rounded w-full" value="${g.pagadoFecha||hoy}"></div><div><label class="small">Importe pagado</label><input id="gPagMonto" inputmode="decimal" class="border p-2 rounded w-full" value="${g.montoPagado??g.monto??''}"></div><div><label class="small">Medio</label><select id="gPagMedio" class="border p-2 rounded w-full">${GASTO_MEDIOS.map(x=>`<option ${x===g.medio?'selected':''}>${x}</option>`).join('')}</select></div></div>`:''}
+  <div class="grid grid-cols-${g?(pag?3:2):1} gap-2"><button onclick="gastoGuardar('${g?g.id:''}')" class="bg-blue-600 px-4 py-2 rounded font-semibold">Guardar</button>${g&&pag?`<button onclick="gastoReabrir('${g.id}')" class="border px-4 py-2 rounded font-semibold">↩ Volver a pendiente</button>`:''}${g?`<button onclick="gastoEliminar('${g.id}')" class="bg-rose-700 px-4 py-2 rounded font-semibold">🗑️ Eliminar</button>`:''}</div>
+  ${g&&g.frec!=='unica'&&!pag?'<p class="small">Para que deje de repetirse, cambiá "Se repite" a "Una sola vez".</p>':''}</div>`);
+}
+function gastoPlantilla(i){
+ const p=GASTO_PLANTILLAS[i],h=new Date(),f=(dia)=>{const d=new Date(h.getFullYear(),h.getMonth(),dia);if(d<new Date(h.getFullYear(),h.getMonth(),h.getDate()))d.setMonth(d.getMonth()+1);return gISO(d)};
+ const hasta=p.dd===p.dh?'':f(p.dh);let desde=f(p.dd);
+ if(hasta&&desde>hasta){desde=gISO(new Date(gFecha(desde).getFullYear(),gFecha(desde).getMonth(),p.dd))}
+ document.getElementById('gNombre').value=p.nombre;document.getElementById('gTipo').value=p.tipo;document.getElementById('gFrec').value=p.frec;
+ document.getElementById('gDesde').value=desde;document.getElementById('gHasta').value=hasta&&hasta>desde?hasta:'';
+ if(p.tipo==='Sueldo'||p.tipo==='Alquiler')document.getElementById('gFijo').checked=false;
+}
+async function gastoGuardar(id){
+ const nombre=document.getElementById('gNombre').value.trim(),desde=document.getElementById('gDesde').value;let hasta=document.getElementById('gHasta').value||desde;
+ if(!nombre)return alert('Poné un nombre.');if(!desde)return alert('Elegí desde qué fecha se puede pagar.');if(hasta<desde)return alert('"Hasta" no puede ser anterior a "Desde".');
+ const g=id?(state.gastos||[]).find(x=>String(x.id)===String(id)):null;
+ const o={nombre,tipo:document.getElementById('gTipo').value,fecha_desde:desde,fecha_hasta:hasta,monto:gNumInput(document.getElementById('gMonto').value),monto_estimado:gNumInput(document.getElementById('gEst').value),
+  frecuencia:document.getElementById('gFrec').value,aviso_dias:Number(document.getElementById('gAviso').value||0),monto_fijo:document.getElementById('gFijo').checked,notas:document.getElementById('gNotas').value.trim()||null};
+ if(!g||g.desde!==desde||g.hasta!==hasta){o.dia_desde=gFecha(desde).getDate();o.dia_hasta=gFecha(hasta).getDate()}
+ if(g&&g.estado==='pagado'){o.pagado_fecha=document.getElementById('gPagFecha')?.value||g.pagadoFecha||null;o.monto_pagado=gNumInput(document.getElementById('gPagMonto')?.value);o.medio=document.getElementById('gPagMedio')?.value||null}
+ try{if(g)await dbUpdate('gastos',g.id,o);else await dbInsert('gastos',o);cerrarModal();await gastosCargar()}
+ catch(e){alert('No se pudo guardar: '+e.message)}
+}
+async function gastoEliminar(id){
+ if(!confirm('¿Eliminar este gasto? Si se repite, el mes siguiente no se genera.'))return;
+ try{await dbDelete('gastos',id);cerrarModal();await gastosCargar()}catch(e){alert('No se pudo eliminar: '+e.message)}
+}
+async function gastoReabrir(id){
+ try{await dbUpdate('gastos',id,{estado:'pendiente',pagado_fecha:null,monto_pagado:null,medio:null});cerrarModal();await gastosCargar()}catch(e){alert('No se pudo reabrir: '+e.message)}
+}
+function gastoPagar(id){
+ const g=(state.gastos||[]).find(x=>String(x.id)===String(id));if(!g)return;
+ const sig=gastoSiguiente(g);
+ abrirModal('✅ Registrar pago',`<div class="space-y-3"><div><b>${gastoIcono(g.tipo)} ${esc(g.nombre)}</b><div class="small">${esc(gastoVentanaTxt(g))}</div></div>
+  <div class="grid grid-cols-3 gap-2"><div><label class="small">Importe pagado</label><input id="gpMonto" inputmode="decimal" class="border p-2 rounded w-full" value="${g.monto??g.montoEst??''}" placeholder="$"></div>
+  <div><label class="small">Fecha de pago</label><input id="gpFecha" type="date" class="border p-2 rounded w-full" value="${fechaLocalHoy()}"></div>
+  <div><label class="small">Medio</label><select id="gpMedio" class="border p-2 rounded w-full">${GASTO_MEDIOS.map(x=>`<option>${x}</option>`).join('')}</select></div></div>
+  ${sig?`<p class="small">Se va a crear el próximo: ${esc(gastoVentanaTxt({desde:sig.fecha_desde,hasta:sig.fecha_hasta}))}${sig.monto==null?' (monto a confirmar)':''}.</p>`:''}
+  <button onclick="gastoConfirmarPago('${g.id}')" class="bg-emerald-700 px-4 py-2 rounded w-full font-semibold">Confirmar pago</button></div>`);
+}
+async function gastoConfirmarPago(id){
+ const g=(state.gastos||[]).find(x=>String(x.id)===String(id));if(!g)return;
+ const m=gNumInput(document.getElementById('gpMonto').value);if(m===null||m<=0)return alert('Ingresá el importe pagado.');
+ const fecha=document.getElementById('gpFecha').value||fechaLocalHoy(),medio=document.getElementById('gpMedio').value;
+ try{
+  await dbUpdate('gastos',g.id,{estado:'pagado',monto:m,monto_pagado:m,pagado_fecha:fecha,medio});
+  const sig=gastoSiguiente(g);
+  if(sig&&!(state.gastos||[]).some(x=>x.id!==g.id&&x.estado!=='pagado'&&(x.serie||x.id)===sig.serie_id&&x.desde===sig.fecha_desde))await dbInsert('gastos',sig);
+  cerrarModal();await gastosCargar()
+ }catch(e){alert('No se pudo registrar el pago: '+e.message)}
+}
 /* v8: módulo Operativo (solapas) + resumen en Inicio */
 const OPER_KEY='abasto_oper_solapa';
 let operActual='pendientes';
@@ -6090,6 +6323,8 @@ function dashboard(){
  if(state.ots.filter(o=>o.estado==='Esperando repuestos').length)al.push(`<div class="bg-rose-50 p-2 rounded">🔧 Hay OT esperando repuestos.</div>`);
  {const hp=fechaLocalHoy(),pu=(state.recordatorios||[]).filter(r=>r.cliente===LISTA_PENDIENTE&&!r.hecho&&(r.prioridad==='alta'||(r.vence&&r.vence<=hp)));
   if(pu.length)al.push(`<div class="bg-rose-50 p-2 rounded">📌 <b>${pu.length}</b> pendiente(s) urgente(s) o con fecha de hoy/vencida:<div class="mt-1 space-y-1">${pu.slice(0,4).map(r=>`<div class="flex justify-between gap-2"><span>${esc(r.texto.length>60?r.texto.slice(0,60)+'…':r.texto)}</span><button onclick="irAOperativo('pendientes')" class="text-blue-600 font-semibold shrink-0">Ver</button></div>`).join('')}</div></div>`)}
+ {if(puede('gastos')&&typeof gastosUrgentes==='function'){const gu=gastosUrgentes();
+  if(gu.length)al.push(`<div class="bg-amber-50 p-2 rounded">📅 <b>${gu.length}</b> gasto(s) para atender:<div class="mt-1 space-y-1">${gu.slice(0,5).map(x=>`<div class="flex justify-between gap-2"><span>${esc(x.g.nombre)} · ${esc(x.txt)}</span><button onclick="tab('gastos')" class="text-blue-600 font-semibold shrink-0">Ver</button></div>`).join('')}</div></div>`)}}
  const ultCierre=state.arqueos.find(a=>a.tipo!=='apertura');
  if(ultCierre&&Math.abs(ultCierre.diferencia)>=0.01)al.push(`<div class="bg-rose-50 p-2 rounded">💰 Último arqueo con diferencia de ${money(ultCierre.diferencia)}.</div>`);
  if(puede('caja')&&!state.arqueos.some(a=>a.tipo==='apertura'&&isoDate(a.fecha)===hoyK))al.push(`<div class="bg-slate-50 p-2 rounded">🧾 Todavía no se hizo la apertura de caja de hoy. <button onclick="tab('caja');abrirArqueo()" class="text-blue-600 font-semibold">Abrir caja</button></div>`);
@@ -6360,7 +6595,7 @@ window.addEventListener('DOMContentLoaded',()=>{setTimeout(()=>document.getEleme
   /* ── 2) Buscador global (Ctrl/Cmd + K) ──────────────────────────── */
   var MODULOS = [
     ['dashboard','Inicio','home'], ['operativo','Operativo','pin'], ['taller','Taller','wrench'], ['ventas','Ventas','cart'], ['caja','Caja','wallet'],
-    ['crm','CRM','users'], ['stock','Stock','package'], ['compras','Compras','truck'], ['catalogoProveedores','Proveedores y Productos','truck'], ['reportes','Reportes','chart']
+    ['crm','CRM','users'], ['stock','Stock','package'], ['compras','Compras','truck'], ['gastos','Gastos y vencimientos','calendar'], ['catalogoProveedores','Proveedores y Productos','truck'], ['reportes','Reportes','chart']
   ];
   function ir(t, foco){
     try { tab(t) } catch (e) { console.error(e) }
