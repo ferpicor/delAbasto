@@ -971,7 +971,7 @@ html body .item-operativo .small{color:var(--acc-tx)}
 .gcal-dia{font-size:.72rem;color:var(--tx-3);font-weight:600}
 .gcal-pill{font-size:.68rem;text-align:left;border:1px solid var(--line-2);border-radius:6px;padding:1px 5px;background:transparent;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;width:100%}
 .gcal-pill i{font-style:normal;opacity:.75}
-#gastosVistaBtns button.on{border-color:var(--acc);color:var(--acc-tx)}
+#gastosVistaBtns button.on,#gastosModoBtns button.on,.oper-link.on{border-color:var(--acc);color:var(--acc-tx)}
 .pend-chip{font-size:.68rem;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--tx-2);white-space:nowrap}
 .compra-item-fecha{flex:0 0 auto;font-family:var(--mono);font-size:.68rem;color:var(--tx-3);white-space:nowrap}
 @media(max-width:700px){
@@ -1506,13 +1506,14 @@ body.modo-buscador nav .tab:not(#t-catalogoProveedores),body.modo-buscador #ppIm
   <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
    <div><h2 class="text-xl font-bold">📅 Gastos y vencimientos</h2><p class="text-sm text-slate-500">Alquiler, tarjetas, sueldos, impuestos y servicios. Solo visible para el Dueño.</p></div>
    <div class="flex flex-wrap gap-2 items-center">
+    <div class="flex gap-1" id="gastosModoBtns"><button type="button" class="small oper-link" data-m="gastos" onclick="gastosModo('gastos')">💸 Gastos</button><button type="button" class="small oper-link" data-m="cheques" onclick="gastosModo('cheques')">🧾 Cheques</button></div>
     <div class="flex gap-1" id="gastosVistaBtns"><button type="button" class="small oper-link" data-v="lista" onclick="gastosVista('lista')">☰ Lista</button><button type="button" class="small oper-link" data-v="cal" onclick="gastosVista('cal')">📅 Calendario</button></div>
-    <button onclick="gastoEditar()" class="bg-blue-600 px-3 py-2 rounded-lg text-sm">➕ Nuevo gasto</button>
+    <button id="gastosNuevoBtn" onclick="gastosNuevo()" class="bg-blue-600 px-3 py-2 rounded-lg text-sm">➕ Nuevo gasto</button>
    </div>
   </div>
  </div>
  <div id="gastosKpis" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
- <div class="card p-4 flex flex-wrap gap-2 items-center">
+ <div id="gastosFiltros" class="card p-4 flex flex-wrap gap-2 items-center">
   <select id="gastosFiltroEstado" class="border p-2 rounded" onchange="gastosRender()"><option value="pendiente">Pendientes</option><option value="pagado">Pagados</option><option value="todos">Todos</option></select>
   <select id="gastosFiltroTipo" class="border p-2 rounded" onchange="gastosRender()"><option value="">Todos los tipos</option></select>
   <input id="gastosBuscar" oninput="gastosRender()" class="border p-2 rounded flex-1 min-w-[160px]" placeholder="Buscar gasto...">
@@ -5847,20 +5848,21 @@ function gastoNorm(x){
  return {id:x.id,nombre:x.nombre||'',tipo:x.tipo||'Otros',monto:n(x.monto),montoEst:n(x.monto_estimado),fijo:!!x.monto_fijo,
   diaDesde:x.dia_desde||null,diaHasta:x.dia_hasta||null,desde:String(x.fecha_desde).slice(0,10),hasta:String(x.fecha_hasta||x.fecha_desde).slice(0,10),
   frec:x.frecuencia||'unica',aviso:x.aviso_dias==null?3:Number(x.aviso_dias),notas:x.notas||'',estado:x.estado||'pendiente',
-  pagadoFecha:x.pagado_fecha?String(x.pagado_fecha).slice(0,10):'',montoPagado:n(x.monto_pagado),medio:x.medio||'',serie:x.serie_id||null};
+  pagadoFecha:x.pagado_fecha?String(x.pagado_fecha).slice(0,10):'',montoPagado:n(x.monto_pagado),medio:x.medio||'',serie:x.serie_id||null,cajaId:x.caja_id||null};
 }
 async function gastosCargar(){
  if(typeof puede!=='function'||!puede('gastos')||typeof supabaseClient==='undefined')return;
- const prev=JSON.stringify(state.gastos||[]);
+ const prev=JSON.stringify([state.gastos||[],state.cheques||[]]);
  try{
   const {data,error}=await supabaseClient.from('gastos').select('*').order('fecha_desde',{ascending:true}).limit(3000);
   if(error)throw error;
   state.gastos=(data||[]).map(gastoNorm);GASTOS_ERROR='';
  }catch(e){GASTOS_ERROR=String(e.message||e);state.gastos=state.gastos||[]}
+ await chequesCargar();
  try{
   gastosActualizarBadge();
   if(tabActual==='gastos')gastosRender();
-  else if(tabActual==='dashboard'&&prev!==JSON.stringify(state.gastos||[]))dashboard();
+  else if(tabActual==='dashboard'&&prev!==JSON.stringify([state.gastos||[],state.cheques||[]]))dashboard();
  }catch(_){}
 }
 function gastoEstado(g,hoy){
@@ -5878,8 +5880,10 @@ function gastoEstado(g,hoy){
 }
 function gastosPendientes(){return (state.gastos||[]).filter(g=>g.estado!=='pagado')}
 function gastosUrgentes(){
- return gastosPendientes().map(g=>({g,e:gastoEstado(g)})).filter(x=>['rojo','ambar','cian'].includes(x.e.nivel)).sort((a,b)=>a.e.orden-b.e.orden||a.g.desde.localeCompare(b.g.desde))
-  .map(x=>({g:x.g,txt:x.e.txt+(x.g.monto==null?' · ⏳ monto a confirmar':' · '+money(x.g.monto))}));
+ const a=gastosPendientes().map(g=>({g,e:gastoEstado(g)})).filter(x=>['rojo','ambar','cian'].includes(x.e.nivel))
+  .map(x=>({g:x.g,orden:x.e.orden,txt:x.e.txt+(x.g.monto==null?' · ⏳ monto a confirmar':' · '+money(x.g.monto))}));
+ let c=[];try{c=chequesUrgentes()}catch(_){}
+ return a.concat(c).sort((x,y)=>x.orden-y.orden);
 }
 function gastosActualizarBadge(){
  const b=document.getElementById('gastosBadge');if(!b)return;
@@ -5923,15 +5927,25 @@ function gastosKpis(){
  const sub=l=>`${money(suma(l))}${sinM(l)?` + ${sinM(l)} sin monto`:''}`;
  document.getElementById('gastosKpis').innerHTML=k('🔴 Vencidos',ven.length,sub(ven),'#fb7185')+k('🟡 Próximos 7 días',sem.length,sub(sem),'#fbbf24')+k('📅 Próximos 30 días',mes.length,sub(mes))+k('✅ Pagado este mes',(state.gastos||[]).filter(g=>g.estado==='pagado'&&String(g.pagadoFecha||'').slice(0,7)===mm).length,money(pagMes));
 }
+let GASTOS_MODO='gastos';
+function gastosModo(m){GASTOS_MODO=m;gastosRender()}
+function gastosNuevo(){GASTOS_MODO==='cheques'?chequeEditar():gastoEditar()}
 function gastosRender(){
  const cuerpo=document.getElementById('gastosCuerpo');if(!cuerpo)return;
+ document.querySelectorAll('#gastosModoBtns button').forEach(b=>b.classList.toggle('on',b.dataset.m===GASTOS_MODO));
+ document.getElementById('gastosFiltros')?.classList.toggle('hidden',GASTOS_MODO==='cheques');
+ const nb=document.getElementById('gastosNuevoBtn');if(nb)nb.textContent=GASTOS_MODO==='cheques'?'➕ Nuevo cheque':'➕ Nuevo gasto';
+ if(GASTOS_MODO==='cheques'){document.querySelectorAll('#gastosVistaBtns button').forEach(b=>b.classList.toggle('on',b.dataset.v===GASTOS_VISTA));chequesRender();return}
  const ft=document.getElementById('gastosFiltroTipo');if(ft&&ft.options.length<=1){GASTO_TIPOS.forEach(([t])=>ft.add(new Option(t,t)))}
  document.querySelectorAll('#gastosVistaBtns button').forEach(b=>b.classList.toggle('on',b.dataset.v===GASTOS_VISTA));
  const av=document.getElementById('gastosAviso');
  if(av){av.classList.toggle('hidden',!GASTOS_ERROR);if(GASTOS_ERROR)av.innerHTML=`⚠️ No pude leer la tabla de gastos: <span class="small">${esc(GASTOS_ERROR)}</span><br>Si es la primera vez, corré <b>migracion_gastos.sql</b> en el SQL Editor de Supabase y recargá.`}
  gastosKpis();
  const lista=gastosFiltrados();
- if(GASTOS_VISTA==='cal'){cuerpo.innerHTML=gastosCalendarioHTML(lista);return}
+ if(GASTOS_VISTA==='cal'){
+  const e=document.getElementById('gastosFiltroEstado')?.value||'pendiente',q=normTxt(document.getElementById('gastosBuscar')?.value||''),tp=document.getElementById('gastosFiltroTipo')?.value||'';
+  const ch=tp?[]:chequesComoItems().filter(i=>(e==='todos'||i.estado===e)&&(!q||normTxt(i.nombre).includes(q)));
+  cuerpo.innerHTML=gastosCalendarioHTML(lista.concat(ch));return}
  const est=document.getElementById('gastosFiltroEstado')?.value||'pendiente';
  if(!lista.length){cuerpo.innerHTML=`<div class="card p-5 text-slate-400 text-sm">${(state.gastos||[]).length?'No hay gastos con ese filtro.':'Todavía no cargaste gastos. Tocá ➕ Nuevo gasto y elegí una plantilla (Alquiler, Tarjeta, Sueldos…).'}</div>`;return}
  const hoy=fechaLocalHoy(),grupos=[];
@@ -5953,7 +5967,7 @@ function gastosCalendarioHTML(lista){
  for(let i=0;i<off;i++)celdas+='<div class="gcal-celda gcal-vacia"></div>';
  for(let d=1;d<=dias;d++){
   const iso=gISO(new Date(y,m,d)),dd=lista.filter(g=>g.desde<=iso&&g.hasta>=iso);
-  const pills=dd.slice(0,3).map(g=>{const e=gastoEstado(g,hoy),col=gastoColor(e.nivel),ini=g.desde===iso;
+  const pills=dd.slice(0,3).map(g=>{const e=g._c?chequeEstado(g._c,hoy):gastoEstado(g,hoy),col=gastoColor(e.nivel),ini=g.desde===iso;
    return `<button type="button" class="gcal-pill" style="${col?`border-color:${col};color:${col}`:''};${ini?'':'opacity:.55;border-style:dashed'}" title="${esc(g.nombre)} · ${esc(gastoVentanaTxt(g))}" onclick="gastoEditar('${g.id}')">${ini?esc(g.nombre):'… '+esc(g.nombre)}${ini&&g.monto!=null?' <i>'+Math.round(g.monto).toLocaleString('es-AR')+'</i>':''}</button>`}).join('');
   const mas=dd.length>3?`<div class="small" title="${esc(dd.slice(3).map(g=>g.nombre).join(', '))}">+${dd.length-3} más</div>`:'';
   celdas+=`<div class="gcal-celda${iso===hoy?' gcal-hoy':''}"><div class="gcal-dia">${d}</div>${pills}${mas}</div>`;
@@ -5961,6 +5975,7 @@ function gastosCalendarioHTML(lista){
  return `<div class="card p-4"><div class="flex justify-between items-center mb-3"><button type="button" class="small oper-link" onclick="gastosMes(-1)">‹ Anterior</button><h3 class="font-semibold">${mesTxt.charAt(0).toUpperCase()+mesTxt.slice(1)}</h3><button type="button" class="small oper-link" onclick="gastosMes(1)">Siguiente ›</button></div><div style="overflow-x:auto"><div class="gcal">${nombres.map(n=>`<div class="gcal-cab">${n}</div>`).join('')}${celdas}</div></div><p class="small mt-2">Línea punteada = días de la ventana de pago. Tocá un gasto para editarlo.</p></div>`;
 }
 function gastoEditar(id){
+ if(String(id||'').startsWith('c:'))return chequeEditar(String(id).slice(2));
  const g=id?(state.gastos||[]).find(x=>String(x.id)===String(id)):null,pag=g&&g.estado==='pagado',hoy=fechaLocalHoy();
  const plant=g?'':`<div><label class="small">Plantilla rápida</label><div class="flex flex-wrap gap-2 mt-1">${GASTO_PLANTILLAS.map((p,i)=>`<button type="button" class="small oper-link" onclick="gastoPlantilla(${i})">${p.t}</button>`).join('')}</div></div>`;
  abrirModal(g?'✏️ Editar gasto':'➕ Nuevo gasto',`<div class="space-y-3">${plant}
@@ -5998,11 +6013,14 @@ async function gastoGuardar(id){
  catch(e){alert('No se pudo guardar: '+e.message)}
 }
 async function gastoEliminar(id){
- if(!confirm('¿Eliminar este gasto? Si se repite, el mes siguiente no se genera.'))return;
+ if(!confirm('¿Eliminar este gasto? Si se repite, el mes siguiente no se genera.'+((state.gastos||[]).find(x=>String(x.id)===String(id))?.cajaId?'\n\nEl movimiento de Caja ya registrado NO se borra.':'')))return;
  try{await dbDelete('gastos',id);cerrarModal();await gastosCargar()}catch(e){alert('No se pudo eliminar: '+e.message)}
 }
 async function gastoReabrir(id){
- try{await dbUpdate('gastos',id,{estado:'pendiente',pagado_fecha:null,monto_pagado:null,medio:null});cerrarModal();await gastosCargar()}catch(e){alert('No se pudo reabrir: '+e.message)}
+ const g=(state.gastos||[]).find(x=>String(x.id)===String(id));let borrar=false;
+ if(g?.cajaId)borrar=confirm('Este pago tenía un movimiento en Caja.\n\nAceptar = borrar también ese movimiento.\nCancelar = dejarlo en Caja.');
+ try{if(borrar){try{await dbDelete('caja',g.cajaId)}catch(e){alert('No se pudo borrar el movimiento de Caja: '+e.message)}}
+  await dbUpdate('gastos',id,{estado:'pendiente',pagado_fecha:null,monto_pagado:null,medio:null,caja_id:(borrar||!g?.cajaId)?null:g.cajaId});cerrarModal();await gastosCargar();if(borrar)try{await cargarSupabase(true,['caja'])}catch(_){}}catch(e){alert('No se pudo reabrir: '+e.message)}
 }
 function gastoPagar(id){
  const g=(state.gastos||[]).find(x=>String(x.id)===String(id));if(!g)return;
@@ -6011,6 +6029,7 @@ function gastoPagar(id){
   <div class="grid grid-cols-3 gap-2"><div><label class="small">Importe pagado</label><input id="gpMonto" inputmode="decimal" class="border p-2 rounded w-full" value="${g.monto??g.montoEst??''}" placeholder="$"></div>
   <div><label class="small">Fecha de pago</label><input id="gpFecha" type="date" class="border p-2 rounded w-full" value="${fechaLocalHoy()}"></div>
   <div><label class="small">Medio</label><select id="gpMedio" class="border p-2 rounded w-full">${GASTO_MEDIOS.map(x=>`<option>${x}</option>`).join('')}</select></div></div>
+  <label class="flex items-center gap-2 text-sm"><input id="gpCaja" type="checkbox" checked> 📒 Registrar la salida en Caja</label>
   ${sig?`<p class="small">Se va a crear el próximo: ${esc(gastoVentanaTxt({desde:sig.fecha_desde,hasta:sig.fecha_hasta}))}${sig.monto==null?' (monto a confirmar)':''}.</p>`:''}
   <button onclick="gastoConfirmarPago('${g.id}')" class="bg-emerald-700 px-4 py-2 rounded w-full font-semibold">Confirmar pago</button></div>`);
 }
@@ -6019,11 +6038,149 @@ async function gastoConfirmarPago(id){
  const m=gNumInput(document.getElementById('gpMonto').value);if(m===null||m<=0)return alert('Ingresá el importe pagado.');
  const fecha=document.getElementById('gpFecha').value||fechaLocalHoy(),medio=document.getElementById('gpMedio').value;
  try{
-  await dbUpdate('gastos',g.id,{estado:'pagado',monto:m,monto_pagado:m,pagado_fecha:fecha,medio});
+  const o={estado:'pagado',monto:m,monto_pagado:m,pagado_fecha:fecha,medio};
+  if(document.getElementById('gpCaja')?.checked)o.caja_id=await gastoCaja('Salida','Gastos - '+g.tipo,medio,m,fecha,g.nombre);
+  await dbUpdate('gastos',g.id,o);
   const sig=gastoSiguiente(g);
   if(sig&&!(state.gastos||[]).some(x=>x.id!==g.id&&x.estado!=='pagado'&&(x.serie||x.id)===sig.serie_id&&x.desde===sig.fecha_desde))await dbInsert('gastos',sig);
-  cerrarModal();await gastosCargar()
+  cerrarModal();await gastosCargar();
+  try{await cargarSupabase(true,['caja'])}catch(_){}
  }catch(e){alert('No se pudo registrar el pago: '+e.message)}
+}
+/* ───────── Cheques (etapa 2) + vínculo con Caja ───────── */
+const CHQ_BANCOS=['Banco Nación','Banco Santa Fe','Banco Galicia','Santander','BBVA','Macro','Credicoop','ICBC','HSBC','Patagonia','Supervielle','Otro'];
+let CHQ_ERROR='',CHQ_VER='activos',CHQ_TIPO='todos';
+function chequeNorm(x){return {id:x.id,tipo:x.tipo||'recibido',numero:x.numero||'',banco:x.banco||'',contra:x.contraparte||'',importe:Number(x.importe)||0,emision:x.fecha_emision?String(x.fecha_emision).slice(0,10):'',pago:String(x.fecha_pago).slice(0,10),estado:x.estado||(x.tipo==='emitido'?'pendiente':'cartera'),estadoFecha:x.estado_fecha?String(x.estado_fecha).slice(0,10):'',notas:x.notas||'',cajaId:x.caja_id||null}}
+function chequeActivo(c){return c.tipo==='emitido'?c.estado==='pendiente':['cartera','depositado'].includes(c.estado)}
+function chequeEstado(c,hoy){
+ hoy=hoy||fechaLocalHoy();const aPago=gDif(hoy,c.pago),r=(nivel,txt,orden)=>({nivel,txt,orden,aDesde:aPago,aHasta:aPago});
+ if(!chequeActivo(c))return {nivel:c.estado==='rechazado'?'rojo':'ok',txt:{cobrado:'Cobrado',debitado:'Debitado',rechazado:'Rechazado',endosado:'Endosado'}[c.estado]||c.estado,orden:9,aDesde:aPago,aHasta:aPago};
+ if(c.tipo==='emitido'){
+  if(aPago<0)return r('rojo',`Fecha vencida hace ${-aPago} d · ¿ya se debitó?`,0);
+  if(aPago===0)return r('rojo','Se debita HOY',1);
+  if(aPago<=3)return r('ambar',`Se debita ${aPago===1?'mañana':'en '+aPago+' d'}`,2);
+  return r('gris',`Se debita en ${aPago} d`,5);
+ }
+ if(c.estado==='depositado')return r('cian',`Depositado${c.estadoFecha?' el '+gFmt(c.estadoFecha):''} · esperando acreditación`,3);
+ if(aPago>0)return r(aPago<=2?'ambar':'gris',aPago===1?'Se puede depositar mañana':`Se puede depositar en ${aPago} d`,aPago<=2?4:6);
+ const limite=30+aPago; // días que quedan del plazo de 30 días corridos desde la fecha de pago
+ if(limite<0)return r('rojo',`Plazo de depósito vencido hace ${-limite} d`,0);
+ if(limite<=5)return r('ambar',`Depositar: quedan ${limite} d de plazo`,2);
+ return r('cian','Ya se puede depositar',3);
+}
+function chequesComoItems(){
+ return (state.cheques||[]).map(c=>({id:'c:'+c.id,nombre:`Cheque ${c.tipo==='emitido'?'emitido':'recibido'} ${c.numero?'N° '+c.numero:''}${c.contra?' · '+c.contra:''}`.trim(),tipo:'Cheque',desde:c.pago,hasta:c.pago,monto:c.importe,estado:chequeActivo(c)?'pendiente':'pagado',aviso:3,frec:'unica',_c:c}));
+}
+function chequesUrgentes(){
+ return (state.cheques||[]).filter(chequeActivo).map(c=>({c,e:chequeEstado(c)})).filter(x=>['rojo','ambar','cian'].includes(x.e.nivel)&&!(x.c.estado==='depositado'&&x.e.nivel==='cian'))
+  .map(x=>({g:{id:'c:'+x.c.id,nombre:`Cheque ${x.c.tipo==='emitido'?'emitido':'recibido'}${x.c.numero?' N° '+x.c.numero:''}${x.c.contra?' · '+x.c.contra:''}`},orden:x.e.orden,txt:x.e.txt+' · '+money(x.c.importe)}));
+}
+async function chequesCargar(){
+ if(typeof puede!=='function'||!puede('gastos')||typeof supabaseClient==='undefined')return;
+ try{const {data,error}=await supabaseClient.from('cheques').select('*').order('fecha_pago',{ascending:true}).limit(3000);if(error)throw error;state.cheques=(data||[]).map(chequeNorm);CHQ_ERROR=''}
+ catch(e){CHQ_ERROR=String(e.message||e);state.cheques=state.cheques||[]}
+}
+function chequesRender(){
+ const cuerpo=document.getElementById('gastosCuerpo');
+ const av=document.getElementById('gastosAviso');
+ if(av){av.classList.toggle('hidden',!CHQ_ERROR);if(CHQ_ERROR)av.innerHTML=`⚠️ No pude leer la tabla de cheques: <span class="small">${esc(CHQ_ERROR)}</span><br>Corré <b>migracion_cheques.sql</b> en el SQL Editor de Supabase y recargá.`}
+ const hoy=fechaLocalHoy(),todos=(state.cheques||[]).map(c=>({c,e:chequeEstado(c,hoy)}));
+ const em=todos.filter(x=>x.c.tipo==='emitido'&&chequeActivo(x.c)),re=todos.filter(x=>x.c.tipo==='recibido'&&chequeActivo(x.c));
+ const s=l=>l.reduce((a,x)=>a+x.c.importe,0),k=(t,n,sub,col)=>`<div class="card p-4"><div class="small">${t}</div><div class="text-2xl font-bold" ${col&&n>0?`style="color:${col}"`:''}>${n}</div><div class="small">${sub}</div></div>`;
+ const em30=em.filter(x=>x.e.aHasta<=30),dep=re.filter(x=>x.c.estado==='cartera'&&x.e.aHasta<=0),rech=todos.filter(x=>x.c.estado==='rechazado'&&x.c.estadoFecha&&gDif(x.c.estadoFecha,hoy)<=60);
+ document.getElementById('gastosKpis').innerHTML=k('📤 Emitidos a debitar (30 d)',em30.length,money(s(em30)),'#fbbf24')+k('📥 Recibidos en cartera',re.filter(x=>x.c.estado==='cartera').length,money(s(re.filter(x=>x.c.estado==='cartera'))))+k('🏦 Listos para depositar',dep.length,money(s(dep)),'var(--acc-tx)')+k('❌ Rechazados (60 d)',rech.length,money(s(rech)),'#fb7185');
+ const chip=(g,v,t,cur,fn)=>`<button type="button" class="small oper-link ${cur===v?'on':''}" onclick="${fn}('${v}')">${t}</button>`;
+ const barra=`<div class="card p-4 flex flex-wrap gap-2 items-center"><div class="flex gap-1">${chip(0,'activos','Activos',CHQ_VER,'chequesVer')}${chip(0,'cerrados','Cerrados',CHQ_VER,'chequesVer')}${chip(0,'todos','Todos',CHQ_VER,'chequesVer')}</div><div class="flex gap-1">${chip(0,'todos','Recibidos y emitidos',CHQ_TIPO,'chequesTipo')}${chip(0,'recibido','📥 Recibidos',CHQ_TIPO,'chequesTipo')}${chip(0,'emitido','📤 Emitidos',CHQ_TIPO,'chequesTipo')}</div></div>`;
+ let l=todos.filter(x=>(CHQ_TIPO==='todos'||x.c.tipo===CHQ_TIPO)&&(CHQ_VER==='todos'||(CHQ_VER==='activos')===chequeActivo(x.c)));
+ if(GASTOS_VISTA==='cal'){cuerpo.innerHTML=barra+'<div class="h-3"></div>'+gastosCalendarioHTML(l.map(x=>chequesComoItems().find(i=>i.id==='c:'+x.c.id)))}
+ else{
+  const fila=x=>chequeFilaHTML(x.c,x.e);
+  const G=(t,arr)=>arr.length?`<div class="card p-4 space-y-2"><h3 class="font-semibold">${t} <span class="small">(${arr.length} · ${money(s(arr))})</span></h3>${arr.map(fila).join('')}</div>`:'';
+  let h;
+  if(CHQ_VER==='activos'){
+   const ord=(a,b)=>a.c.pago.localeCompare(b.c.pago);
+   h=[G('🔴 Atención ahora',l.filter(x=>x.e.orden<=1).sort(ord)),G('📥 Recibidos en cartera / depositados',l.filter(x=>x.e.orden>1&&x.c.tipo==='recibido').sort(ord)),G('📤 Emitidos pendientes de débito',l.filter(x=>x.e.orden>1&&x.c.tipo==='emitido').sort(ord))].filter(Boolean).join('<div class="h-3"></div>');
+  }else h=G('Cheques',l.sort((a,b)=>b.c.pago.localeCompare(a.c.pago)));
+  cuerpo.innerHTML=barra+'<div class="h-3"></div>'+(h||`<div class="card p-5 text-slate-400 text-sm">${(state.cheques||[]).length?'No hay cheques con ese filtro.':'Todavía no cargaste cheques. Tocá ➕ Nuevo cheque.'}</div>`);
+ }
+}
+function chequesVer(v){CHQ_VER=v;gastosRender()}
+function chequesTipo(v){CHQ_TIPO=v;gastosRender()}
+function chequeFilaHTML(c,e){
+ const col=gastoColor(e.nivel),em=c.tipo==='emitido';
+ const b=(a,t,st)=>`<button type="button" class="small" ${st?`style="${st}"`:''} onclick="chequeAccion('${c.id}','${a}')">${t}</button>`;
+ let acc='';
+ if(em&&c.estado==='pendiente')acc=b('debitado','✅ Debitado','color:#34d399')+b('rechazado','❌ Rechazado','color:#fb7185');
+ else if(!em&&c.estado==='cartera')acc=b('depositado','🏦 Depositar','color:var(--acc-tx)')+b('endosado','↪ Endosar')+b('cobrado','✅ Cobrado','color:#34d399');
+ else if(!em&&c.estado==='depositado')acc=b('cobrado','✅ Cobrado','color:#34d399')+b('rechazado','❌ Rechazado','color:#fb7185');
+ const sub=[`${em?'A pagar el':'Fecha de pago'} ${gFmt(c.pago)}`,c.banco?esc(c.banco):'',c.notas?esc(c.notas):''].filter(Boolean).join(' · ');
+ return `<div class="item-operativo border rounded-lg p-3"><div class="flex justify-between gap-3 items-center flex-wrap"><div class="flex-1" style="min-width:200px"><b>${em?'📤':'📥'} ${c.numero?'N° '+esc(c.numero):'Cheque'}${c.contra?' · '+esc(c.contra):''}</b><div class="small mt-1">${sub}</div></div><div class="flex gap-2 items-center shrink-0 flex-wrap"><span class="pend-chip" ${col?`style="color:${col};border-color:${col}"`:''}>${esc(e.txt)}</span><b>${money(c.importe)}</b>${acc}<button type="button" class="small" onclick="chequeEditar('${c.id}')">✏️ Editar</button></div></div></div>`;
+}
+function chequeEditar(id,tipoNuevo){
+ const c=id?(state.cheques||[]).find(x=>String(x.id)===String(id)):null,tipo=c?.tipo||tipoNuevo||'recibido';
+ abrirModal(c?'✏️ Editar cheque':'➕ Nuevo cheque',`<div class="space-y-3">
+  <div class="grid grid-cols-2 gap-2"><div><label class="small">Tipo</label><select id="chTipo" class="border p-2 rounded w-full" onchange="document.getElementById('chContraLbl').textContent=this.value==='emitido'?'Proveedor / a quién':'Cliente / quién lo entregó'"><option value="recibido" ${tipo==='recibido'?'selected':''}>📥 Recibido (de un cliente)</option><option value="emitido" ${tipo==='emitido'?'selected':''}>📤 Emitido (lo di yo)</option></select></div>
+  <div><label class="small">N° de cheque</label><input id="chNum" class="border p-2 rounded w-full" value="${esc(c?.numero||'')}"></div></div>
+  <div class="grid grid-cols-2 gap-2"><div><label class="small">Banco</label><input id="chBanco" list="chBancos" class="border p-2 rounded w-full" value="${esc(c?.banco||'')}"><datalist id="chBancos">${CHQ_BANCOS.map(b=>`<option value="${b}">`).join('')}</datalist></div>
+  <div><label class="small" id="chContraLbl">${tipo==='emitido'?'Proveedor / a quién':'Cliente / quién lo entregó'}</label><input id="chContra" class="border p-2 rounded w-full" value="${esc(c?.contra||'')}"></div></div>
+  <div class="grid grid-cols-3 gap-2"><div><label class="small">Importe</label><input id="chImp" inputmode="decimal" class="border p-2 rounded w-full" value="${c?c.importe:''}"></div>
+  <div><label class="small">Fecha de emisión</label><input id="chEmi" type="date" class="border p-2 rounded w-full" value="${c?.emision||fechaLocalHoy()}"></div>
+  <div><label class="small">Fecha de pago</label><input id="chPago" type="date" class="border p-2 rounded w-full" value="${c?.pago||''}"></div></div>
+  <div><label class="small">Notas</label><textarea id="chNotas" rows="2" class="border p-2 rounded w-full">${esc(c?.notas||'')}</textarea></div>
+  <div class="grid grid-cols-${c?2:1} gap-2"><button onclick="chequeGuardar('${c?c.id:''}')" class="bg-blue-600 px-4 py-2 rounded font-semibold">Guardar</button>${c?`<button onclick="chequeEliminar('${c.id}')" class="bg-rose-700 px-4 py-2 rounded font-semibold">🗑️ Eliminar</button>`:''}</div>
+  ${c&&!chequeActivo(c)?`<button onclick="chequeReabrir('${c.id}')" class="border px-4 py-2 rounded w-full font-semibold">↩ Volver a activo</button>`:''}</div>`);
+}
+async function chequeGuardar(id){
+ const imp=gNumInput(document.getElementById('chImp').value),pago=document.getElementById('chPago').value;
+ if(imp===null||imp<=0)return alert('Ingresá el importe.');if(!pago)return alert('Ingresá la fecha de pago.');
+ const c=id?(state.cheques||[]).find(x=>String(x.id)===String(id)):null,tipo=document.getElementById('chTipo').value;
+ const o={tipo,numero:document.getElementById('chNum').value.trim()||null,banco:document.getElementById('chBanco').value.trim()||null,contraparte:document.getElementById('chContra').value.trim()||null,importe:imp,fecha_emision:document.getElementById('chEmi').value||null,fecha_pago:pago,notas:document.getElementById('chNotas').value.trim()||null};
+ try{if(c){if(c.tipo!==tipo)o.estado=tipo==='emitido'?'pendiente':'cartera';await dbUpdate('cheques',c.id,o)}else{o.estado=tipo==='emitido'?'pendiente':'cartera';await dbInsert('cheques',o)}cerrarModal();await gastosRefrescarTodo()}
+ catch(e){alert('No se pudo guardar: '+e.message)}
+}
+async function chequeEliminar(id){
+ const c=(state.cheques||[]).find(x=>String(x.id)===String(id));
+ if(!confirm('¿Eliminar este cheque?'+(c?.cajaId?'\n\nEl movimiento de Caja ya registrado NO se borra.':'')))return;
+ try{await dbDelete('cheques',id);cerrarModal();await gastosRefrescarTodo()}catch(e){alert('No se pudo eliminar: '+e.message)}
+}
+async function chequeReabrir(id){
+ const c=(state.cheques||[]).find(x=>String(x.id)===String(id));if(!c)return;
+ let borrarCaja=false;if(c.cajaId)borrarCaja=confirm('Este cheque tenía un movimiento en Caja.\n\nAceptar = borrar también ese movimiento.\nCancelar = dejar el movimiento en Caja.');
+ try{if(borrarCaja){try{await dbDelete('caja',c.cajaId)}catch(e){alert('No se pudo borrar el movimiento de Caja: '+e.message)}}
+  await dbUpdate('cheques',c.id,{estado:c.tipo==='emitido'?'pendiente':'cartera',estado_fecha:null,caja_id:borrarCaja||!c.cajaId?null:c.cajaId});cerrarModal();await gastosRefrescarTodo(true)}
+ catch(e){alert('No se pudo reabrir: '+e.message)}
+}
+function chequeAccion(id,a){
+ const c=(state.cheques||[]).find(x=>String(x.id)===String(id));if(!c)return;
+ const tit={debitado:'✅ Cheque debitado',rechazado:'❌ Cheque rechazado',depositado:'🏦 Depositar cheque',endosado:'↪ Endosar cheque',cobrado:'✅ Cheque cobrado'}[a];
+ const caja=a==='debitado'||a==='cobrado',em=c.tipo==='emitido';
+ abrirModal(tit,`<div class="space-y-3"><div><b>${em?'📤':'📥'} ${c.numero?'N° '+esc(c.numero):'Cheque'}${c.contra?' · '+esc(c.contra):''}</b><div class="small">${money(c.importe)} · pago ${gFmt(c.pago)}</div></div>
+  <div><label class="small">Fecha</label><input id="caFecha" type="date" class="border p-2 rounded w-full" value="${fechaLocalHoy()}"></div>
+  ${a==='endosado'?'<div><label class="small">Endosado a (proveedor)</label><input id="caNota" class="border p-2 rounded w-full" placeholder="Ej: Proveedor X"></div>':''}
+  ${caja?`<label class="flex items-center gap-2 text-sm"><input id="caCaja" type="checkbox" checked> 📒 Registrar ${em?'salida':'entrada'} en Caja por ${money(c.importe)}</label>`:''}
+  ${a==='rechazado'&&em===false?'<p class="small">Un cheque rechazado queda marcado en rojo para que le reclames al cliente.</p>':''}
+  <button onclick="chequeConfirmarAccion('${c.id}','${a}')" class="bg-blue-600 px-4 py-2 rounded w-full font-semibold">Confirmar</button></div>`);
+}
+async function chequeConfirmarAccion(id,a){
+ const c=(state.cheques||[]).find(x=>String(x.id)===String(id));if(!c)return;
+ const fecha=document.getElementById('caFecha').value||fechaLocalHoy(),o={estado:a,estado_fecha:fecha};
+ const nota=document.getElementById('caNota')?.value.trim();if(nota)o.notas=((c.notas?c.notas+' · ':'')+'Endosado a '+nota);
+ try{
+  if((a==='cobrado'||a==='debitado')&&document.getElementById('caCaja')?.checked){
+   o.caja_id=await gastoCaja(c.tipo==='emitido'?'Salida':'Entrada',c.tipo==='emitido'?'Cheques pagados':'Cheques cobrados','Otro',c.importe,fecha,`Cheque ${c.numero?'N° '+c.numero+' ':''}${c.banco?c.banco+' ':''}${c.contra?'· '+c.contra:''}`.trim());
+  }
+  await dbUpdate('cheques',c.id,o);cerrarModal();await gastosRefrescarTodo(true)
+ }catch(e){alert('No se pudo registrar: '+e.message)}
+}
+async function gastoCaja(tipo,concepto,medio,monto,fecha,desc){
+ const mp={'Débito automático':'Débito','Tarjeta':'Crédito','Cheque':'Otro'}[medio]||medio;
+ const r=await dbInsert('caja',{tipo,categoria:concepto,concepto,medio_pago:mp,monto,descripcion:desc,fecha:fechaHoraLocal(fecha),cuit:null});
+ return r&&r.id!=null?String(r.id):null;
+}
+async function gastosRefrescarTodo(recargarCaja){
+ await Promise.all([gastosCargar(),chequesCargar()]);
+ try{gastosActualizarBadge();if(tabActual==='gastos')gastosRender()}catch(_){}
+ if(recargarCaja)try{await cargarSupabase(true,['caja'])}catch(_){}
 }
 /* v8: módulo Operativo (solapas) + resumen en Inicio */
 const OPER_KEY='abasto_oper_solapa';
