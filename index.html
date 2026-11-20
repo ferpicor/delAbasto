@@ -1506,7 +1506,7 @@ body.modo-buscador nav .tab:not(#t-catalogoProveedores),body.modo-buscador #ppIm
   <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
    <div><h2 class="text-xl font-bold">📅 Gastos y vencimientos</h2><p class="text-sm text-slate-500">Alquiler, tarjetas, sueldos, impuestos y servicios. Solo visible para el Dueño.</p></div>
    <div class="flex flex-wrap gap-2 items-center">
-    <div class="flex gap-1" id="gastosModoBtns"><button type="button" class="small oper-link" data-m="gastos" onclick="gastosModo('gastos')">💸 Gastos</button><button type="button" class="small oper-link" data-m="cheques" onclick="gastosModo('cheques')">🧾 Cheques</button></div>
+    <div class="flex gap-1" id="gastosModoBtns"><button type="button" class="small oper-link" data-m="gastos" onclick="gastosModo('gastos')">💸 Gastos</button><button type="button" class="small oper-link" data-m="cheques" onclick="gastosModo('cheques')">🧾 Cheques</button><button type="button" class="small oper-link" data-m="fijos" onclick="gastosModo('fijos')">📌 Fijos</button><button type="button" class="small oper-link" data-m="personales" onclick="gastosModo('personales')">👤 Personales</button></div>
     <div class="flex gap-1" id="gastosVistaBtns"><button type="button" class="small oper-link" data-v="lista" onclick="gastosVista('lista')">☰ Lista</button><button type="button" class="small oper-link" data-v="cal" onclick="gastosVista('cal')">📅 Calendario</button></div>
     <button id="gastosNuevoBtn" onclick="gastosNuevo()" class="bg-blue-600 px-3 py-2 rounded-lg text-sm">➕ Nuevo gasto</button>
    </div>
@@ -5848,7 +5848,7 @@ function gastoNorm(x){
  return {id:x.id,nombre:x.nombre||'',tipo:x.tipo||'Otros',monto:n(x.monto),montoEst:n(x.monto_estimado),fijo:!!x.monto_fijo,
   diaDesde:x.dia_desde||null,diaHasta:x.dia_hasta||null,desde:String(x.fecha_desde).slice(0,10),hasta:String(x.fecha_hasta||x.fecha_desde).slice(0,10),
   frec:x.frecuencia||'unica',aviso:x.aviso_dias==null?3:Number(x.aviso_dias),notas:x.notas||'',estado:x.estado||'pendiente',
-  pagadoFecha:x.pagado_fecha?String(x.pagado_fecha).slice(0,10):'',montoPagado:n(x.monto_pagado),medio:x.medio||'',serie:x.serie_id||null,cajaId:x.caja_id||null};
+  pagadoFecha:x.pagado_fecha?String(x.pagado_fecha).slice(0,10):'',montoPagado:n(x.monto_pagado),medio:x.medio||'',serie:x.serie_id||null,cajaId:x.caja_id||null,noFijo:!!x.no_fijo};
 }
 async function gastosCargar(){
  if(typeof puede!=='function'||!puede('gastos')||typeof supabaseClient==='undefined')return;
@@ -5859,6 +5859,7 @@ async function gastosCargar(){
   state.gastos=(data||[]).map(gastoNorm);GASTOS_ERROR='';
  }catch(e){GASTOS_ERROR=String(e.message||e);state.gastos=state.gastos||[]}
  await chequesCargar();
+ await gastosCargarExtra();
  try{
   gastosActualizarBadge();
   if(tabActual==='gastos')gastosRender();
@@ -5901,7 +5902,7 @@ function gastoSiguiente(g){
  const cruza=b.getMonth()!==a.getMonth()||b.getFullYear()!==a.getFullYear();
  const ult=(y,m)=>new Date(y,m+1,0).getDate(),y=a.getFullYear(),m=a.getMonth()+n,m2=cruza?m+1:m;
  const f1=new Date(y,m,Math.min(dd,ult(y,m)));let f2=new Date(y,m2,Math.min(dh,ult(y,m2)));if(f2<f1)f2=f1;
- return {nombre:g.nombre,tipo:g.tipo,monto:g.fijo?g.monto:null,monto_estimado:g.montoEst,monto_fijo:g.fijo,dia_desde:dd,dia_hasta:dh,
+ return {nombre:g.nombre,tipo:g.tipo,monto:g.fijo?g.monto:null,monto_estimado:g.montoEst,monto_fijo:g.fijo,...(g.noFijo?{no_fijo:true}:{}),dia_desde:dd,dia_hasta:dh,
   fecha_desde:gISO(f1),fecha_hasta:gISO(f2),frecuencia:g.frec,aviso_dias:g.aviso,notas:g.notas||null,estado:'pendiente',serie_id:g.serie||g.id};
 }
 function gastosVista(v){GASTOS_VISTA=v;try{localStorage.setItem('abasto_gastos_vista',v)}catch(e){}gastosRender()}
@@ -5929,12 +5930,15 @@ function gastosKpis(){
 }
 let GASTOS_MODO='gastos';
 function gastosModo(m){GASTOS_MODO=m;gastosRender()}
-function gastosNuevo(){GASTOS_MODO==='cheques'?chequeEditar():gastoEditar()}
+function gastosNuevo(){({cheques:()=>chequeEditar(),fijos:()=>fijoEditar(),personales:()=>personalGastoEditar()}[GASTOS_MODO]||(()=>gastoEditar()))()}
 function gastosRender(){
  const cuerpo=document.getElementById('gastosCuerpo');if(!cuerpo)return;
  document.querySelectorAll('#gastosModoBtns button').forEach(b=>b.classList.toggle('on',b.dataset.m===GASTOS_MODO));
- document.getElementById('gastosFiltros')?.classList.toggle('hidden',GASTOS_MODO==='cheques');
- const nb=document.getElementById('gastosNuevoBtn');if(nb)nb.textContent=GASTOS_MODO==='cheques'?'➕ Nuevo cheque':'➕ Nuevo gasto';
+ document.getElementById('gastosFiltros')?.classList.toggle('hidden',GASTOS_MODO!=='gastos');
+ document.getElementById('gastosVistaBtns')?.classList.toggle('hidden',GASTOS_MODO==='fijos'||GASTOS_MODO==='personales');
+ const nb=document.getElementById('gastosNuevoBtn');if(nb)nb.textContent={cheques:'➕ Nuevo cheque',fijos:'➕ Nuevo fijo',personales:'➕ Gasto personal'}[GASTOS_MODO]||'➕ Nuevo gasto';
+ if(GASTOS_MODO==='fijos'){fijosRender();return}
+ if(GASTOS_MODO==='personales'){personalesRender();return}
  if(GASTOS_MODO==='cheques'){document.querySelectorAll('#gastosVistaBtns button').forEach(b=>b.classList.toggle('on',b.dataset.v===GASTOS_VISTA));chequesRender();return}
  const ft=document.getElementById('gastosFiltroTipo');if(ft&&ft.options.length<=1){GASTO_TIPOS.forEach(([t])=>ft.add(new Option(t,t)))}
  document.querySelectorAll('#gastosVistaBtns button').forEach(b=>b.classList.toggle('on',b.dataset.v===GASTOS_VISTA));
@@ -5988,6 +5992,7 @@ function gastoEditar(id){
   <div class="grid grid-cols-2 gap-2"><div><label class="small">Se repite</label><select id="gFrec" class="border p-2 rounded w-full">${GASTO_FREC.map(([v,t])=>`<option value="${v}" ${v===(g?.frec||'unica')?'selected':''}>${t}</option>`).join('')}</select></div>
   <div><label class="small">Avisar antes (días)</label><input id="gAviso" type="number" min="0" max="60" class="border p-2 rounded w-full" value="${g?g.aviso:3}"></div></div>
   <label class="flex items-center gap-2 text-sm"><input id="gFijo" type="checkbox" ${g?.fijo?'checked':''}> El monto es siempre el mismo (se copia al mes siguiente)</label>
+  <label class="flex items-center gap-2 text-sm"><input id="gNoFijo" type="checkbox" ${g?.noFijo?'checked':''}> No contar como gasto fijo mensual</label>
   <div><label class="small">Notas</label><textarea id="gNotas" rows="2" class="border p-2 rounded w-full">${esc(g?.notas||'')}</textarea></div>
   ${pag?`<div class="grid grid-cols-3 gap-2"><div><label class="small">Pagado el</label><input id="gPagFecha" type="date" class="border p-2 rounded w-full" value="${g.pagadoFecha||hoy}"></div><div><label class="small">Importe pagado</label><input id="gPagMonto" inputmode="decimal" class="border p-2 rounded w-full" value="${g.montoPagado??g.monto??''}"></div><div><label class="small">Medio</label><select id="gPagMedio" class="border p-2 rounded w-full">${GASTO_MEDIOS.map(x=>`<option ${x===g.medio?'selected':''}>${x}</option>`).join('')}</select></div></div>`:''}
   <div class="grid grid-cols-${g?(pag?3:2):1} gap-2"><button onclick="gastoGuardar('${g?g.id:''}')" class="bg-blue-600 px-4 py-2 rounded font-semibold">Guardar</button>${g&&pag?`<button onclick="gastoReabrir('${g.id}')" class="border px-4 py-2 rounded font-semibold">↩ Volver a pendiente</button>`:''}${g?`<button onclick="gastoEliminar('${g.id}')" class="bg-rose-700 px-4 py-2 rounded font-semibold">🗑️ Eliminar</button>`:''}</div>
@@ -6007,6 +6012,7 @@ async function gastoGuardar(id){
  const g=id?(state.gastos||[]).find(x=>String(x.id)===String(id)):null;
  const o={nombre,tipo:document.getElementById('gTipo').value,fecha_desde:desde,fecha_hasta:hasta,monto:gNumInput(document.getElementById('gMonto').value),monto_estimado:gNumInput(document.getElementById('gEst').value),
   frecuencia:document.getElementById('gFrec').value,aviso_dias:Number(document.getElementById('gAviso').value||0),monto_fijo:document.getElementById('gFijo').checked,notas:document.getElementById('gNotas').value.trim()||null};
+ {const nf=document.getElementById('gNoFijo').checked;if(nf||g?.noFijo)o.no_fijo=nf}
  if(!g||g.desde!==desde||g.hasta!==hasta){o.dia_desde=gFecha(desde).getDate();o.dia_hasta=gFecha(hasta).getDate()}
  if(g&&g.estado==='pagado'){o.pagado_fecha=document.getElementById('gPagFecha')?.value||g.pagadoFecha||null;o.monto_pagado=gNumInput(document.getElementById('gPagMonto')?.value);o.medio=document.getElementById('gPagMedio')?.value||null}
  try{if(g)await dbUpdate('gastos',g.id,o);else await dbInsert('gastos',o);cerrarModal();await gastosCargar()}
@@ -6181,6 +6187,175 @@ async function gastosRefrescarTodo(recargarCaja){
  await Promise.all([gastosCargar(),chequesCargar()]);
  try{gastosActualizarBadge();if(tabActual==='gastos')gastosRender()}catch(_){}
  if(recargarCaja)try{await cargarSupabase(true,['caja'])}catch(_){}
+}
+/* ───────── Gastos fijos (desde recurrentes + manuales) y Gastos personales ───────── */
+const FIJO_CATS=['Alquiler','Sueldo','Servicio','Impuesto','Seguro','Contador','Software / Internet','Tarjeta','Proveedor','Otros'];
+const PERS_CATS=['Supermercado','Vivienda','Salud','Educación','Transporte','Ocio','Ropa','Impuestos personales','Tarjeta personal','Otros'];
+const EXTRA_ERR={};let PERS_MES=null,PERS_SEL='todas';
+async function gastosCargarExtra(){
+ if(typeof puede!=='function'||!puede('gastos')||typeof supabaseClient==='undefined')return;
+ const L=async(t,k,o)=>{try{const {data,error}=await supabaseClient.from(t).select('*').order(o,{ascending:true}).limit(5000);if(error)throw error;state[k]=data||[];EXTRA_ERR[t]=''}catch(e){EXTRA_ERR[t]=String(e.message||e);state[k]=state[k]||[]}};
+ await Promise.all([L('gastos_fijos','fijos','created_at'),L('personas','personas','created_at'),L('gastos_personales','gpers','fecha')]);
+}
+function extraAviso(tablas,sql){
+ const av=document.getElementById('gastosAviso');if(!av)return;
+ const e=tablas.map(t=>EXTRA_ERR[t]?`${t}: ${EXTRA_ERR[t]}`:'').filter(Boolean);
+ av.classList.toggle('hidden',!e.length);if(e.length)av.innerHTML=`⚠️ No pude leer: <span class="small">${esc(e.join(' | '))}</span><br>Corré <b>${sql}</b> en el SQL Editor de Supabase y recargá.`;
+}
+const FREC_N={mensual:1,...GASTO_MESES_N};
+function fijosCalcular(){
+ const items=[],series={};
+ (state.gastos||[]).forEach(g=>{const k=g.serie||g.id;(series[k]=series[k]||[]).push(g)});
+ Object.values(series).forEach(arr=>{
+  arr.sort((a,b)=>b.desde.localeCompare(a.desde));const u=arr[0];
+  if(u.frec==='unica'||u.noFijo)return;
+  let base=null;for(const g of arr){const v=g.monto??g.montoPagado??g.montoEst;if(v!=null){base=v;break}}
+  const n=FREC_N[u.frec]||1;
+  items.push({origen:'rec',id:u.id,nombre:u.nombre,cat:u.tipo,frec:u.frec,base,mes:base==null?0:base/n,sin:base==null});
+ });
+ (state.fijos||[]).filter(f=>f.activo!==false).forEach(f=>{const n=FREC_N[f.frecuencia]||1,b=Number(f.monto)||0;items.push({origen:'man',id:f.id,nombre:f.nombre,cat:f.categoria||'Otros',frec:f.frecuencia||'mensual',base:b,mes:b/n,sin:false,f})});
+ return items;
+}
+function fijosRender(){
+ extraAviso(['gastos_fijos'],'migracion_fijos_personales.sql');
+ const items=fijosCalcular(),total=items.reduce((a,x)=>a+x.mes,0),sin=items.filter(x=>x.sin).length;
+ const mm=fechaLocalHoy().slice(0,7),ing=(state.movimientos||[]).filter(m=>m.tipo==='Entrada'&&String(m.fecha).slice(0,7)===mm).reduce((a,m)=>a+(Number(m.monto)||0),0);
+ const k=(t,v,sub)=>`<div class="card p-4"><div class="small">${t}</div><div class="text-2xl font-bold">${v}</div><div class="small">${sub}</div></div>`;
+ document.getElementById('gastosKpis').innerHTML=k('📌 Fijos por mes',money(total),`${items.length} conceptos${sin?` · ${sin} sin monto cargado`:''}`)+k('📆 Por año',money(total*12),'proyección')+k('📥 Ingresos de Caja este mes',money(ing),'entradas registradas')+k('⚖️ Fijos vs. ingresos',ing>0?Math.round(total/ing*100)+'%':'—','de lo que entró a Caja este mes');
+ const porCat={};items.forEach(x=>{porCat[x.cat]=(porCat[x.cat]||0)+x.mes});
+ const cats=Object.entries(porCat).sort((a,b)=>b[1]-a[1]),max=cats[0]?cats[0][1]:1;
+ const desg=cats.length?`<div class="card p-4 space-y-2"><h3 class="font-semibold">Desglose por categoría</h3>${cats.map(([c,v])=>`<div><div class="flex justify-between small"><span>${esc(c)}</span><span><b>${money(v)}</b> · ${total?Math.round(v/total*100):0}%</span></div><div style="height:8px;border-radius:6px;background:var(--raise)"><div style="height:8px;border-radius:6px;width:${Math.max(3,v/max*100)}%;background:var(--acc)"></div></div></div>`).join('')}</div>`:'';
+ const frecTxt=f=>(GASTO_FREC.find(x=>x[0]===f)||[,'Todos los meses'])[1];
+ const fila=x=>{
+  let extra='';
+  if(x.origen==='man'){const h=(x.f.historial||[]).slice().sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha)));if(h.length>=2){const a=h[h.length-2].monto,b=h[h.length-1].monto;if(a>0&&b!==a)extra=` <span class="pend-chip" style="color:${b>a?'#fb7185':'#34d399'}">${b>a?'↗':'↘'} ${Math.abs(Math.round((b-a)/a*100))}% desde ${gFmt(h[h.length-1].fecha)}</span>`}}
+  return `<div class="item-operativo border rounded-lg p-3"><div class="flex justify-between gap-3 items-center flex-wrap"><div class="flex-1" style="min-width:200px"><b>${esc(x.nombre)}</b> <span class="pend-chip">${esc(x.cat)}</span>${extra}<div class="small mt-1">${x.sin?'⏳ monto todavía sin cargar':`${money(x.base)} · ${esc(frecTxt(x.frec))}`}${x.frec!=='mensual'&&!x.sin?` · equivale a ${money(x.mes)}/mes`:''}${x.origen==='rec'?' · viene de Vencimientos':''}</div></div><div class="flex gap-2 items-center shrink-0 flex-wrap"><b>${money(x.mes)}<span class="small">/mes</span></b>${x.origen==='man'?`<button type="button" class="small" onclick="fijoACaja('${x.id}')">📒 Pasar a Caja</button><button type="button" class="small" onclick="fijoEditar('${x.id}')">✏️ Editar</button>`:`<button type="button" class="small" onclick="gastosModo('gastos');gastoEditar('${x.id}')">✏️ Ver en Vencimientos</button>`}</div></div></div>`;
+ };
+ const rec=items.filter(x=>x.origen==='rec').sort((a,b)=>b.mes-a.mes),man=items.filter(x=>x.origen==='man').sort((a,b)=>b.mes-a.mes),pausados=(state.fijos||[]).filter(f=>f.activo===false);
+ const G=(t,l,txt)=>`<div class="card p-4 space-y-2"><h3 class="font-semibold">${t} <span class="small">(${l.length} · ${money(l.reduce((a,x)=>a+x.mes,0))}/mes)</span></h3>${l.length?l.map(fila).join(''):`<div class="text-slate-400 text-sm">${txt}</div>`}</div>`;
+ document.getElementById('gastosCuerpo').innerHTML=desg+'<div class="h-3"></div>'+G('🔁 Desde Vencimientos (se repiten)',rec,'Cuando cargues gastos que se repiten (alquiler, sueldos, tarjeta…), aparecen acá solos.')+'<div class="h-3"></div>'+G('📌 Fijos sin vencimiento',man,'Cargá lo que no tiene fecha de pago: internet, contador, seguro…')+(pausados.length?`<div class="card p-4 space-y-2"><h3 class="font-semibold">⏸ Pausados <span class="small">(no suman)</span></h3>${pausados.map(f=>`<div class="item-operativo border rounded-lg p-3 flex justify-between items-center"><span style="opacity:.7">${esc(f.nombre)} · ${money(f.monto)}</span><button type="button" class="small" onclick="fijoEditar('${f.id}')">✏️ Editar</button></div>`).join('')}</div>`:'')+'<p class="small mt-2">Un gasto de Vencimientos que no querés contar como fijo: abrilo y marcá "No contar como gasto fijo".</p>';
+}
+function fijoEditar(id){
+ const f=id?(state.fijos||[]).find(x=>String(x.id)===String(id)):null;
+ const h=(f?.historial||[]).slice().reverse().slice(0,6);
+ abrirModal(f?'✏️ Editar gasto fijo':'➕ Nuevo gasto fijo',`<div class="space-y-3">
+  <div class="grid grid-cols-2 gap-2"><div><label class="small">Nombre</label><input id="fjNombre" class="border p-2 rounded w-full" value="${esc(f?.nombre||'')}" placeholder="Ej: Internet"></div>
+  <div><label class="small">Categoría</label><select id="fjCat" class="border p-2 rounded w-full">${FIJO_CATS.map(c=>`<option ${c===(f?.categoria||'Servicio')?'selected':''}>${c}</option>`).join('')}</select></div></div>
+  <div class="grid grid-cols-2 gap-2"><div><label class="small">Monto</label><input id="fjMonto" inputmode="decimal" class="border p-2 rounded w-full" value="${f?f.monto:''}"></div>
+  <div><label class="small">Cada cuánto se paga</label><select id="fjFrec" class="border p-2 rounded w-full">${GASTO_FREC.filter(x=>x[0]!=='unica').map(([v,t])=>`<option value="${v}" ${v===(f?.frecuencia||'mensual')?'selected':''}>${t}</option>`).join('')}</select></div></div>
+  <div><label class="small">Notas</label><textarea id="fjNotas" rows="2" class="border p-2 rounded w-full">${esc(f?.notas||'')}</textarea></div>
+  ${f?`<label class="flex items-center gap-2 text-sm"><input id="fjActivo" type="checkbox" ${f.activo!==false?'checked':''}> Activo (si lo desmarcás deja de sumar)</label>`:''}
+  ${h.length?`<div class="small">Historial de montos: ${h.map(x=>`${gFmt(x.fecha)} → ${money(x.monto)}`).join(' · ')}</div>`:''}
+  <div class="grid grid-cols-${f?2:1} gap-2"><button onclick="fijoGuardar('${f?f.id:''}')" class="bg-blue-600 px-4 py-2 rounded font-semibold">Guardar</button>${f?`<button onclick="fijoEliminar('${f.id}')" class="bg-rose-700 px-4 py-2 rounded font-semibold">🗑️ Eliminar</button>`:''}</div></div>`);
+}
+async function fijoGuardar(id){
+ const nombre=document.getElementById('fjNombre').value.trim(),m=gNumInput(document.getElementById('fjMonto').value);
+ if(!nombre)return alert('Poné un nombre.');if(m===null||m<0)return alert('Ingresá el monto.');
+ const f=id?(state.fijos||[]).find(x=>String(x.id)===String(id)):null,hoy=fechaLocalHoy();
+ const o={nombre,categoria:document.getElementById('fjCat').value,monto:m,frecuencia:document.getElementById('fjFrec').value,notas:document.getElementById('fjNotas').value.trim()||null};
+ const hist=Array.isArray(f?.historial)?f.historial.slice():[];
+ if(!f||Number(f.monto)!==m)hist.push({fecha:hoy,monto:m});o.historial=hist;
+ if(f)o.activo=document.getElementById('fjActivo').checked;
+ try{if(f)await dbUpdate('gastos_fijos',f.id,o);else await dbInsert('gastos_fijos',o);cerrarModal();await gastosCargarExtra();gastosRender()}catch(e){alert('No se pudo guardar: '+e.message)}
+}
+async function fijoEliminar(id){if(!confirm('¿Eliminar este gasto fijo?'))return;try{await dbDelete('gastos_fijos',id);cerrarModal();await gastosCargarExtra();gastosRender()}catch(e){alert('No se pudo eliminar: '+e.message)}}
+function fijoACaja(id){
+ const f=(state.fijos||[]).find(x=>String(x.id)===String(id));if(!f)return;
+ abrirModal('📒 Pasar a Caja',`<div class="space-y-3"><div><b>${esc(f.nombre)}</b><div class="small">Registra una salida en Caja. Si ya lo cargaste ahí, no lo repitas.</div></div>
+  <div class="grid grid-cols-3 gap-2"><div><label class="small">Importe</label><input id="fcMonto" inputmode="decimal" class="border p-2 rounded w-full" value="${f.monto}"></div><div><label class="small">Fecha</label><input id="fcFecha" type="date" class="border p-2 rounded w-full" value="${fechaLocalHoy()}"></div><div><label class="small">Medio</label><select id="fcMedio" class="border p-2 rounded w-full">${GASTO_MEDIOS.map(x=>`<option>${x}</option>`).join('')}</select></div></div>
+  <button onclick="fijoACajaOk('${f.id}')" class="bg-blue-600 px-4 py-2 rounded w-full font-semibold">Registrar salida en Caja</button></div>`);
+}
+async function fijoACajaOk(id){
+ const f=(state.fijos||[]).find(x=>String(x.id)===String(id)),m=gNumInput(document.getElementById('fcMonto').value);if(!f)return;if(m===null||m<=0)return alert('Ingresá el importe.');
+ try{await gastoCaja('Salida','Gastos fijos - '+(f.categoria||'Otros'),document.getElementById('fcMedio').value,m,document.getElementById('fcFecha').value||fechaLocalHoy(),f.nombre);cerrarModal();try{await cargarSupabase(true,['caja'])}catch(_){}alert('Registrado en Caja.')}
+ catch(e){alert('No se pudo registrar en Caja: '+e.message)}
+}
+/* ---- Personales ---- */
+function persNombre(id){return ((state.personas||[]).find(p=>String(p.id)===String(id))||{}).nombre||'—'}
+function persMes(d){const b=PERS_MES||new Date();PERS_MES=new Date(b.getFullYear(),b.getMonth()+d,1);gastosRender()}
+function persSel(v){PERS_SEL=v;gastosRender()}
+function personalesRender(){
+ extraAviso(['personas','gastos_personales'],'migracion_fijos_personales.sql');
+ const base=PERS_MES||(PERS_MES=new Date(new Date().getFullYear(),new Date().getMonth(),1)),mm=gISO(base).slice(0,7);
+ const personas=(state.personas||[]).filter(p=>p.activo!==false);
+ const del=(state.gpers||[]).filter(g=>String(g.fecha).slice(0,7)===mm&&(PERS_SEL==='todas'||String(g.persona_id)===String(PERS_SEL)));
+ const gas=del.filter(g=>!g.es_retiro),ret=del.filter(g=>g.es_retiro),s=l=>l.reduce((a,g)=>a+(Number(g.monto)||0),0);
+ const mesTxt=base.toLocaleDateString('es-AR',{month:'long',year:'numeric'}),mesCap=mesTxt.charAt(0).toUpperCase()+mesTxt.slice(1);
+ const todasMes=(state.gpers||[]).filter(g=>String(g.fecha).slice(0,7)===mm);
+ const kp=personas.map(p=>{const t=s(todasMes.filter(g=>!g.es_retiro&&String(g.persona_id)===String(p.id))),pre=Number(p.presupuesto)||0;return `<div class="card p-4"><div class="small">👤 ${esc(p.nombre)}</div><div class="text-2xl font-bold">${money(t)}</div><div class="small">${pre>0?`${Math.round(t/pre*100)}% de ${money(pre)}`:'gastos del mes'}</div>${pre>0?`<div style="height:6px;border-radius:6px;background:var(--raise);margin-top:6px"><div style="height:6px;border-radius:6px;width:${Math.min(100,t/pre*100)}%;background:${t>pre?'#fb7185':'var(--acc)'}"></div></div>`:''}</div>`}).join('');
+ document.getElementById('gastosKpis').innerHTML=`<div class="card p-4"><div class="small">Gastos del mes</div><div class="text-2xl font-bold">${money(s(todasMes.filter(g=>!g.es_retiro)))}</div><div class="small">todos los socios</div></div><div class="card p-4"><div class="small">🏧 Retiros de Caja</div><div class="text-2xl font-bold">${money(s(todasMes.filter(g=>g.es_retiro)))}</div><div class="small">sacado del negocio</div></div>${kp}`;
+ const chips=`<button type="button" class="small oper-link ${PERS_SEL==='todas'?'on':''}" onclick="persSel('todas')">Todas</button>`+personas.map(p=>`<button type="button" class="small oper-link ${String(PERS_SEL)===String(p.id)?'on':''}" onclick="persSel('${p.id}')">👤 ${esc(p.nombre)}</button>`).join('');
+ const porCat={};gas.forEach(g=>{porCat[g.categoria||'Otros']=(porCat[g.categoria||'Otros']||0)+Number(g.monto)});
+ const cats=Object.entries(porCat).sort((a,b)=>b[1]-a[1]),tot=s(gas),max=cats[0]?cats[0][1]:1;
+ const fila=g=>`<div class="item-operativo border rounded-lg p-3"><div class="flex justify-between gap-3 items-center flex-wrap"><div class="flex-1" style="min-width:200px"><b>${g.es_retiro?'🏧':'🧾'} ${esc(g.concepto)}</b> <span class="pend-chip">${esc(persNombre(g.persona_id))}</span> <span class="pend-chip">${esc(g.categoria||'Otros')}</span><div class="small mt-1">${gFmt(g.fecha)}${g.medio?' · '+esc(g.medio):''}${g.notas?' · '+esc(g.notas):''}</div></div><div class="flex gap-2 items-center shrink-0"><b>${money(g.monto)}</b><button type="button" class="small" onclick="personalGastoEditar('${g.id}')">✏️ Editar</button></div></div></div>`;
+ document.getElementById('gastosCuerpo').innerHTML=`<div class="card p-4 flex flex-wrap gap-2 items-center justify-between"><div class="flex flex-wrap gap-2 items-center"><button type="button" class="small oper-link" onclick="persMes(-1)">‹</button><b>${mesCap}</b><button type="button" class="small oper-link" onclick="persMes(1)">›</button><span class="mx-2"></span>${chips}</div><div class="flex gap-2"><button type="button" class="small oper-link" onclick="retiroCajaModal()">🏧 Retiro de Caja</button><button type="button" class="small oper-link" onclick="personasAdmin()">⚙ Administrar personas</button></div></div><div class="h-3"></div>`
+  +(!(state.personas||[]).length?`<div class="card p-5 text-sm">Primero agregá a las personas (vos y tu socio): tocá <b>⚙ Administrar personas</b>.</div>`:'')
+  +(cats.length?`<div class="card p-4 space-y-2"><h3 class="font-semibold">Por categoría</h3>${cats.map(([c,v])=>`<div><div class="flex justify-between small"><span>${esc(c)}</span><span><b>${money(v)}</b> · ${tot?Math.round(v/tot*100):0}%</span></div><div style="height:8px;border-radius:6px;background:var(--raise)"><div style="height:8px;border-radius:6px;width:${Math.max(3,v/max*100)}%;background:var(--acc)"></div></div></div>`).join('')}</div><div class="h-3"></div>`:'')
+  +`<div class="card p-4 space-y-2"><h3 class="font-semibold">Movimientos del mes <span class="small">(${del.length})</span></h3>${del.length?del.slice().sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha))).map(fila).join(''):'<div class="text-slate-400 text-sm">No hay gastos en este mes.</div>'}</div>`;
+}
+function personasAdmin(){
+ const l=(state.personas||[]).map(p=>`<div class="item-operativo border rounded-lg p-3 flex flex-wrap gap-2 items-center justify-between"><div class="flex-1" style="min-width:140px"><b>👤 ${esc(p.nombre)}</b>${p.activo===false?' <span class="pend-chip">inactiva</span>':''}<div class="small">${Number(p.presupuesto)>0?'Presupuesto '+money(p.presupuesto):'sin presupuesto'}</div></div><div class="flex gap-2"><button class="small" onclick="personaEditar('${p.id}')">✏️ Editar</button></div></div>`).join('');
+ abrirModal('⚙ Personas',`<div class="space-y-3">${l||'<div class="small">Todavía no hay personas.</div>'}<button onclick="personaEditar()" class="bg-blue-600 px-4 py-2 rounded w-full font-semibold">➕ Agregar persona</button></div>`);
+}
+function personaEditar(id){
+ const p=id?(state.personas||[]).find(x=>String(x.id)===String(id)):null;
+ abrirModal(p?'✏️ Editar persona':'➕ Nueva persona',`<div class="space-y-3"><div><label class="small">Nombre</label><input id="peNombre" class="border p-2 rounded w-full" value="${esc(p?.nombre||'')}"></div>
+  <div><label class="small">Presupuesto mensual (opcional)</label><input id="pePre" inputmode="decimal" class="border p-2 rounded w-full" value="${p&&p.presupuesto!=null?p.presupuesto:''}"></div>
+  ${p?`<label class="flex items-center gap-2 text-sm"><input id="peActivo" type="checkbox" ${p.activo!==false?'checked':''}> Activa</label>`:''}
+  <div class="grid grid-cols-${p?2:1} gap-2"><button onclick="personaGuardar('${p?p.id:''}')" class="bg-blue-600 px-4 py-2 rounded font-semibold">Guardar</button>${p?`<button onclick="personaEliminar('${p.id}')" class="bg-rose-700 px-4 py-2 rounded font-semibold">🗑️ Eliminar</button>`:''}</div></div>`);
+}
+async function personaGuardar(id){
+ const nombre=document.getElementById('peNombre').value.trim();if(!nombre)return alert('Poné un nombre.');
+ const o={nombre,presupuesto:gNumInput(document.getElementById('pePre').value)};if(id)o.activo=document.getElementById('peActivo').checked;
+ try{if(id)await dbUpdate('personas',id,o);else await dbInsert('personas',o);await gastosCargarExtra();personasAdmin();gastosRender()}catch(e){alert('No se pudo guardar: '+e.message)}
+}
+async function personaEliminar(id){
+ if((state.gpers||[]).some(g=>String(g.persona_id)===String(id)))return alert('Esta persona tiene gastos cargados, no se puede eliminar. Desmarcá "Activa" para ocultarla.');
+ if(!confirm('¿Eliminar esta persona?'))return;
+ try{await dbDelete('personas',id);await gastosCargarExtra();personasAdmin();gastosRender()}catch(e){alert('No se pudo eliminar: '+e.message)}
+}
+function personaOpts(sel){return (state.personas||[]).filter(p=>p.activo!==false||String(p.id)===String(sel)).map(p=>`<option value="${p.id}" ${String(p.id)===String(sel)?'selected':''}>${esc(p.nombre)}</option>`).join('')}
+function personalGastoEditar(id){
+ if(!(state.personas||[]).length)return personasAdmin();
+ const g=id?(state.gpers||[]).find(x=>String(x.id)===String(id)):null;
+ const sel=g?g.persona_id:(PERS_SEL!=='todas'?PERS_SEL:'');
+ abrirModal(g?(g.es_retiro?'✏️ Editar retiro':'✏️ Editar gasto personal'):'➕ Gasto personal',`<div class="space-y-3">
+  <div class="grid grid-cols-2 gap-2"><div><label class="small">Persona</label><select id="gpPersona" class="border p-2 rounded w-full">${personaOpts(sel)}</select></div><div><label class="small">Fecha</label><input id="gpFechaP" type="date" class="border p-2 rounded w-full" value="${g?String(g.fecha).slice(0,10):fechaLocalHoy()}"></div></div>
+  <div class="grid grid-cols-2 gap-2"><div><label class="small">Concepto</label><input id="gpConc" class="border p-2 rounded w-full" value="${esc(g?.concepto||'')}" placeholder="Ej: Supermercado"></div><div><label class="small">Categoría</label><select id="gpCat" class="border p-2 rounded w-full">${[...PERS_CATS,...(g&&g.es_retiro?['Retiro del negocio']:[])].map(c=>`<option ${c===(g?.categoria||'Supermercado')?'selected':''}>${c}</option>`).join('')}</select></div></div>
+  <div class="grid grid-cols-2 gap-2"><div><label class="small">Monto</label><input id="gpMontoP" inputmode="decimal" class="border p-2 rounded w-full" value="${g?g.monto:''}"></div><div><label class="small">Medio</label><select id="gpMedioP" class="border p-2 rounded w-full">${['Efectivo','Transferencia','Débito','Crédito','Mercado Pago','Otro'].map(x=>`<option ${x===(g?.medio||'Efectivo')?'selected':''}>${x}</option>`).join('')}</select></div></div>
+  <div><label class="small">Notas</label><textarea id="gpNotasP" rows="2" class="border p-2 rounded w-full">${esc(g?.notas||'')}</textarea></div>
+  <div class="grid grid-cols-${g?2:1} gap-2"><button onclick="personalGastoGuardar('${g?g.id:''}')" class="bg-blue-600 px-4 py-2 rounded font-semibold">Guardar</button>${g?`<button onclick="personalGastoEliminar('${g.id}')" class="bg-rose-700 px-4 py-2 rounded font-semibold">🗑️ Eliminar</button>`:''}</div></div>`);
+}
+async function personalGastoGuardar(id){
+ const m=gNumInput(document.getElementById('gpMontoP').value),conc=document.getElementById('gpConc').value.trim();
+ if(!conc)return alert('Poné el concepto.');if(m===null||m<=0)return alert('Ingresá el monto.');
+ const o={persona_id:document.getElementById('gpPersona').value,fecha:document.getElementById('gpFechaP').value||fechaLocalHoy(),concepto:conc,categoria:document.getElementById('gpCat').value,monto:m,medio:document.getElementById('gpMedioP').value,notas:document.getElementById('gpNotasP').value.trim()||null};
+ try{if(id)await dbUpdate('gastos_personales',id,o);else await dbInsert('gastos_personales',o);cerrarModal();await gastosCargarExtra();gastosRender()}catch(e){alert('No se pudo guardar: '+e.message)}
+}
+async function personalGastoEliminar(id){
+ const g=(state.gpers||[]).find(x=>String(x.id)===String(id));if(!g)return;
+ let borrar=false;if(g.caja_id)borrar=confirm('Este retiro tiene un movimiento en Caja.\n\nAceptar = borrar también ese movimiento.\nCancelar = dejarlo en Caja.');
+ else if(!confirm('¿Eliminar este gasto?'))return;
+ try{if(borrar){try{await dbDelete('caja',g.caja_id)}catch(e){alert('No se pudo borrar el movimiento de Caja: '+e.message)}}
+  await dbDelete('gastos_personales',id);cerrarModal();await gastosCargarExtra();gastosRender();if(borrar)try{await cargarSupabase(true,['caja'])}catch(_){}}
+ catch(e){alert('No se pudo eliminar: '+e.message)}
+}
+function retiroCajaModal(){
+ if(!(state.personas||[]).length)return personasAdmin();
+ abrirModal('🏧 Retiro de Caja',`<div class="space-y-3"><p class="small">Registra una <b>salida en Caja</b> como retiro de socio y la anota en los gastos personales de la persona.</p>
+  <div class="grid grid-cols-2 gap-2"><div><label class="small">Quién retira</label><select id="rtPersona" class="border p-2 rounded w-full">${personaOpts(PERS_SEL!=='todas'?PERS_SEL:'')}</select></div><div><label class="small">Fecha</label><input id="rtFecha" type="date" class="border p-2 rounded w-full" value="${fechaLocalHoy()}"></div></div>
+  <div class="grid grid-cols-2 gap-2"><div><label class="small">Monto</label><input id="rtMonto" inputmode="decimal" class="border p-2 rounded w-full"></div><div><label class="small">Medio</label><select id="rtMedio" class="border p-2 rounded w-full"><option>Efectivo</option><option>Transferencia</option></select></div></div>
+  <div><label class="small">Motivo (opcional)</label><input id="rtMotivo" class="border p-2 rounded w-full" placeholder="Ej: gastos de la semana"></div>
+  <button onclick="retiroCajaOk()" class="bg-blue-600 px-4 py-2 rounded w-full font-semibold">Registrar retiro</button></div>`);
+}
+async function retiroCajaOk(){
+ const m=gNumInput(document.getElementById('rtMonto').value);if(m===null||m<=0)return alert('Ingresá el monto.');
+ const pid=document.getElementById('rtPersona').value,fecha=document.getElementById('rtFecha').value||fechaLocalHoy(),medio=document.getElementById('rtMedio').value,motivo=document.getElementById('rtMotivo').value.trim(),nom=persNombre(pid);
+ try{
+  const cajaId=await gastoCaja('Salida','Retiros de socios',medio,m,fecha,'Retiro - '+nom+(motivo?' · '+motivo:''));
+  await dbInsert('gastos_personales',{persona_id:pid,fecha,concepto:'Retiro de Caja'+(motivo?' · '+motivo:''),categoria:'Retiro del negocio',monto:m,medio,es_retiro:true,caja_id:cajaId});
+  cerrarModal();await gastosCargarExtra();gastosRender();try{await cargarSupabase(true,['caja'])}catch(_){}
+ }catch(e){alert('No se pudo registrar el retiro: '+e.message)}
 }
 /* v8: módulo Operativo (solapas) + resumen en Inicio */
 const OPER_KEY='abasto_oper_solapa';
